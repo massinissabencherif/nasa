@@ -1,0 +1,11 @@
+{
+  "name": "@hestia/ui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "react": "^19.1.0"
+  }
+}

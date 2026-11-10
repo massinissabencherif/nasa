@@ -1,0 +1,10 @@
+# HESTIA — Addendum to PROMPT_FABLE.md (overrides anything in it)
+
+1. **Demo scale.** A real 29-unit shelf feeds 4 crew for 1–2 days, not 412. Add `units_per_lot` to `food_item`: each physical unit on the demo shelf represents one storage lot. Pick multipliers so the seeded stock ≈ 412 days and removing the 3 boxes named in the demo script ≈ −14 days. Show the scale in the UI ("1 box = 1 lot of N rations, demo scale") and in the Assumptions panel.
+2. **One model in RAM.** 16 GB: never keep `qwen2.5vl:7b` and `gemma3:4b` loaded together. Text advice uses the deterministic template by default; the LLM is opt-in and uses `qwen2.5vl:7b` in text mode. No cold model load may happen during a scan.
+3. **Vision strategy.** Benchmark per-slot crops vs row crops vs single full image on `shelf_full.png`. Ollama may serve requests serially: measure, do not assume concurrency helps. Keep the best strategy that stays ≤ 20 s warm.
+4. **Capacitor over plain HTTP.** The crew app must reach `http://<LAN-IP>:8000`. Android: `server.androidScheme: "http"`, `cleartext: true`, `usesCleartextTraffic`. iOS: ATS local-networking exception + `NSLocalNetworkUsageDescription`. Verify SSE from a real device; fall back to polling if it fails.
+5. **Network.** Do not assume macOS can host an internet-less hotspot. Document a tested setup in README and `docs/risks.md` (phone hotspot with mobile data off, or a travel router). The station shows its LAN IP and a locally generated QR code of the crew URL.
+6. **macOS permissions.** Camera access for the terminal and the firewall prompt for incoming connections need a click from me: tell me when.
+7. **Context survival.** Create the repo at `~/nasa/hestia`. Copy `PROMPT_FABLE.md` and this file into `hestia/docs/prompt/`. Re-read them and `CLAUDE.md` at the start of each phase, and keep `docs/STATUS.md` current (phase, what works, what is next). `~/nasa/readme.md` is the French project brief: use it as the base for `CLAUDE.md`.
+8. **Pre-event work** is allowed by the local organisers. Keep the git history honest and list on the NASA project page what was built before 14 Nov.
