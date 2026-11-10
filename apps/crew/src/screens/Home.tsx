@@ -1,21 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IconCheckin, IconSettings, Panel, StatusDot, worstLevel } from '@hestia/ui';
+import { IconCheckin, IconSettings, Panel, SilhouetteBody, StatusDot, worstLevel, ZoneDetailPanel } from '@hestia/ui';
 import type { Measurement } from '@hestia/api-client';
+import type { ZoneKey } from '@hestia/ui';
 import { useApi } from '../lib/ApiProvider';
-import { useCrewMember, useCrewStatus, useSelectedCrewId } from '../lib/hooks';
+import { useCrewMember, useCrewStatus, useLatestMeasurements, useSelectedCrewId, useThresholds } from '../lib/hooks';
 import { clearSelectedCrewId } from '../lib/profile';
-
-const ZONE_LABELS: Record<string, string> = {
-  brain_morale: 'Brain / morale',
-  eyes_sans: 'Eyes (SANS)',
-  heart: 'Heart',
-  bones: 'Bones',
-  muscles: 'Muscles',
-  immunity: 'Immunity',
-  skin: 'Skin',
-  digestive_nutrition: 'Digestive / nutrition',
-};
 
 const REMINDER_FIELDS: { type: string; label: string }[] = [
   { type: 'exercise_min', label: 'Log resistive exercise — the main defense against bone loss' },
@@ -29,7 +19,10 @@ export function Home() {
   const crewId = useSelectedCrewId();
   const crew = useCrewMember(crewId);
   const status = useCrewStatus(crewId);
+  const latest = useLatestMeasurements(crewId);
+  const thresholds = useThresholds();
   const [todayTypes, setTodayTypes] = useState<Set<string>>(new Set());
+  const [selectedZone, setSelectedZone] = useState<ZoneKey | null>(null);
 
   useEffect(() => {
     if (crewId == null) return;
@@ -91,28 +84,38 @@ export function Home() {
         </button>
       )}
 
-      <Panel title="Status">
+      <Panel>
         {status ? (
-          <div style={{ display: 'grid', gap: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+          <div style={{ display: 'grid', gap: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
               {overall && <StatusDot level={overall} size={10} />}
               <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
                 {overall === 'green' ? 'All systems nominal' : 'Some zones need attention'}
               </span>
             </div>
-            {Object.entries(status).map(([zone, z]) => (
-              <div key={zone} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <StatusDot level={z.level} />
-                  <span style={{ fontSize: 'var(--text-sm)' }}>{ZONE_LABELS[zone] ?? zone}</span>
-                </div>
-              </div>
-            ))}
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <SilhouetteBody status={status} width={190} selectedZone={selectedZone} onSelectZone={setSelectedZone} />
+            </div>
+            <p style={{ textAlign: 'center', fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginTop: 6 }}>
+              Tap a zone for details
+            </p>
           </div>
         ) : (
           <p style={{ color: 'var(--text-faint)', fontSize: 'var(--text-sm)' }}>Loading…</p>
         )}
       </Panel>
+
+      {selectedZone && status && (
+        <Panel>
+          <ZoneDetailPanel
+            zone={selectedZone}
+            status={status}
+            latest={latest}
+            thresholds={thresholds}
+            onClose={() => setSelectedZone(null)}
+          />
+        </Panel>
+      )}
 
       {missing.length > 0 && (
         <Panel title="Reminders">

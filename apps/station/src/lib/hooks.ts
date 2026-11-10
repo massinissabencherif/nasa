@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { CrewMember, CrewStatus, MissionContext, PantryState } from '@hestia/api-client';
+import type { CrewMember, CrewStatus, LatestMeasurements, MissionContext, PantryState, Thresholds } from '@hestia/api-client';
 import { api } from './api';
 
 export function useConnection(): boolean {
@@ -61,6 +61,27 @@ export function useCrewStatuses(crew: CrewMember[]): Record<number, CrewStatus> 
     };
   }, [crew]);
   return statuses;
+}
+
+export function useLatestMeasurements(crewId: number | null): LatestMeasurements | null {
+  const [latest, setLatest] = useState<LatestMeasurements | null>(null);
+  useEffect(() => {
+    if (crewId == null) return;
+    let cancelled = false;
+    api.getLatestMeasurements(crewId).then((l) => !cancelled && setLatest(l)).catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [crewId]);
+  return latest;
+}
+
+export function useThresholds(): Thresholds | null {
+  const [thresholds, setThresholds] = useState<Thresholds | null>(null);
+  useEffect(() => {
+    api.getThresholds().then(setThresholds).catch(() => {});
+  }, []);
+  return thresholds;
 }
 
 export function usePantry() {

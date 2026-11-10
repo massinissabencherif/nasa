@@ -8,3 +8,7 @@ export * from './components/ReadoutNumber';
 export * from './components/NavRail';
 export * from './components/TopBar';
 export * from './components/TabBar';
+export * from './components/SilhouetteBody';
+export * from './components/ZoneDetailPanel';
+export * from './zones';
+export * from './thresholdText';

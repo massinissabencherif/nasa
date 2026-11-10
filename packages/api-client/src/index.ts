@@ -31,6 +31,8 @@ export type ZoneStatus = {
 
 export type CrewStatus = Record<string, ZoneStatus>;
 
+export type LatestMeasurements = Record<string, { value: number; unit: string; ts: string }>;
+
 export type Measurement = {
   id: number;
   ts: string;
@@ -180,6 +182,7 @@ export function createApiClient(baseUrl: string) {
 
     listCrew: () => request<CrewMember[]>('/api/crew'),
     getCrewStatus: (id: number) => request<CrewStatus>(`/api/crew/${id}/status`),
+    getLatestMeasurements: (id: number) => request<LatestMeasurements>(`/api/crew/${id}/latest`),
     getMeasurements: (id: number, opts?: { type?: string; days?: number }) => {
       const params = new URLSearchParams();
       if (opts?.type) params.set('type', opts.type);

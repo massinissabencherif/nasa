@@ -107,6 +107,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@hestia/api-client':
+        specifier: workspace:*
+        version: link:../api-client
       react:
         specifier: ^19.1.0
         version: 19.3.1

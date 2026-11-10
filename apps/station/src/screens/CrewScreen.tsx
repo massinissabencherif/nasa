@@ -1,23 +1,30 @@
 import { useState } from 'react';
-import { Panel, StatusBadge, StatusDot, worstLevel } from '@hestia/ui';
+import { Panel, SilhouetteBody, StatusBadge, ZoneDetailPanel, ZONES, worstLevel } from '@hestia/ui';
 import type { Level } from '@hestia/api-client';
-import { useCrew, useCrewStatuses } from '../lib/hooks';
-
-const ZONE_LABELS: Record<string, string> = {
-  brain_morale: 'Brain / morale',
-  eyes_sans: 'Eyes (SANS)',
-  heart: 'Heart',
-  bones: 'Bones',
-  muscles: 'Muscles',
-  immunity: 'Immunity',
-  skin: 'Skin',
-  digestive_nutrition: 'Digestive / nutrition',
-};
+import type { ZoneKey } from '@hestia/ui';
+import { useCrew, useCrewStatuses, useLatestMeasurements, useThresholds } from '../lib/hooks';
 
 export function CrewScreen() {
   const crew = useCrew();
   const statuses = useCrewStatuses(crew);
+  const thresholds = useThresholds();
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [selectedZone, setSelectedZone] = useState<ZoneKey | null>(null);
+  const latest = useLatestMeasurements(expanded);
+
+  function toggle(memberId: number) {
+    if (expanded === memberId) {
+      setExpanded(null);
+      setSelectedZone(null);
+      return;
+    }
+    setExpanded(memberId);
+    const status = statuses[memberId];
+    const worstZone = status
+      ? ZONES.find((z) => status[z]?.level !== 'green') ?? ZONES[0]
+      : null;
+    setSelectedZone(worstZone);
+  }
 
   return (
     <div style={{ display: 'grid', gap: 12 }}>
@@ -28,7 +35,7 @@ export function CrewScreen() {
         return (
           <Panel key={member.id} bodyStyle={{ padding: 0 }}>
             <button
-              onClick={() => setExpanded(isOpen ? null : member.id)}
+              onClick={() => toggle(member.id)}
               style={{
                 width: '100%',
                 display: 'flex',
@@ -41,24 +48,8 @@ export function CrewScreen() {
                 textAlign: 'left',
               }}
             >
-              <div
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: '50%',
-                  background: 'var(--panel-raised)',
-                  border: '1px solid var(--border)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 600,
-                  flexShrink: 0,
-                }}
-              >
-                {member.name
-                  .split(' ')
-                  .map((p) => p[0])
-                  .join('')}
+              <div style={{ width: 36, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
+                <SilhouetteBody status={status ?? null} interactive={false} width={32} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontWeight: 600 }}>{member.name}</p>
@@ -72,33 +63,28 @@ export function CrewScreen() {
               <div
                 style={{
                   borderTop: '1px solid var(--border-soft)',
-                  padding: 16,
+                  padding: 20,
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(2, 1fr)',
-                  gap: 10,
+                  gridTemplateColumns: '180px 1fr',
+                  gap: 24,
                 }}
               >
-                {Object.entries(status).map(([zone, zoneStatus]) => (
-                  <div
-                    key={zone}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '8px 10px',
-                      background: 'var(--panel-raised)',
-                      borderRadius: 'var(--radius-sm)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <StatusDot level={zoneStatus.level} />
-                      <span style={{ fontSize: 'var(--text-sm)' }}>{ZONE_LABELS[zone] ?? zone}</span>
-                    </div>
-                    <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>
-                      {zoneStatus.hazard}
-                    </span>
-                  </div>
-                ))}
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <SilhouetteBody
+                    status={status}
+                    width={150}
+                    selectedZone={selectedZone}
+                    onSelectZone={setSelectedZone}
+                  />
+                </div>
+                {selectedZone && (
+                  <ZoneDetailPanel
+                    zone={selectedZone}
+                    status={status}
+                    latest={latest}
+                    thresholds={thresholds}
+                  />
+                )}
               </div>
             )}
           </Panel>

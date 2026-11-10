@@ -1,5 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import type { CrewMember, CrewStatus, Measurement, MealProposal } from '@hestia/api-client';
+import type { CrewMember, CrewStatus, LatestMeasurements, Measurement, MealProposal, Thresholds } from '@hestia/api-client';
 import { useApi } from './ApiProvider';
 import { getSelectedCrewId, subscribeSelectedCrewId } from './profile';
 
@@ -60,6 +60,29 @@ export function useMeasurements(id: number | null, type: string, days = 30): Mea
     api.getMeasurements(id, { type, days }).then(setData).catch(() => {});
   }, [api, id, type, days]);
   return data;
+}
+
+export function useLatestMeasurements(id: number | null): LatestMeasurements | null {
+  const api = useApi();
+  const [latest, setLatest] = useState<LatestMeasurements | null>(null);
+  useEffect(() => {
+    if (id == null) return;
+    let cancelled = false;
+    api.getLatestMeasurements(id).then((l) => !cancelled && setLatest(l)).catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [api, id]);
+  return latest;
+}
+
+export function useThresholds(): Thresholds | null {
+  const api = useApi();
+  const [thresholds, setThresholds] = useState<Thresholds | null>(null);
+  useEffect(() => {
+    api.getThresholds().then(setThresholds).catch(() => {});
+  }, [api]);
+  return thresholds;
 }
 
 export function useMealProposal(id: number | null) {

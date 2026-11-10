@@ -68,6 +68,23 @@ def get_measurements(
         return session.exec(query.order_by(Measurement.ts.desc())).all()
 
 
+@router.get("/{crew_id}/latest")
+def get_latest_measurements(crew_id: int) -> dict:
+    with Session(engine) as session:
+        if session.get(CrewMember, crew_id) is None:
+            raise HTTPException(404, f"no crew member {crew_id}")
+        rows = session.exec(
+            select(Measurement)
+            .where(Measurement.crew_member_id == crew_id)
+            .order_by(Measurement.ts.desc())
+        ).all()
+        latest: dict[str, dict] = {}
+        for row in rows:
+            if row.type not in latest:
+                latest[row.type] = {"value": row.value, "unit": row.unit, "ts": row.ts}
+        return latest
+
+
 @router.post("/{crew_id}/checkin")
 def checkin(crew_id: int, body: CheckinBody) -> list[Measurement]:
     with Session(engine) as session:

@@ -6,6 +6,7 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "dependencies": {
+    "@hestia/api-client": "workspace:*",
     "react": "^19.1.0"
   },
   "devDependencies": {
