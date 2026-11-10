@@ -8,3 +8,4 @@ src-tauri/target/
 src-tauri/gen/
 .pnpm-store/
 *.log
+*.db

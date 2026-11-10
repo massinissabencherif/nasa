@@ -15,6 +15,7 @@ dependencies = [
 
 [project.scripts]
 hestia-server = "app.main:main"
+hestia-reset-db = "app.seed:main"
 
 [build-system]
 requires = ["hatchling"]

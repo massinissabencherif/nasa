@@ -1,0 +1,122 @@
+{
+  "assumption": "kcal/macro/mass values are plausible per-unit estimates for simulated demo items, not lab-measured. units_per_lot is a single demo-scale multiplier (see PROMPT_ADDENDUM.md #1): one physical unit on the shelf represents units_per_lot real rations, chosen so the seeded stock gives ~412 days of autonomy for the 4-person crew and removing the 3 slot-A1 cans drops it by ~14 days.",
+  "units_per_lot": 212,
+  "items": [
+    {
+      "key": "tomato_soup",
+      "name": "Tomato soup can",
+      "kcal": 212,
+      "protein_g": 6,
+      "carbs_g": 28,
+      "fat_g": 8,
+      "mass_g": 400,
+      "expiry_days": 730
+    },
+    {
+      "key": "oatmeal_box",
+      "name": "Oatmeal box",
+      "kcal": 1200,
+      "protein_g": 40,
+      "carbs_g": 210,
+      "fat_g": 20,
+      "mass_g": 500,
+      "expiry_days": 365
+    },
+    {
+      "key": "tuna_can",
+      "name": "Tuna can",
+      "kcal": 120,
+      "protein_g": 22,
+      "carbs_g": 0,
+      "fat_g": 3,
+      "mass_g": 142,
+      "expiry_days": 1095
+    },
+    {
+      "key": "crackers_pack",
+      "name": "Crackers pack",
+      "kcal": 500,
+      "protein_g": 8,
+      "carbs_g": 70,
+      "fat_g": 20,
+      "mass_g": 200,
+      "expiry_days": 270
+    },
+    {
+      "key": "peanut_butter_jar",
+      "name": "Peanut butter jar",
+      "kcal": 1500,
+      "protein_g": 60,
+      "carbs_g": 50,
+      "fat_g": 130,
+      "mass_g": 340,
+      "expiry_days": 365
+    },
+    {
+      "key": "rice_bag",
+      "name": "Rice bag",
+      "kcal": 1800,
+      "protein_g": 36,
+      "carbs_g": 396,
+      "fat_g": 6,
+      "mass_g": 500,
+      "expiry_days": 730
+    },
+    {
+      "key": "cereal_box",
+      "name": "Cereal box",
+      "kcal": 1300,
+      "protein_g": 26,
+      "carbs_g": 270,
+      "fat_g": 18,
+      "mass_g": 400,
+      "expiry_days": 270
+    },
+    {
+      "key": "bean_can",
+      "name": "Bean can",
+      "kcal": 250,
+      "protein_g": 15,
+      "carbs_g": 40,
+      "fat_g": 2,
+      "mass_g": 425,
+      "expiry_days": 1095
+    },
+    {
+      "key": "water_pouch",
+      "name": "Water pouch",
+      "kcal": 0,
+      "protein_g": 0,
+      "carbs_g": 0,
+      "fat_g": 0,
+      "mass_g": 500,
+      "expiry_days": 1825,
+      "note": "hydration only, not counted toward kcal autonomy"
+    },
+    {
+      "key": "energy_bar_box",
+      "name": "Energy bar box",
+      "kcal": 1000,
+      "protein_g": 40,
+      "carbs_g": 140,
+      "fat_g": 30,
+      "mass_g": 350,
+      "expiry_days": 365
+    }
+  ],
+  "shelf_grid": [
+    { "label": "A1", "item": "tomato_soup", "capacity": 6, "ground_truth_count": 3 },
+    { "label": "A2", "item": "oatmeal_box", "capacity": 4, "ground_truth_count": 2 },
+    { "label": "A3", "item": "tuna_can", "capacity": 8, "ground_truth_count": 4 },
+    { "label": "A4", "item": null, "capacity": 4, "ground_truth_count": 0 },
+    { "label": "B1", "item": "crackers_pack", "capacity": 6, "ground_truth_count": 5 },
+    { "label": "B2", "item": "peanut_butter_jar", "capacity": 4, "ground_truth_count": 2 },
+    { "label": "B3", "item": "rice_bag", "capacity": 4, "ground_truth_count": 3 },
+    { "label": "B4", "item": "cereal_box", "capacity": 4, "ground_truth_count": 1 },
+    { "label": "C1", "item": "bean_can", "capacity": 6, "ground_truth_count": 4 },
+    { "label": "C2", "item": null, "capacity": 4, "ground_truth_count": 0 },
+    { "label": "C3", "item": "water_pouch", "capacity": 6, "ground_truth_count": 3 },
+    { "label": "C4", "item": "energy_bar_box", "capacity": 4, "ground_truth_count": 2 }
+  ],
+  "demo_removal_slot": "A1"
+}
