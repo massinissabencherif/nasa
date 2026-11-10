@@ -2,7 +2,14 @@ from dataclasses import dataclass
 
 from sqlmodel import Session, select
 
-from app.models import CrewMember, FoodItem, InventoryLine, InventorySnapshot, ShelfSlot
+from app.models import (
+    ConsumptionEvent,
+    CrewMember,
+    FoodItem,
+    InventoryLine,
+    InventorySnapshot,
+    ShelfSlot,
+)
 
 KCAL_PER_KG_BODYWEIGHT_CHANGE = 7700  # NASA-referenced approximation, flagged as an assumption
 RATION_SAFETY_FLOOR_PCT = 70
@@ -48,14 +55,26 @@ def current_stock(session: Session) -> StockTotals:
     ).all()
     slots = {s.id: s for s in session.exec(select(ShelfSlot)).all()}
 
+    # Units logged between this snapshot and now (e.g. a crew meal) aren't
+    # physically confirmed by a scan yet, but should still move the autonomy
+    # number — the next scan will reconcile the real count.
+    pending_delta: dict[int, int] = {}
+    for event in session.exec(
+        select(ConsumptionEvent).where(ConsumptionEvent.ts > snapshot.ts)
+    ):
+        pending_delta[event.food_item_id] = pending_delta.get(event.food_item_id, 0) + event.qty
+
     kcal = protein = carbs = fat = 0.0
     min_expiry: int | None = None
     for line in lines:
         slot = slots.get(line.slot_id)
-        if slot is None or slot.food_item_id is None or line.count <= 0:
+        if slot is None or slot.food_item_id is None:
+            continue
+        count = line.count + pending_delta.get(slot.food_item_id, 0)
+        if count <= 0:
             continue
         food = session.get(FoodItem, slot.food_item_id)
-        lot_count = line.count * food.units_per_lot
+        lot_count = count * food.units_per_lot
         kcal += lot_count * food.kcal
         protein += lot_count * food.protein_g
         carbs += lot_count * food.carbs_g
@@ -79,6 +98,71 @@ def autonomy_report(session: Session) -> AutonomyReport:
     days = stock.kcal / need if need > 0 else 0.0
     expiry_warning = stock.min_expiry_days is not None and stock.min_expiry_days < EXPIRY_WARNING_DAYS
     return AutonomyReport(need, stock, days, expiry_warning)
+
+
+@dataclass
+class AvailableItem:
+    food_item_id: int
+    name: str
+    kcal: float
+    protein_g: float
+    carbs_g: float
+    fat_g: float
+    available_count: int
+
+
+def available_items(session: Session) -> list[AvailableItem]:
+    """Real per-unit nutrition (not the units_per_lot demo scale) for whatever
+    the latest scan still shows in stock — used for individual meal proposals,
+    as opposed to the whole-crew autonomy numbers above."""
+    snapshot = _latest_snapshot(session)
+    if snapshot is None:
+        return []
+    lines = session.exec(
+        select(InventoryLine).where(InventoryLine.snapshot_id == snapshot.id)
+    ).all()
+    slots = {s.id: s for s in session.exec(select(ShelfSlot)).all()}
+    pending_delta: dict[int, int] = {}
+    for event in session.exec(select(ConsumptionEvent).where(ConsumptionEvent.ts > snapshot.ts)):
+        pending_delta[event.food_item_id] = pending_delta.get(event.food_item_id, 0) + event.qty
+
+    out = []
+    for line in lines:
+        slot = slots.get(line.slot_id)
+        if slot is None or slot.food_item_id is None:
+            continue
+        count = line.count + pending_delta.get(slot.food_item_id, 0)
+        if count <= 0:
+            continue
+        food = session.get(FoodItem, slot.food_item_id)
+        out.append(
+            AvailableItem(
+                food_item_id=food.id,
+                name=food.name,
+                kcal=food.kcal,
+                protein_g=food.protein_g,
+                carbs_g=food.carbs_g,
+                fat_g=food.fat_g,
+                available_count=count,
+            )
+        )
+    return out
+
+
+def kcal_eaten_today(session: Session, crew_member_id: int, since) -> float:
+    events = session.exec(
+        select(ConsumptionEvent).where(
+            ConsumptionEvent.crew_member_id == crew_member_id,
+            ConsumptionEvent.ts >= since,
+            ConsumptionEvent.qty < 0,
+        )
+    ).all()
+    total = 0.0
+    for event in events:
+        food = session.get(FoodItem, event.food_item_id)
+        if food:
+            total += -event.qty * food.kcal
+    return total
 
 
 @dataclass

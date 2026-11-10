@@ -128,6 +128,53 @@ export function IconClock(props: IconProps) {
   );
 }
 
+export function IconHome(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M3.5 9.5L10 4l6.5 5.5" />
+      <path d="M5.3 8.5V16a.8.8 0 00.8.8h8a.8.8 0 00.8-.8V8.5" />
+    </svg>
+  );
+}
+
+export function IconCheckin(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M5.5 4.3h9a1 1 0 011 1V15a1 1 0 01-1 1h-9a1 1 0 01-1-1V5.3a1 1 0 011-1z" />
+      <path d="M7.3 8.3l1.8 1.8 3.2-3.6M7 12.6h6" />
+    </svg>
+  );
+}
+
+export function IconMeal(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M6 3.5v5.2a1.6 1.6 0 003.2 0V3.5M7.6 8.7V16.5" />
+      <path d="M13.7 3.5c-1.3 0-2 1.6-2 4.4s.7 3 2 3 2-.2 2-.2v5.8" />
+    </svg>
+  );
+}
+
+export function IconHistory(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M4 10a6 6 0 106-6H7" />
+      <path d="M5.5 2.3L7 4 5.3 5.6" />
+      <path d="M10 7v3.3l2.3 1.4" />
+    </svg>
+  );
+}
+
+export function IconInfo(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="10" cy="10" r="7.2" />
+      <path d="M10 9.2v4.3" />
+      <circle cx="10" cy="6.8" r="0.15" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export function IconCalibrate(props: IconProps) {
   return (
     <svg {...base(props)}>

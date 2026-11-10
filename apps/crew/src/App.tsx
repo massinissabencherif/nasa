@@ -1,38 +1,76 @@
-import { useEffect, useState } from "react";
+import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { IconCheckin, IconHistory, IconHome, IconMeal, TabBar } from '@hestia/ui';
+import { ApiProvider } from './lib/ApiProvider';
+import { useSelectedCrewId } from './lib/hooks';
+import { ProfilePicker } from './screens/ProfilePicker';
+import { Home } from './screens/Home';
+import { Checkin } from './screens/Checkin';
+import { Meal } from './screens/Meal';
+import { History } from './screens/History';
+import { Settings } from './screens/Settings';
 
-const DEFAULT_API_BASE = "http://localhost:8000";
+const TABS = [
+  { key: 'home', label: 'Home', icon: IconHome, path: '/home' },
+  { key: 'checkin', label: 'Check-in', icon: IconCheckin, path: '/checkin' },
+  { key: 'meal', label: 'Meal', icon: IconMeal, path: '/meal' },
+  { key: 'history', label: 'History', icon: IconHistory, path: '/history' },
+];
 
-type HealthState = "checking" | "ok" | "error";
+function Shell() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const crewId = useSelectedCrewId();
 
-function App() {
-  const [apiBase] = useState(
-    () => localStorage.getItem("hestia-api-base") ?? DEFAULT_API_BASE,
-  );
-  const [health, setHealth] = useState<HealthState>("checking");
+  if (crewId == null && location.pathname !== '/profile') {
+    return <Navigate to="/profile" replace />;
+  }
 
-  useEffect(() => {
-    fetch(`${apiBase}/health`)
-      .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
-      .then(() => setHealth("ok"))
-      .catch(() => setHealth("error"));
-  }, [apiBase]);
+  const showTabs = crewId != null && location.pathname !== '/profile' && location.pathname !== '/settings';
+
+  const items = TABS.map((t) => ({
+    key: t.key,
+    label: t.label,
+    icon: t.icon,
+    active: location.pathname === t.path,
+    onClick: () => navigate(t.path),
+  }));
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center gap-4 font-sans px-6 text-center">
-      <h1 className="text-3xl font-semibold tracking-tight">HESTIA — Crew</h1>
-      {health === "checking" && <p className="text-slate-400">Checking server…</p>}
-      {health === "ok" && (
-        <p className="text-emerald-400 text-xl font-medium">server OK</p>
-      )}
-      {health === "error" && (
-        <p className="text-red-400 text-xl font-medium">
-          server unreachable ({apiBase})
-        </p>
-      )}
-      <p className="text-xs text-slate-500 max-w-xs">
-        SIMULATED data only — NOT A MEDICAL DEVICE.
-      </p>
-    </main>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <main style={{ flex: 1, overflow: 'auto' }}>
+        <Routes>
+          <Route path="/" element={<Navigate to="/profile" replace />} />
+          <Route path="/profile" element={<ProfilePicker />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/checkin" element={<Checkin />} />
+          <Route path="/meal" element={<Meal />} />
+          <Route path="/history" element={<History />} />
+          <Route path="/settings" element={<Settings />} />
+        </Routes>
+      </main>
+      {showTabs && <TabBar items={items} />}
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <ApiProvider>
+      <HashRouter>
+        <div
+          style={{
+            height: '100%',
+            maxWidth: 480,
+            margin: '0 auto',
+            background: 'var(--bg)',
+            borderLeft: '1px solid var(--border)',
+            borderRight: '1px solid var(--border)',
+          }}
+        >
+          <Shell />
+        </div>
+      </HashRouter>
+    </ApiProvider>
   );
 }
 

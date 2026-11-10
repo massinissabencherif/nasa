@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.db import init_db
-from app.routes import alerts, context, crew, demo, earth, events, forecast, pantry
+from app.routes import alerts, context, crew, demo, earth, events, forecast, pantry, reference
 from app.seed import is_seeded, reset_and_seed
 from vision.ollama_client import warmup
 
@@ -38,6 +38,7 @@ app.include_router(alerts.router)
 app.include_router(earth.router)
 app.include_router(demo.router)
 app.include_router(events.router)
+app.include_router(reference.router)
 
 
 @app.get("/health")

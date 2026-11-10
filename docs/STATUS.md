@@ -1,73 +1,82 @@
 # HESTIA — status
 
-## Phase 3 — Station UI (done)
+## Phase 4 — Crew mobile UI (done)
 
-**Design system** (`packages/ui`): dark "mission control" theme per §13 — bundled
-IBM Plex Sans/Mono (local `.woff` files, no Google Fonts CDN call — checked
-with `document.fonts`, confirmed offline-safe and in the production bundle),
-an ice-blue accent kept separate from the mandated green/orange/red status
-semantics, hairline borders instead of card shadows. Shared components:
-`Panel`, `StatusBadge`/`StatusDot` (icon + color, never color alone),
-`ReadoutNumber` (animated mono counter, respects `prefers-reduced-motion`),
-`NavRail`, `TopBar`. Hand-drawn line icons in `icons.tsx` (no icon-library
-dependency). `packages/api-client` now has a typed method per backend
-endpoint used by the UI.
+**Backend additions this phase**:
+- `GET/POST /api/crew/{id}/meal`: real implementation, replacing the phase-1
+  stub. Proposals use the catalogue's *raw* per-unit kcal (e.g. a tomato soup
+  can is ~212 kcal) — deliberately **not** the `units_per_lot` demo-scale
+  multiplier used for whole-stock autonomy, since a person doesn't eat 212
+  real rations in one sitting. Eating logs a `ConsumptionEvent` so autonomy
+  drops immediately, before the next camera scan confirms it physically
+  (`current_stock()` now folds in any consumption events newer than the
+  latest snapshot).
+- Scan-vs-meal reconciliation: if a crew member logged a meal in the last 10
+  minutes, the next scan's diff for that item subtracts the already-logged
+  quantity instead of double-counting it (PROMPT_FABLE.md §4 step 7).
+- `GET /api/thresholds` exposes the indicative bands so the mobile charts
+  draw the *same* green/orange/red zones the backend status engine uses —
+  one source of truth, not a hand-copied duplicate.
+- New tests (`test_nutrition.py`): raw-vs-demo-scale kcal, meal decrementing
+  pending stock, per-crew-member kcal-eaten-today isolation. 24 passed.
 
-**Station app** (`apps/station`, React + Vite + Tauri, HashRouter):
-- Shell: left nav (Crew, Pantry, Forecasts, Alerts, Earth link, Mission
-  settings) + top bar (context, Earth delay, SIMULATED / not-a-medical-device
-  tags, connection status, clock).
-- **Live pantry** (the hero screen): shelf photo with confidence-colored crop
-  overlays sourced from the *same* `shelf_grid.json` the vision pipeline
-  uses, animated autonomy readout (the "wow" number), ration-plan panel with
-  a live day selector, consumption feed resolved to item names, and a
-  3×4 slot grid. "Scan now" offers mock / both fixtures / camera, and shows
-  live per-row progress via the `/api/events` SSE stream added this phase.
-  Verified end-to-end against the real VLM: selecting the after-removal
-  fixture correctly dropped autonomy 412.7 → 393.4 and populated the
-  consumption feed with real item names.
-- **Calibration** screen: same shelf image, click a slot, drag sliders for
-  its `[x0,y0,x1,y1]` crop box, save — backed by two new endpoints,
-  `GET/PUT /api/pantry/grid-boxes`.
-- **Crew**, **Alerts**, **Earth link**, **Mission settings** screens are
-  fully wired to real data (status engine, alerts/ack, queued Earth messages
-  with a live countdown, context switcher). **Forecasts** is an honest
-  one-line placeholder (phase 7).
-- New backend support for this phase: `GET /api/pantry/snapshot-image`
-  (serves the latest scan's photo), per-row `scan_row_done` SSE events,
-  `food_item_id`/`needs_confirmation` added to the pantry API response.
+**Design system additions** (`packages/ui`): `TabBar` (bottom nav, for
+thumb reach) alongside the existing `NavRail`; new icons (home, check-in,
+meal, history, info). Chart colors came from the **dataviz skill**, not
+picked by eye — ran `validate_palette.js` against our actual panel surface
+(`#161d27`): the hand-picked status green/orange/red and a new ice-blue
+failed the categorical lightness/CVD checks, so all three status colors
+were swapped for the validated steps (`#0ca30c` / `#fab219` / `#d03b3b`,
+visually still read as green/orange/red) and a validated blue/magenta pair
+(`--chart-series-1/2`) was adopted for the two-line blood-pressure chart —
+applied as design tokens, so station's existing badges/overlays pick up the
+more rigorous colors for free.
 
-**Verified visually**: no Chrome extension available this session, so the
-UI was driven and screenshotted via Chrome's DevTools Protocol directly
-(launched with `--remote-debugging-port`, screenshots over the CDP
-websocket) — every screen, the full scan flow (mock and real-VLM), and the
-1280×800 minimum layout were actually rendered and inspected, not just
-code-reviewed.
+**Crew app** (`apps/crew`, React + Vite + Capacitor, configurable API base
+stored in `localStorage` so it also runs as a plain browser window pointed
+at the station's LAN IP): HashRouter + bottom tab bar (Home, Check-in, Meal,
+History), profile picker (4 fictional astronauts) gating the rest of the
+app, phone-width layout (max 480px, tested at 390×844) that still centers
+reasonably in a full browser window.
+- **Home**: per-zone status list (silhouette stand-in, same data phase 5's
+  SVG will consume), a check-in prompt, light reminders for anything not
+  logged today.
+- **Check-in**: every field has an info toggle with how/why/risk copy tied
+  to the specific HRP hazard it monitors; symptom chips are multi-select.
+- **Meal**: today's kcal progress bar, available items from the real stock
+  with "I ate this" — verified live that it moves the Pantry autonomy
+  number immediately.
+- **History**: Recharts line per indicator with green/orange/red
+  reference bands computed from `/api/thresholds` (not hardcoded), a
+  two-series chart for blood pressure.
+- **Settings**: station address field + connection status.
 
-**Bug found and fixed while reviewing screenshots**: the seeded weight
-random walk (`σ=0.15 kg/day` over 90 days) was large enough that 3 of 4
-"baseline" astronauts crossed the 2%-weight-loss caution threshold just by
-chance, on almost every seed — muddying the two intentional scripted
-anomalies. Reduced to `σ=0.045`; re-verified Chen Wei (bones/muscles) and
-Sofia Lindqvist (heart/immunity red) are now the clearly dominant signals,
-with only minor single-day noise left on the others (realistic, not
-systemic). All 21 backend tests still pass; this doesn't change the earlier
-autonomy/demo-scale numbers (weight isn't part of that calculation).
+**Verified visually again via Chrome DevTools Protocol** (no browser
+extension available) at the 390×844 target. This caught two real bugs,
+both fixed and reverified:
+1. A seed bug carried over from phase 3 review wasn't new, but the chart
+   work surfaced a **second, unrelated bug**: Y-axis tick labels were
+   unreadable garbage ("00001") on any chart whose domain wasn't a round
+   number. Root cause: no `tickFormatter`, so Recharts rendered the raw
+   JS float (`127.88000000000001`) and the long string overflowed off
+   the left edge of the chart — only invisible once gridlines aligned,
+   which is why it wasn't caught by code review alone. Fixed with a
+   `tickFormatter` that rounds to 1 decimal.
+2. Confirmed the mood threshold band (orange only at exactly 3) renders
+   correctly from the generic band-reconstruction algorithm, which proves
+   that algorithm handles `eq` rules correctly, not just `gte`/`lte` ranges.
 
 ## Known gaps / not yet done
 
-- `apps/crew` (mobile) untouched — phase 4.
-- Silhouette SVG (M3) not built — Crew screen shows a zone list stand-in;
-  phase 5 will replace it with the real clickable body component, reusing
-  the same `CrewStatus` data already flowing through `useCrewStatuses`.
-- Forecasts screen is a placeholder; Earth link's countdown is real but the
-  simulated ground reply and time-scale factor are phase 6.
-- No gamification, no reminders, no offline/error-state polish yet (phase 8).
-- Calibration screen edits box coordinates only, not slot→item/capacity
-  mapping (that already has a working API — `PUT /api/pantry/grid` — just no
-  UI yet; low priority since the seeded mapping is correct).
+- Silhouette SVG (M3) still not built — both station Crew and crew-app Home
+  show a zone list. Phase 5 replaces the *visual* only; the underlying
+  `CrewStatus` data contract is already final and consumed in two places.
+- Gamification (streak/badges/score) has a seeded `Gamification` table and
+  no UI yet — phase 8, as planned.
+- Mobile build (Capacitor Android/iOS) untouched — phase 9. Capacitor's
+  cleartext/LAN config was already pre-set in phase 0.
 
 ## Next
 
-Phase 4 — Crew mobile UI: profile picker, daily check-in, meal-of-the-day,
-history charts, home screen; must also run as a plain browser window.
+Phase 5 — Silhouette + status mapping: the shared SVG body component in
+`packages/ui`, big on mobile, miniature per astronaut on the station.

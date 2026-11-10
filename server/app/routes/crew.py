@@ -5,8 +5,10 @@ from pydantic import BaseModel
 from sqlmodel import Session, select
 
 from app.db import engine
+from app.engines.nutrition import available_items, daily_need, kcal_eaten_today
 from app.engines.status import crew_status
-from app.models import CrewMember, Measurement
+from app.models import ConsumptionEvent, CrewMember, Measurement
+from app.routes.events import publish_event
 
 router = APIRouter(prefix="/api/crew", tags=["crew"])
 
@@ -96,8 +98,57 @@ def checkin(crew_id: int, body: CheckinBody) -> list[Measurement]:
         return created
 
 
+@router.get("/{crew_id}/meal")
+def propose_meal(crew_id: int) -> dict:
+    with Session(engine) as session:
+        crew = session.get(CrewMember, crew_id)
+        if crew is None:
+            raise HTTPException(404, f"no crew member {crew_id}")
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        need = daily_need(crew)
+        eaten = kcal_eaten_today(session, crew_id, today_start)
+        return {
+            "daily_need_kcal": round(need, 1),
+            "kcal_eaten_today": round(eaten, 1),
+            "kcal_remaining_today": round(max(0.0, need - eaten), 1),
+            "available": [
+                {
+                    "food_item_id": item.food_item_id,
+                    "name": item.name,
+                    "kcal": item.kcal,
+                    "protein_g": item.protein_g,
+                    "carbs_g": item.carbs_g,
+                    "fat_g": item.fat_g,
+                    "available_count": item.available_count,
+                }
+                for item in available_items(session)
+            ],
+        }
+
+
+class MealBody(BaseModel):
+    food_item_id: int
+    qty: int = 1
+
+
 @router.post("/{crew_id}/meal")
-def eat_meal(crew_id: int) -> dict:
-    raise HTTPException(
-        501, "meal proposal/consumption needs the pantry stock (M1, phase 2) — not implemented yet"
-    )
+def eat_meal(crew_id: int, body: MealBody) -> ConsumptionEvent:
+    with Session(engine) as session:
+        crew = session.get(CrewMember, crew_id)
+        if crew is None:
+            raise HTTPException(404, f"no crew member {crew_id}")
+        available = {item.food_item_id: item for item in available_items(session)}
+        item = available.get(body.food_item_id)
+        if item is None or item.available_count < body.qty:
+            raise HTTPException(400, "that item isn't available in the current stock")
+        event = ConsumptionEvent(
+            ts=datetime.now(timezone.utc),
+            food_item_id=body.food_item_id,
+            qty=-body.qty,
+            crew_member_id=crew_id,
+        )
+        session.add(event)
+        session.commit()
+        session.refresh(event)
+        publish_event({"type": "meal_logged", "crew_member_id": crew_id, "food_item_id": body.food_item_id})
+        return event

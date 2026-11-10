@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
@@ -121,11 +121,28 @@ def scan_pantry(mode: str = "mock", image_path: str | None = None, camera_index:
             )
             if slot.food_item_id is not None and prev_count is not None:
                 delta = reading.count - prev_count
-                if delta != 0:
-                    session.add(
-                        ConsumptionEvent(
-                            ts=snapshot_ts, food_item_id=slot.food_item_id, qty=delta,
+                if delta < 0:
+                    # A crew member may have already logged this as a meal (M2) within the
+                    # last 10 min — don't double-count it as an anonymous scan event.
+                    recent_meal_qty = sum(
+                        e.qty
+                        for e in session.exec(
+                            select(ConsumptionEvent).where(
+                                ConsumptionEvent.food_item_id == slot.food_item_id,
+                                ConsumptionEvent.crew_member_id.is_not(None),
+                                ConsumptionEvent.ts >= snapshot_ts - timedelta(minutes=10),
+                                ConsumptionEvent.ts <= snapshot_ts,
+                            )
                         )
+                    )
+                    remainder = delta - recent_meal_qty
+                    if remainder < 0:
+                        session.add(
+                            ConsumptionEvent(ts=snapshot_ts, food_item_id=slot.food_item_id, qty=remainder)
+                        )
+                elif delta != 0:
+                    session.add(
+                        ConsumptionEvent(ts=snapshot_ts, food_item_id=slot.food_item_id, qty=delta)
                     )
             out.append({
                 "slot": slot.label,

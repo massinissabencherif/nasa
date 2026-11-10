@@ -7,3 +7,4 @@ export * from './components/Panel';
 export * from './components/ReadoutNumber';
 export * from './components/NavRail';
 export * from './components/TopBar';
+export * from './components/TabBar';

@@ -109,6 +109,32 @@ export type EarthMessage = {
   alert_id: number | null;
 };
 
+export type ThresholdRule = { level: Level; when: Record<string, number> };
+export type ThresholdConfig = {
+  unit?: string;
+  rules?: ThresholdRule[];
+  default?: Level;
+  [key: string]: unknown;
+};
+export type Thresholds = Record<string, ThresholdConfig>;
+
+export type MealItem = {
+  food_item_id: number;
+  name: string;
+  kcal: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  available_count: number;
+};
+
+export type MealProposal = {
+  daily_need_kcal: number;
+  kcal_eaten_today: number;
+  kcal_remaining_today: number;
+  available: MealItem[];
+};
+
 export type ShelfSlot = {
   id: number;
   label: string;
@@ -163,6 +189,12 @@ export function createApiClient(baseUrl: string) {
     },
     checkin: (id: number, body: Record<string, unknown>) =>
       request<Measurement[]>(`/api/crew/${id}/checkin`, { method: 'POST', body: JSON.stringify(body) }),
+    getMealProposal: (id: number) => request<MealProposal>(`/api/crew/${id}/meal`),
+    eatMeal: (id: number, foodItemId: number, qty = 1) =>
+      request(`/api/crew/${id}/meal`, {
+        method: 'POST',
+        body: JSON.stringify({ food_item_id: foodItemId, qty }),
+      }),
 
     getPantry: () => request<PantryState>('/api/pantry'),
     scanPantry: (opts?: { mode?: 'mock' | 'image' | 'camera'; image_path?: string; camera_index?: number }) => {
@@ -188,6 +220,8 @@ export function createApiClient(baseUrl: string) {
     ackAlert: (id: number) => request<Alert>(`/api/alerts/${id}/ack`, { method: 'POST' }),
 
     getEarthMessages: () => request<EarthMessage[]>('/api/earth/messages'),
+
+    getThresholds: () => request<Thresholds>('/api/thresholds'),
 
     eventsUrl: () => `${baseUrl}/api/events`,
   };

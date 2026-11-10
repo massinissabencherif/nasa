@@ -11,12 +11,18 @@
   --accent: #4fc3e8;
   --accent-dim: rgba(79, 195, 232, 0.14);
 
-  --green: #35d07f;
-  --green-dim: rgba(53, 208, 127, 0.14);
-  --orange: #f2a33c;
-  --orange-dim: rgba(242, 163, 60, 0.14);
-  --red: #f2555a;
-  --red-dim: rgba(242, 85, 90, 0.14);
+  /* Status + chart series colors are from the validated dataviz palette
+     (CVD-checked against this panel surface), not picked by eye. */
+  --green: #0ca30c;
+  --green-dim: rgba(12, 163, 12, 0.16);
+  --orange: #fab219;
+  --orange-dim: rgba(250, 178, 25, 0.16);
+  --red: #d03b3b;
+  --red-dim: rgba(208, 59, 59, 0.16);
+
+  --chart-series-1: #3987e5;
+  --chart-series-2: #d55181;
+  --chart-grid: rgba(234, 240, 245, 0.08);
 
   --font-sans: 'Plex Sans', -apple-system, 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
