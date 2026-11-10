@@ -8,6 +8,8 @@ export type MissionContext = {
   radiation_msv_day: number;
   resupply_days: number | null;
   active: boolean;
+  time_scale: number;
+  use_llm_advice: boolean;
 };
 
 export type CrewMember = {
@@ -106,8 +108,10 @@ export type EarthMessage = {
   id: number;
   created_ts: string;
   deliver_ts: string;
+  reply_ts: string;
   payload: string;
-  status: string;
+  reply_payload: string | null;
+  status: 'queued' | 'delivered' | 'replied';
   alert_id: number | null;
 };
 
@@ -179,6 +183,13 @@ export function createApiClient(baseUrl: string) {
     getContext: () => request<MissionContext>('/api/context'),
     setContext: (type: string) =>
       request<MissionContext>('/api/context', { method: 'PUT', body: JSON.stringify({ type }) }),
+    setTimeScale: (timeScale: number) =>
+      request<MissionContext>('/api/context', { method: 'PUT', body: JSON.stringify({ time_scale: timeScale }) }),
+    setUseLlmAdvice: (useLlmAdvice: boolean) =>
+      request<MissionContext>('/api/context', {
+        method: 'PUT',
+        body: JSON.stringify({ use_llm_advice: useLlmAdvice }),
+      }),
 
     listCrew: () => request<CrewMember[]>('/api/crew'),
     getCrewStatus: (id: number) => request<CrewStatus>(`/api/crew/${id}/status`),
@@ -223,6 +234,8 @@ export function createApiClient(baseUrl: string) {
     ackAlert: (id: number) => request<Alert>(`/api/alerts/${id}/ack`, { method: 'POST' }),
 
     getEarthMessages: () => request<EarthMessage[]>('/api/earth/messages'),
+    advanceEarthTime: (seconds: number) =>
+      request<{ advanced_seconds: number }>(`/api/earth/advance?seconds=${seconds}`, { method: 'POST' }),
 
     getThresholds: () => request<Thresholds>('/api/thresholds'),
 

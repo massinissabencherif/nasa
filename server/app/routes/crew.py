@@ -5,9 +5,10 @@ from pydantic import BaseModel
 from sqlmodel import Session, select
 
 from app.db import engine
+from app.engines.alerts import evaluate_and_alert
 from app.engines.nutrition import available_items, daily_need, kcal_eaten_today
 from app.engines.status import crew_status
-from app.models import ConsumptionEvent, CrewMember, Measurement
+from app.models import ConsumptionEvent, CrewMember, Measurement, MissionContext
 from app.routes.events import publish_event
 
 router = APIRouter(prefix="/api/crew", tags=["crew"])
@@ -112,6 +113,20 @@ def checkin(crew_id: int, body: CheckinBody) -> list[Measurement]:
         session.commit()
         for m in created:
             session.refresh(m)
+
+        active_context = session.exec(
+            select(MissionContext).where(MissionContext.active == True)  # noqa: E712
+        ).first()
+        use_llm = bool(active_context and active_context.use_llm_advice)
+        new_alerts = evaluate_and_alert(session, crew_id, use_llm=use_llm)
+        session.commit()
+        for alert in new_alerts:
+            publish_event({
+                "type": "alert_created",
+                "crew_member_id": crew_id,
+                "indicator": alert.indicator,
+                "level": alert.level,
+            })
         return created
 
 

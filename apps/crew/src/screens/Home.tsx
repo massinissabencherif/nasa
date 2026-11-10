@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IconCheckin, IconSettings, Panel, SilhouetteBody, StatusDot, worstLevel, ZoneDetailPanel } from '@hestia/ui';
+import { IconCheckin, IconCritical, IconSettings, Panel, SilhouetteBody, StatusDot, worstLevel, ZoneDetailPanel } from '@hestia/ui';
 import type { Measurement } from '@hestia/api-client';
 import type { ZoneKey } from '@hestia/ui';
 import { useApi } from '../lib/ApiProvider';
-import { useCrewMember, useCrewStatus, useLatestMeasurements, useSelectedCrewId, useThresholds } from '../lib/hooks';
+import { useCrewMember, useCrewStatus, useLatestMeasurements, useMyAlerts, useSelectedCrewId, useThresholds } from '../lib/hooks';
 import { clearSelectedCrewId } from '../lib/profile';
 
 const REMINDER_FIELDS: { type: string; label: string }[] = [
@@ -23,6 +23,8 @@ export function Home() {
   const thresholds = useThresholds();
   const [todayTypes, setTodayTypes] = useState<Set<string>>(new Set());
   const [selectedZone, setSelectedZone] = useState<ZoneKey | null>(null);
+  const { alerts, refresh: refreshAlerts } = useMyAlerts(crewId);
+  const unackedRed = alerts.filter((a) => a.level === 'red' && !a.acked);
 
   useEffect(() => {
     if (crewId == null) return;
@@ -62,6 +64,48 @@ export function Home() {
           </button>
         </div>
       </div>
+
+      {unackedRed.map((alert) => (
+        <div
+          key={alert.id}
+          style={{
+            padding: 14,
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--red-dim)',
+            border: '1px solid var(--red)',
+            display: 'grid',
+            gap: 8,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <IconCritical size={16} />
+            <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>
+              Red alert — {alert.indicator.replace('_', ' ')}
+            </span>
+          </div>
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text)', whiteSpace: 'pre-line' }}>
+            {alert.message}
+          </p>
+          {alert.sent_to_earth && (
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>Sent to Earth.</p>
+          )}
+          <button
+            onClick={() => api.ackAlert(alert.id).then(refreshAlerts)}
+            style={{
+              justifySelf: 'start',
+              padding: '6px 12px',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--border)',
+              background: 'var(--panel-raised)',
+              color: 'var(--text)',
+              fontSize: 'var(--text-sm)',
+              cursor: 'pointer',
+            }}
+          >
+            Acknowledge
+          </button>
+        </div>
+      ))}
 
       {!todayTypes.has('mood') && (
         <button

@@ -27,6 +27,17 @@ export function SettingsScreen() {
     setContext(updated);
   }
 
+  async function setTimeScale(scale: number) {
+    const updated = await api.setTimeScale(scale);
+    setContext(updated);
+  }
+
+  async function toggleLlmAdvice() {
+    if (!context) return;
+    const updated = await api.setUseLlmAdvice(!context.use_llm_advice);
+    setContext(updated);
+  }
+
   return (
     <div style={{ display: 'grid', gap: 16 }}>
       <Panel title="Mission context">
@@ -57,6 +68,57 @@ export function SettingsScreen() {
             {context.resupply_days ? ` · resupply every ~${context.resupply_days} days` : ''}
           </p>
         )}
+      </Panel>
+
+      <Panel title="Demo time scale">
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          {[1, 10, 30, 60].map((scale) => (
+            <button
+              key={scale}
+              onClick={() => setTimeScale(scale)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--border)',
+                background: context?.time_scale === scale ? 'var(--accent-dim)' : 'var(--panel-raised)',
+                color: context?.time_scale === scale ? 'var(--accent)' : 'var(--text)',
+                fontSize: 'var(--text-sm)',
+                cursor: 'pointer',
+              }}
+            >
+              ×{scale}
+            </button>
+          ))}
+        </div>
+        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginTop: 10 }}>
+          Scales the Earth delay for new alerts — at ×30, a 20 min delay becomes 40s. Use "Skip
+          ahead" on the Earth link screen to fast-forward messages already queued.
+        </p>
+      </Panel>
+
+      <Panel title="Advice generation">
+        <button
+          onClick={toggleLlmAdvice}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '8px 14px',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--border)',
+            background: context?.use_llm_advice ? 'var(--accent-dim)' : 'var(--panel-raised)',
+            color: context?.use_llm_advice ? 'var(--accent)' : 'var(--text)',
+            fontSize: 'var(--text-sm)',
+            cursor: 'pointer',
+          }}
+        >
+          {context?.use_llm_advice ? 'Local LLM (qwen2.5vl, text mode)' : 'Deterministic template'}
+        </button>
+        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginTop: 10 }}>
+          Deterministic is the default and always works offline instantly. The LLM path is
+          opt-in, can take a few seconds, and falls back to the template automatically if it's
+          slow or Ollama is off.
+        </p>
       </Panel>
 
       <Panel title="Station">

@@ -1,70 +1,65 @@
 # HESTIA — status
 
-## Phase 5 — Silhouette + status mapping (done)
+## Phase 6 — Alerts + LLM advice with guardrails + Earth link (done)
 
-**Backend**: `GET /api/crew/{id}/latest` — most recent value per measurement
-type, one query, used to show real numbers (not just colors) in the zone
-panel. 26 tests pass (2 new).
+**Alert engine** (`app/engines/alerts.py`, new): `evaluate_and_alert()` checks
+every alertable indicator (BP, HR, glucose, temperature, sleep, mood, weight
+trend, exercise streak, symptoms, radiation) for a crew member and creates an
+`Alert` only when the level actually *changed* — re-running it at the same
+level is a no-op, so check-ins don't spam duplicate alerts (PROMPT_FABLE.md
+§7: "only significant changes are sent"). A red alert also queues an
+`EarthMessage` with a real one-way delay from the active context. Wired into
+`POST /api/crew/{id}/checkin` (runs after measurements are saved) and reused
+by `seed.py` — the two scripted demo anomalies and all seeded data now go
+through the exact same detection path a live check-in would use, instead of
+hand-written rows.
 
-**Shared component** (`packages/ui`, consumed by both apps — exactly the
-"shared component, mobile big, station mini" brief): `SilhouetteBody` is a
-hand-made SVG figure built from flat polygons/ellipses (not an imported body
-asset), with 8 independently-clickable zones mapped onto distinct anatomical
-regions chosen for a real reason, not arbitrarily:
+**Guardrailed advice** (`app/engines/advice.py`, new): deterministic
+templates are the default per PROMPT_ADDENDUM.md #2 — ≤4 numbered steps, one
+named onboard Procedure, always ends with "not a diagnosis". The LLM path is
+opt-in (toggle in Mission settings), uses `qwen2.5vl:7b` in **text mode**
+(never `gemma3:4b`, never alongside the vision model), has an 8s timeout, and
+falls back to the template on *any* failure — verified both paths live:
+~4.4s for a real guardrailed LLM response, and confirmed the fallback fires
+correctly when forced to time out.
 
-| Region | Zone | Why there |
-|---|---|---|
-| Head | Brain / morale | obvious |
-| Eyes | Eyes (SANS) | obvious |
-| Neck | Immunity | lymph nodes / thymus |
-| Chest | Heart | obvious |
-| Arms | Skin | radiation on exposed surface |
-| Abdomen | Digestive / nutrition | obvious |
-| Pelvis | Bones | hip/spine density is the most-cited spaceflight bone-loss metric |
-| Legs | Muscles | classic atrophy region |
+**Earth link, fully modeled**: `EarthMessage` now carries the full round
+trip — `deliver_ts` (arrival at Earth) and `reply_ts` (simulated reply back,
+one more one-way delay), with `status` (queued → delivered → replied)
+computed live from current time rather than stored and drifting. A scripted,
+clearly-labeled "(SIMULATED REPLY)" ground response is generated at queue
+time and revealed only once `reply_ts` passes. `POST /api/earth/advance`
+fast-forwards all queued/pending messages by N seconds — verified the full
+queued → delivered → replied progression live via two "+20m" clicks. Mission
+settings also got a **time-scale** control (×1/10/30/60, applied to new
+alerts' delay) satisfying the brief's "time-scale factor for demos" ask
+separately from the manual skip-ahead button.
 
-Each zone fills with the live green/orange/red status (`fill` transitions
-over 300ms) and — accessibility requirement, not optional — a non-green zone
-also gets a small icon badge (▲/✕, the same glyphs as `StatusBadge`) so
-nothing depends on color alone. Clicking (or Enter/Space on a focused zone)
-opens `ZoneDetailPanel`: function, HRP hazard, each linked indicator with
-its live value *and* status icon, indicative thresholds formatted from the
-live `/api/thresholds` data (not hand-copied — verified it correctly
-renders both ordinary range rules and the oddball ones, mood's `eq` rule
-and exercise_streak's non-numeric band), a "why this matters" line, and a
-guardrailed action box with the "not a diagnosis" disclaimer, shown only
-when the zone isn't green.
+**On-screen red alerts on mobile**: crew app's Home shows an unacked red
+alert as a full banner (message + "Sent to Earth" + Acknowledge), satisfying
+the "on-screen" half of PROMPT_FABLE.md §7's "on-screen + mobile notification
+banner" — a real OS push notification isn't wired (Capacitor native bridge
+is phase 9 territory), noted honestly below rather than glossed over.
 
-Station's Crew screen shows a 32px mini silhouette per astronaut inline in
-the collapsed row (instant at-a-glance read of all 4 crew), and a 150px
-interactive one when a row is expanded, auto-selecting the worst zone.
-Crew app's Home shows one big (190px) interactive silhouette with the panel
-appearing inline below it.
-
-**Chart colors** (carried from phase 4): reused as-is, no changes needed —
-the dataviz-validated status palette already is the silhouette's fill
-palette (same CSS tokens).
-
-**Verified visually via Chrome DevTools Protocol** (still no browser
-extension): clicked zones on both apps, confirmed live indicator values and
-correctly-formatted thresholds render (e.g. Sofia's real heart rate 121.4
-bpm showing red under Heart, Alex's real mood 3 showing orange under Brain),
-confirmed the mini-silhouette-inside-a-toggle-button doesn't fire its own
-click handler (it's `interactive={false}`, so a click there correctly just
-bubbles to the row's expand/collapse toggle instead of crashing or
-double-firing).
+**Tests**: 31 pass (5 new in `test_alerts.py`) — both scripted anomalies
+produce the expected alerts, a red alert queues a correctly-delayed Earth
+message, unchanged levels don't duplicate, a level change does create a new
+alert, and every deterministic template ends with the disclaimer and stays
+within the step budget.
 
 ## Known gaps / not yet done
 
-- No animation when a *scan* or *check-in* changes a zone's level live in
-  front of the user in this session (the fill transition fires on next
-  fetch/re-render, which already covers the real use case — this just
-  wasn't specifically re-demonstrated this phase).
-- Gamification (phase 8), forecast simulator (phase 7), LLM advice + Earth
-  link polish (phase 6), mobile build (phase 9) all still pending as planned.
+- No true OS-level push notification for red alerts (needs Capacitor's
+  native notification plugin — phase 9).
+- Forecast simulator (phase 7), gamification (phase 8) still pending.
+- The LLM advice path is opt-in and works, but hasn't been exercised through
+  the full check-in → alert → Earth pipeline in one live run this session
+  (verified the advice engine directly instead, for speed).
 
 ## Next
 
-Phase 6 — Alerts + LLM advice with guardrails + Earth link: queue, live
-countdown (already partly done in phase 3), simulated ground reply, and the
-guardrailed local-LLM orange-advice path with a deterministic fallback.
+Phase 7 — Forecasts (M5) + multi-environments (M6): sliders (mission
+duration, ration %, exercise, resupply delay, solar storm) driving stock/
+weight/bone/radiation curves, reusing the nutrition engine and
+`nasa_reference.json` already in place; context switching already works
+end-to-end from phase 1, this phase is mainly the forecast math + UI.

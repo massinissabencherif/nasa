@@ -1,5 +1,5 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
-import type { CrewMember, CrewStatus, LatestMeasurements, Measurement, MealProposal, Thresholds } from '@hestia/api-client';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import type { Alert, CrewMember, CrewStatus, LatestMeasurements, Measurement, MealProposal, Thresholds } from '@hestia/api-client';
 import { useApi } from './ApiProvider';
 import { getSelectedCrewId, subscribeSelectedCrewId } from './profile';
 
@@ -83,6 +83,17 @@ export function useThresholds(): Thresholds | null {
     api.getThresholds().then(setThresholds).catch(() => {});
   }, [api]);
   return thresholds;
+}
+
+export function useMyAlerts(id: number | null) {
+  const api = useApi();
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const refresh = useCallback(() => {
+    if (id == null) return;
+    api.getAlerts().then((all) => setAlerts(all.filter((a) => a.crew_member_id === id))).catch(() => {});
+  }, [api, id]);
+  useEffect(refresh, [refresh]);
+  return { alerts, refresh };
 }
 
 export function useMealProposal(id: number | null) {

@@ -6,10 +6,9 @@ from pathlib import Path
 from sqlmodel import Session, select
 
 from app.db import engine, reset_db
+from app.engines.alerts import evaluate_and_alert
 from app.models import (
-    Alert,
     CrewMember,
-    EarthMessage,
     FoodItem,
     Gamification,
     InventoryLine,
@@ -199,51 +198,14 @@ def seed_crew_and_history(session: Session, mars_base: MissionContext) -> list[C
     return crew_rows
 
 
-def seed_scripted_alerts(session: Session, crew_rows: list[CrewMember], mars_base: MissionContext) -> None:
-    now = _now()
-    chen = next(c for c in crew_rows if c.name == "Chen Wei")
-    sofia = next(c for c in crew_rows if c.name == "Sofia Lindqvist")
-
-    session.add(
-        Alert(
-            ts=now,
-            crew_member_id=chen.id,
-            level="orange",
-            indicator="exercise_streak",
-            message="3 consecutive days below 30 min of exercise — bone-loss risk. "
-                    "See Procedure: resistive exercise routine. This is not a diagnosis.",
-            sent_to_earth=False,
-        )
-    )
-
-    red_alert = Alert(
-        ts=now,
-        crew_member_id=sofia.id,
-        level="red",
-        indicator="temperature",
-        message="Fever (>38.0°C) with elevated resting heart rate (>110 bpm). "
-                 "Crew should follow onboard fever procedure. This is not a diagnosis.",
-        sent_to_earth=True,
-    )
-    session.add(red_alert)
-    session.flush()
-
-    payload = json.dumps({
-        "who": sofia.name,
-        "indicators": ["temperature", "heart_rate"],
-        "level": "red",
-        "trend_7d": "new onset",
-        "actions_taken": ["fever procedure started", "hydration advised"],
-    })
-    session.add(
-        EarthMessage(
-            created_ts=now,
-            deliver_ts=now + timedelta(seconds=mars_base.delay_s),
-            payload=payload[:600],
-            status="queued",
-            alert_id=red_alert.id,
-        )
-    )
+def seed_scripted_alerts(session: Session, crew_rows: list[CrewMember]) -> None:
+    """Run the real alert-evaluation engine over the seeded history instead of
+    hand-writing Alert/EarthMessage rows — the two scripted anomalies (Chen
+    Wei's exercise streak, Sofia Lindqvist's fever) and any incidental
+    orange/red noise from the random walk are all detected the same way a
+    live check-in would trigger them."""
+    for crew in crew_rows:
+        evaluate_and_alert(session, crew.id)
 
 
 def reset_and_seed() -> None:
@@ -253,7 +215,7 @@ def reset_and_seed() -> None:
         _items_by_key, slots = seed_food_catalogue(session)
         seed_inventory_snapshot(session, slots)
         crew_rows = seed_crew_and_history(session, mars_base)
-        seed_scripted_alerts(session, crew_rows, mars_base)
+        seed_scripted_alerts(session, crew_rows)
         session.commit()
 
 

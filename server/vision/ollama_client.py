@@ -5,15 +5,18 @@ VISION_MODEL = "qwen2.5vl:7b"
 KEEP_ALIVE = "30m"
 
 
-def generate(prompt: str, images_b64: list[str] | None = None, timeout: float = 60.0) -> dict:
+def generate(
+    prompt: str, images_b64: list[str] | None = None, timeout: float = 60.0, json_mode: bool = True
+) -> dict:
     payload = {
         "model": VISION_MODEL,
         "prompt": prompt,
-        "format": "json",
         "stream": False,
         "keep_alive": KEEP_ALIVE,
         "options": {"temperature": 0},
     }
+    if json_mode:
+        payload["format"] = "json"
     if images_b64:
         payload["images"] = images_b64
     resp = httpx.post(f"{OLLAMA_URL}/api/generate", json=payload, timeout=timeout)
