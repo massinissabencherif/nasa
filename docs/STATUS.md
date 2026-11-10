@@ -1,78 +1,73 @@
 # HESTIA — status
 
-## Phase 2 — M1 vision + nutrition engine (done)
+## Phase 3 — Station UI (done)
 
-**Vision benchmark** (`uv run python -m vision.benchmark`, `qwen2.5vl:7b`, warm,
-against `shelf_full.png`, ground truth = 29 units across 12 slots). Per
-PROMPT_ADDENDUM.md #3, concurrency was measured, not assumed — per-slot
-concurrency gave wildly inconsistent timings (166s one run, 25s another, same
-prompt/model) and never got close to 20s reliably, so it was dropped:
+**Design system** (`packages/ui`): dark "mission control" theme per §13 — bundled
+IBM Plex Sans/Mono (local `.woff` files, no Google Fonts CDN call — checked
+with `document.fonts`, confirmed offline-safe and in the production bundle),
+an ice-blue accent kept separate from the mandated green/orange/red status
+semantics, hairline borders instead of card shadows. Shared components:
+`Panel`, `StatusBadge`/`StatusDot` (icon + color, never color alone),
+`ReadoutNumber` (animated mono counter, respects `prefers-reduced-motion`),
+`NavRail`, `TopBar`. Hand-drawn line icons in `icons.tsx` (no icon-library
+dependency). `packages/api-client` now has a typed method per backend
+endpoint used by the UI.
 
-| strategy | calls | latency (warm) | exact count |
-|---|---|---|---|
-| per-slot, sequential | 12 | 183.6s | 9/12 |
-| per-slot, concurrency=2 | 12 | 25.1s–166.7s (unstable across runs) | 9/12 |
-| full image | 1 | 34.5s | 10/12 (A3 stack, C3 miscounted) |
-| **row crops (chosen)** | 3 | **16.2–16.3s** | **11/12** (only A3 stacked tuna cans, 2 instead of 4) |
+**Station app** (`apps/station`, React + Vite + Tauri, HashRouter):
+- Shell: left nav (Crew, Pantry, Forecasts, Alerts, Earth link, Mission
+  settings) + top bar (context, Earth delay, SIMULATED / not-a-medical-device
+  tags, connection status, clock).
+- **Live pantry** (the hero screen): shelf photo with confidence-colored crop
+  overlays sourced from the *same* `shelf_grid.json` the vision pipeline
+  uses, animated autonomy readout (the "wow" number), ration-plan panel with
+  a live day selector, consumption feed resolved to item names, and a
+  3×4 slot grid. "Scan now" offers mock / both fixtures / camera, and shows
+  live per-row progress via the `/api/events` SSE stream added this phase.
+  Verified end-to-end against the real VLM: selecting the after-removal
+  fixture correctly dropped autonomy 412.7 → 393.4 and populated the
+  consumption feed with real item names.
+- **Calibration** screen: same shelf image, click a slot, drag sliders for
+  its `[x0,y0,x1,y1]` crop box, save — backed by two new endpoints,
+  `GET/PUT /api/pantry/grid-boxes`.
+- **Crew**, **Alerts**, **Earth link**, **Mission settings** screens are
+  fully wired to real data (status engine, alerts/ack, queued Earth messages
+  with a live countdown, context switcher). **Forecasts** is an honest
+  one-line placeholder (phase 7).
+- New backend support for this phase: `GET /api/pantry/snapshot-image`
+  (serves the latest scan's photo), per-row `scan_row_done` SSE events,
+  `food_item_id`/`needs_confirmation` added to the pantry API response.
 
-Row crops win on both axes: fastest *and* most accurate, and they fix the
-baseline's A4-empty hallucination (section 3 of the brief) by giving the
-model each empty slot's real neighbours as context instead of judging it in
-isolation. The one remaining miss, A3's stacked tuna cans, persisted across
-every prompt rewrite tried (generic stacking hint, explicit "front row +
-back row" example) — a genuine depth-perception limit of this model at this
-resolution, not a prompt problem, and it's the same slot the original fable
-baseline already flagged. Documented as a known limitation rather than
-hidden. Implementation: `server/vision/pipeline.py` (row strategy, one retry
-per row on malformed JSON, confidence<0.6 or count>capacity flagged for
-on-screen confirmation), prompts/strategy picked by `vision/benchmark.py`.
+**Verified visually**: no Chrome extension available this session, so the
+UI was driven and screenshotted via Chrome's DevTools Protocol directly
+(launched with `--remote-debugging-port`, screenshots over the CDP
+websocket) — every screen, the full scan flow (mock and real-VLM), and the
+1280×800 minimum layout were actually rendered and inspected, not just
+code-reviewed.
 
-**Wired end-to-end** via `POST /api/pantry/scan?mode=mock|image|camera`:
-creates an `InventorySnapshot` + `InventoryLine`s, diffs against the previous
-snapshot into `ConsumptionEvent`s (verified live: removing the 3 slot-A1 cans
-via a synthetic second fixture, `shelf_after_removal.png`, produced `qty=-3`
-for tomato soup and dropped autonomy from 412.7 → ~398 days as designed — a
-side effect of the A3 miscount also showed up honestly as a spurious `qty=-2`
-tuna event, i.e. vision errors do propagate into consumption tracking, which
-is realistic and worth knowing about before the live demo). `mock` mode
-replays the fixture's ground truth with zero latency and no Ollama
-dependency, for a reliable demo fallback. `POST /api/pantry/confirm`
-overrides a slot's count/source to manual. `GET/PUT /api/pantry/grid` reads
-and edits slot capacity/food mapping (crop-box editing is the phase 3
-calibration screen, not yet built). Scans publish an SSE event on
-`/api/events`. Ollama is warmed (`keep_alive=30m`) once in the background at
-server startup so the first real scan isn't cold.
-
-**Nutrition engine** (`server/app/engines/nutrition.py`, unit-tested):
-Mifflin-St Jeor BMR × activity factor per crew member; `autonomy_report()`
-(stock kcal via `food.kcal * units_per_lot * count`, days = stock / daily
-need, next-expiry warning); `rationing_plan(days)` (ration %, per-astronaut
-daily kcal, projected weight change at 7700 kcal/kg, `below_safety_floor`
-flag under 70%). Wired into `GET /api/pantry` (autonomy) and `GET /api/rations`
-(ration plan) — both 501s from phase 1 are now real.
-
-**Tests**: `uv run pytest` — 21 passed (thresholds, seed/anomalies, nutrition
-BMR/autonomy/rationing boundaries, vision schema + catalogue sanity). The
-scan route itself was verified manually end-to-end against the real VLM
-(not covered by an automated test — would need mocking Ollama's HTTP API,
-judged not worth it for the time budget).
+**Bug found and fixed while reviewing screenshots**: the seeded weight
+random walk (`σ=0.15 kg/day` over 90 days) was large enough that 3 of 4
+"baseline" astronauts crossed the 2%-weight-loss caution threshold just by
+chance, on almost every seed — muddying the two intentional scripted
+anomalies. Reduced to `σ=0.045`; re-verified Chen Wei (bones/muscles) and
+Sofia Lindqvist (heart/immunity red) are now the clearly dominant signals,
+with only minor single-day noise left on the others (realistic, not
+systemic). All 21 backend tests still pass; this doesn't change the earlier
+autonomy/demo-scale numbers (weight isn't part of that calculation).
 
 ## Known gaps / not yet done
 
-- Android SDK/Platform Tools presence not yet verified.
-- Calibration screen (drag corners / edit `shelf_grid.json` boxes from the
-  station UI) not built — phase 3.
-- Meal-based consumption attribution (`crew_member_id` on `ConsumptionEvent`)
-  stays `None` until M2's "I ate this" button exists.
-- `POST /api/crew/{id}/meal` still 501 pending the station/crew UI that would
-  drive it.
-- No station/crew UI yet at all (phases 3–4) — everything above is API-only,
-  exercised via curl.
-- Forecast simulator (phase 7), LLM advice + Earth link (phase 6), gamification
-  (phase 8) untouched.
+- `apps/crew` (mobile) untouched — phase 4.
+- Silhouette SVG (M3) not built — Crew screen shows a zone list stand-in;
+  phase 5 will replace it with the real clickable body component, reusing
+  the same `CrewStatus` data already flowing through `useCrewStatuses`.
+- Forecasts screen is a placeholder; Earth link's countdown is real but the
+  simulated ground reply and time-scale factor are phase 6.
+- No gamification, no reminders, no offline/error-state polish yet (phase 8).
+- Calibration screen edits box coordinates only, not slot→item/capacity
+  mapping (that already has a working API — `PUT /api/pantry/grid` — just no
+  UI yet; low priority since the seeded mapping is correct).
 
 ## Next
 
-Phase 3 — Station UI: crew view, Live pantry screen (photo + overlay, autonomy
-gauge with the "wow" animated drop, ration panel, consumption feed, Scan now
-button, calibration entry point).
+Phase 4 — Crew mobile UI: profile picker, daily check-in, meal-of-the-day,
+history charts, home screen; must also run as a plain browser window.

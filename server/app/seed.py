@@ -149,7 +149,7 @@ def seed_crew_and_history(session: Session, mars_base: MissionContext) -> list[C
             sleep_h = _gauss_clamped(rng, 7.2, 0.8, 4.5, 9.0)
             mood = max(1, min(5, round(_gauss_clamped(rng, 4.0, 0.8, 1, 5))))
             exercise_min = _gauss_clamped(rng, 45, 15, 0, 90)
-            weight += rng.gauss(-0.01, 0.15)
+            weight += rng.gauss(-0.008, 0.045)
 
             # Scripted anomaly (a): Chen Wei — low-exercise streak culminating today.
             if crew.name == "Chen Wei" and day >= HISTORY_DAYS - 3:

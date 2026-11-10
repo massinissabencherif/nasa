@@ -1,7 +1,9 @@
 import json
 from datetime import datetime, timezone
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlmodel import Session, select
 
@@ -9,9 +11,13 @@ from app.db import engine
 from app.engines.nutrition import autonomy_report
 from app.models import ConsumptionEvent, FoodItem, InventoryLine, InventorySnapshot, ShelfSlot
 from app.routes.events import publish_event
+from vision import grid as vision_grid
 from vision.pipeline import run_scan
 
 router = APIRouter(prefix="/api/pantry", tags=["pantry"])
+
+SERVER_DIR = Path(__file__).resolve().parent.parent.parent
+DEFAULT_FIXTURE = SERVER_DIR / "vision" / "fixtures" / "shelf_full.png"
 
 
 @router.get("")
@@ -35,10 +41,14 @@ def get_pantry() -> dict:
             out.append({
                 "slot": slot.label,
                 "item": food.name if food else None,
+                "food_item_id": slot.food_item_id,
                 "capacity": slot.capacity,
                 "count": line.count if line else None,
                 "confidence": line.confidence if line else None,
                 "source": line.source if line else None,
+                "needs_confirmation": bool(
+                    line and (line.confidence < 0.6 or line.count > slot.capacity)
+                ),
             })
         report = autonomy_report(session)
         return {
@@ -55,10 +65,17 @@ def get_pantry() -> dict:
 
 @router.post("/scan")
 def scan_pantry(mode: str = "mock", image_path: str | None = None, camera_index: int = 0) -> dict:
+    def on_row_done(row_letter: str, entries: dict[str, dict]) -> None:
+        publish_event({"type": "scan_row_done", "row": row_letter, "labels": list(entries.keys())})
+
     try:
-        result = run_scan(mode=mode, image_path=image_path, camera_index=camera_index)
+        result = run_scan(
+            mode=mode, image_path=image_path, camera_index=camera_index, on_row_done=on_row_done
+        )
     except (FileNotFoundError, RuntimeError, ValueError) as exc:
         raise HTTPException(400, str(exc)) from exc
+
+    stored_image_path = image_path or (str(DEFAULT_FIXTURE) if mode == "mock" else None)
 
     with Session(engine) as session:
         slots = session.exec(select(ShelfSlot)).all()
@@ -77,7 +94,7 @@ def scan_pantry(mode: str = "mock", image_path: str | None = None, camera_index:
         snapshot_ts = datetime.now(timezone.utc)
         snapshot = InventorySnapshot(
             ts=snapshot_ts,
-            image_path=image_path,
+            image_path=stored_image_path,
             raw_json=json.dumps({k: v.model_dump() for k, v in result.readings.items()}),
         )
         session.add(snapshot)
@@ -193,4 +210,40 @@ def get_consumption() -> list[ConsumptionEvent]:
         return session.exec(
             select(ConsumptionEvent).order_by(ConsumptionEvent.ts.desc())
         ).all()
+
+
+@router.get("/snapshot-image")
+def get_snapshot_image() -> FileResponse:
+    with Session(engine) as session:
+        snapshot = session.exec(
+            select(InventorySnapshot).order_by(InventorySnapshot.ts.desc())
+        ).first()
+    path = Path(snapshot.image_path) if snapshot and snapshot.image_path else DEFAULT_FIXTURE
+    if not path.is_absolute():
+        path = SERVER_DIR / path
+    if not path.is_file():
+        path = DEFAULT_FIXTURE
+    return FileResponse(path, media_type="image/png")
+
+
+@router.get("/grid-boxes")
+def get_grid_boxes() -> dict[str, list[float]]:
+    return vision_grid.load_boxes()
+
+
+class GridBoxUpdateBody(BaseModel):
+    label: str
+    box: list[float]
+
+
+@router.put("/grid-boxes")
+def update_grid_boxes(body: GridBoxUpdateBody) -> dict[str, list[float]]:
+    if len(body.box) != 4:
+        raise HTTPException(400, "box must be [x0, y0, x1, y1]")
+    boxes = vision_grid.load_boxes()
+    if body.label not in boxes:
+        raise HTTPException(404, f"no slot '{body.label}'")
+    boxes[body.label] = tuple(body.box)
+    vision_grid.save_boxes(boxes)
+    return vision_grid.load_boxes()
 

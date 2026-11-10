@@ -9,6 +9,7 @@ available as a faster, lower-accuracy fallback (PROMPT_FABLE.md §4 step 3).
 
 import json
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from . import capture, grid, ollama_client
@@ -69,10 +70,11 @@ def _call_row(img, boxes, slot_items, labels: list[str]) -> dict[str, dict]:
     return {s.get("label"): s for s in parsed.get("slots", [])}
 
 
-def _scan_rows(img, boxes, slot_items) -> tuple[dict[str, dict], str]:
-    by_label: dict[str, dict] = {}
+def _scan_rows(
+    img, boxes, slot_items, on_row_done: Callable[[str, dict[str, dict]], None] | None = None
+) -> tuple[dict[str, dict], str]:
     raw: dict[str, dict] = {}
-    for labels in grid.ROWS.values():
+    for row_letter, labels in grid.ROWS.items():
         entries = _call_row(img, boxes, slot_items, labels)
         missing = [label for label in labels if label not in entries]
         if missing:
@@ -80,6 +82,8 @@ def _scan_rows(img, boxes, slot_items) -> tuple[dict[str, dict], str]:
             entries = _call_row(img, boxes, slot_items, labels)
         for label in labels:
             raw[label] = entries.get(label)
+        if on_row_done:
+            on_row_done(row_letter, {label: raw[label] for label in labels})
     return raw, "row"
 
 
@@ -111,10 +115,13 @@ def _scan_full(img, boxes, slot_items) -> tuple[dict[str, dict], str]:
     return {label: by_label.get(label) for label in labels}, "full"
 
 
-def scan_live(image, boxes, slot_items, strategy: str = "row") -> ScanResult:
+def scan_live(
+    image, boxes, slot_items, strategy: str = "row",
+    on_row_done: Callable[[str, dict[str, dict]], None] | None = None,
+) -> ScanResult:
     start = time.perf_counter()
     if strategy == "row":
-        raw, used = _scan_rows(image, boxes, slot_items)
+        raw, used = _scan_rows(image, boxes, slot_items, on_row_done=on_row_done)
     elif strategy == "full":
         raw, used = _scan_full(image, boxes, slot_items)
     else:
@@ -142,7 +149,10 @@ def scan_mock() -> ScanResult:
     return ScanResult(readings, set(), 0.0, "mock", {})
 
 
-def run_scan(mode: str, image_path: str | None = None, camera_index: int = 0, strategy: str = "row") -> ScanResult:
+def run_scan(
+    mode: str, image_path: str | None = None, camera_index: int = 0, strategy: str = "row",
+    on_row_done: Callable[[str, dict[str, dict]], None] | None = None,
+) -> ScanResult:
     if mode == "mock":
         return scan_mock()
 
@@ -157,4 +167,4 @@ def run_scan(mode: str, image_path: str | None = None, camera_index: int = 0, st
     else:
         raise ValueError(f"unknown scan mode '{mode}'")
 
-    return scan_live(img, boxes, slot_items, strategy=strategy)
+    return scan_live(img, boxes, slot_items, strategy=strategy, on_row_done=on_row_done)
