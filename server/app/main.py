@@ -1,3 +1,4 @@
+import asyncio
 import socket
 from contextlib import asynccontextmanager
 
@@ -8,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.db import init_db
 from app.routes import alerts, context, crew, demo, earth, events, forecast, pantry
 from app.seed import is_seeded, reset_and_seed
+from vision.ollama_client import warmup
 
 
 @asynccontextmanager
@@ -15,6 +17,7 @@ async def lifespan(app: FastAPI):
     init_db()
     if not is_seeded():
         reset_and_seed()
+    asyncio.get_running_loop().run_in_executor(None, warmup)
     yield
 
 
