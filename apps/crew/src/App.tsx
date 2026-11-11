@@ -1,5 +1,5 @@
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { IconCheckin, IconConnection, IconHistory, IconHome, IconMeal, IconSettings, TabBar } from '@hestia/ui';
+import { IconCheckin, IconConnection, IconHistory, IconHome, IconMeal, IconPantry, IconSettings, TabBar } from '@hestia/ui';
 import { ApiProvider } from './lib/ApiProvider';
 import { useConnection, useCrewMember, useMissionContext, useSelectedCrewId } from './lib/hooks';
 import { ProfilePicker } from './screens/ProfilePicker';
@@ -8,12 +8,13 @@ import { Checkin } from './screens/Checkin';
 import { Meal } from './screens/Meal';
 import { History } from './screens/History';
 import { Settings } from './screens/Settings';
-import { ShelfCamera } from './screens/ShelfCamera';
+import { Pantry } from './screens/Pantry';
 
 const TABS = [
   { key: 'home', label: 'Home', icon: IconHome, path: '/home' },
   { key: 'checkin', label: 'Check-in', icon: IconCheckin, path: '/checkin' },
   { key: 'meal', label: 'Meal', icon: IconMeal, path: '/meal' },
+  { key: 'pantry', label: 'Pantry', icon: IconPantry, path: '/pantry' },
   { key: 'history', label: 'History', icon: IconHistory, path: '/history' },
 ];
 
@@ -25,7 +26,7 @@ function Shell() {
   const connected = useConnection();
   const context = useMissionContext();
 
-  const onSettings = location.pathname === '/settings' || location.pathname === '/shelf';
+  const onSettings = location.pathname === '/settings';
   if (crewId == null && location.pathname !== '/profile' && !onSettings) {
     return <Navigate to="/profile" replace />;
   }
@@ -113,7 +114,8 @@ function Shell() {
           <Route path="/meal" element={<Meal />} />
           <Route path="/history" element={<History />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/shelf" element={<ShelfCamera />} />
+          <Route path="/pantry" element={<Pantry />} />
+          <Route path="/shelf" element={<Navigate to="/pantry" replace />} />
         </Routes>
       </main>
 

@@ -136,7 +136,7 @@ export function CalibrationScreen() {
             />
             <Button onClick={() => fileInput.current?.click()}>Use a photo file as reference…</Button>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', flex: 1, minWidth: 200 }}>
-              Or send it from a phone: crew app → Settings → Shelf camera → "Reference photo only". Take it from where the camera will
+              Or send it from a phone: crew app → Pantry tab → Photo options → "Reference photo only". Take it from where the camera will
               stay, then place the grid on it.
             </p>
           </div>

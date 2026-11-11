@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button, Panel, StatusBadge } from '@hestia/ui';
 import { defaultApiBase, getApiBase, setApiBase } from '../lib/apiBase';
 import { useConnection } from '../lib/hooks';
@@ -7,7 +6,6 @@ import { useConnection } from '../lib/hooks';
 export function Settings() {
   const [value, setValue] = useState(getApiBase());
   const connected = useConnection();
-  const navigate = useNavigate();
 
   return (
     <div style={{ padding: 16, display: 'grid', gap: 14 }}>
@@ -57,14 +55,6 @@ export function Settings() {
           The address and its QR code are shown on the station under Mission settings. Phone and station must be on the same base Wi-Fi;
           no internet is used.
         </p>
-      </Panel>
-      <Panel title="Shelf camera">
-        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', marginBottom: 12 }}>
-          Use this phone's camera to photograph the food shelf. The station reads the photo and updates the inventory.
-        </p>
-        <Button variant="primary" onClick={() => navigate('/shelf')} disabled={connected === false}>
-          Open the shelf camera
-        </Button>
       </Panel>
       <Panel title="About">
         <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>

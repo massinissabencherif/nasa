@@ -48,7 +48,7 @@ still open.
 
 ## Added 11 Nov: any camera, real inventory
 
-- `POST /api/pantry/photo`: a phone (crew app → Settings → Shelf camera) or a
+- `POST /api/pantry/photo`: a phone (crew app → Pantry tab) or a
   file picker on the station uploads a photo; it is scanned like a webcam
   frame, or only stored as the reference picture for calibration.
 - Calibration screen: outer frame → 3 × 4 slots, per-slot item and capacity,
@@ -59,6 +59,20 @@ still open.
   frame) through the real model: accurate mode 10/12 in 47 s, fast mode 7/12
   in 28 s. **Not checked with a real phone or a real shelf.** The phone page
   was only rendered, its camera button was not exercised on a device.
+
+## Added 11 Nov: Pantry tab in the crew app
+
+- Live inventory on the phone (picture with per-slot counts, autonomy and
+  its change, movements, tap-to-correct), polling every 2.5 s plus the event
+  stream for per-slot progress.
+- Photo capture from the tab; in-app viewfinder and "Live mode" (continuous
+  re-reading) where the page is a secure context: the installed Capacitor app
+  or `localhost`. The Android manifest now asks for the CAMERA permission.
+- Checked in headless Chrome at 390 px: the tab updated by itself after a
+  scan made elsewhere (412 → 398, −14.0 d), and the viewfinder + capture path
+  ran with Chrome's fake camera through to the station. **Not checked on a
+  real phone, and not in the installed app** (no APK yet), so the in-app
+  viewfinder and its permission prompt are unverified on Android.
 
 ## Known limits (true today)
 

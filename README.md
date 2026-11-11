@@ -96,12 +96,27 @@ hotspot, so use one of these (see [docs/risks.md](docs/risks.md)):
 macOS asks once to allow incoming connections for Python (firewall prompt) and
 once for camera access for the terminal: both need a manual click.
 
+### Live inventory on the phone
+
+The crew app has a **Pantry** tab: the latest shelf picture with the count of
+each slot, days of autonomy, recent movements, all refreshed every 2.5 s
+whatever made the change (station webcam, another phone, a logged meal). From
+that tab you can take a photo of the shelf, watch the station read it slot by
+slot, and correct any count by tapping it.
+
+- In a phone browser on the base network, "Take a photo" opens the phone's
+  own camera screen (a web page served over plain HTTP may not show a live
+  viewfinder).
+- In the installed app (or on `localhost`), "Open the live camera" shows a
+  viewfinder inside the app, with "Capture and count" and a **Live mode** that
+  reads frame after frame. One read takes 20–50 s, so "live" means a new
+  inventory roughly every half minute to a minute, not video-rate.
+
 ### Inventory of a real shelf with a phone as the camera
 
 Any camera works, not only the laptop webcam:
 
-1. **Reference photo.** On the phone, open the crew app → Settings → **Shelf
-   camera**, tick "Reference photo only" and photograph the shelf from where
+1. **Reference photo.** On the phone, open the crew app → **Pantry** tab → Photo options, tick "Reference photo only" and photograph the shelf from where
    the camera will stay. (On the station: Pantry → Calibrate → "Use a photo
    file as reference…".)
 2. **Calibrate** on the station (Pantry → Calibrate the slot grid): set the

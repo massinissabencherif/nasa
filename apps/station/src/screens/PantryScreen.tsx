@@ -430,7 +430,7 @@ export function PantryScreen() {
                 Scan a photo file…
               </Button>
               <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', flex: 1, minWidth: 200 }}>
-                Or use a phone as the shelf camera: open the crew app on it, then Settings → Shelf camera. The photo is read here.
+                Or use a phone as the shelf camera: open the crew app on it, Pantry tab. The photo is read here and the phone shows the inventory live.
               </p>
             </div>
 
