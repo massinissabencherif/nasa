@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IconInfo } from '@hestia/ui';
-import { FieldRow } from '../components/FieldRow';
+import type { CheckinResult } from '@hestia/api-client';
+import { Button, IconCaution, IconCheck, IconCritical, IconInfo, indicatorLabel, ZONE_META, ZONES } from '@hestia/ui';
+import { ExplainSheet, FieldRow } from '../components/FieldRow';
 import { EXPLANATIONS, SYMPTOM_OPTIONS } from '../lib/explanations';
 import { useApi } from '../lib/ApiProvider';
-import { useSelectedCrewId } from '../lib/hooks';
+import { useLatestMeasurements, useSelectedCrewId } from '../lib/hooks';
 
 type FormState = Record<string, number | ''>;
 
@@ -16,19 +17,69 @@ const FIELDS: { key: string; step?: number }[] = [
   { key: 'temperature', step: 0.1 },
   { key: 'weight', step: 0.1 },
   { key: 'sleep_h', step: 0.5 },
-  { key: 'mood' },
-  { key: 'exercise_min' },
+  { key: 'exercise_min', step: 5 },
 ];
+
+const MOODS = ['Very low', 'Low', 'OK', 'Good', 'Great'];
+
+function Result({ result, onDone }: { result: CheckinResult; onDone: () => void }) {
+  const attention = ZONES.filter((z) => result.status[z].level !== 'green');
+  return (
+    <div style={{ padding: 16, display: 'grid', gap: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--green)' }}>
+        <IconCheck size={22} />
+        <h1 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--text)' }}>Check-in saved</h1>
+      </div>
+      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
+        {attention.length === 0
+          ? 'Every body zone is nominal. Nothing to do.'
+          : `Zones needing attention: ${attention.map((z) => ZONE_META[z].label).join(', ')}.`}
+      </p>
+      {result.alerts.map((alert) => {
+        const red = alert.level === 'red';
+        return (
+          <div
+            key={alert.id}
+            role={red ? 'alert' : undefined}
+            style={{
+              padding: 14,
+              borderRadius: 'var(--radius-md)',
+              background: red ? 'var(--red-dim)' : 'var(--orange-dim)',
+              border: `1px solid ${red ? 'var(--red)' : 'var(--orange)'}`,
+              display: 'grid',
+              gap: 8,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: red ? 'var(--red)' : 'var(--orange)' }}>
+              {red ? <IconCritical size={18} /> : <IconCaution size={18} />}
+              <span style={{ fontWeight: 700, color: 'var(--text)' }}>
+                {red ? 'Red alert' : 'Advice'}: {indicatorLabel(alert.indicator)}
+              </span>
+            </div>
+            <p style={{ fontSize: 'var(--text-sm)', whiteSpace: 'pre-line' }}>{alert.message}</p>
+            {alert.sent_to_earth && <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>The crew is alerted and a report is on its way to Earth.</p>}
+          </div>
+        );
+      })}
+      <Button variant="primary" size="lg" onClick={onDone}>
+        See my body status
+      </Button>
+    </div>
+  );
+}
 
 export function Checkin() {
   const navigate = useNavigate();
   const api = useApi();
   const crewId = useSelectedCrewId();
+  const latest = useLatestMeasurements(crewId);
   const [form, setForm] = useState<FormState>({});
+  const [mood, setMood] = useState<number | null>(null);
   const [symptoms, setSymptoms] = useState<Set<string>>(new Set());
-  const [symptomsOpen, setSymptomsOpen] = useState(false);
+  const [openSheet, setOpenSheet] = useState<'mood' | 'symptoms' | null>(null);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<CheckinResult | null>(null);
 
   function toggleSymptom(s: string) {
     setSymptoms((prev) => {
@@ -39,64 +90,101 @@ export function Checkin() {
     });
   }
 
+  const filled = FIELDS.filter(({ key }) => form[key] !== '' && form[key] !== undefined).length + (mood != null ? 1 : 0) + symptoms.size;
+
   async function save() {
     if (crewId == null) return;
     setSaving(true);
+    setError(null);
     const body: Record<string, unknown> = { symptoms: [...symptoms] };
     for (const { key } of FIELDS) {
       if (form[key] !== '' && form[key] !== undefined) body[key] = form[key];
     }
-    await api.checkin(crewId, body);
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => navigate('/home'), 900);
+    if (mood != null) body.mood = mood;
+    try {
+      setResult(await api.checkin(crewId, body));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSaving(false);
+    }
   }
 
+  if (result) return <Result result={result} onDone={() => navigate('/home')} />;
+
+  const card = { border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--panel)', overflow: 'hidden' } as const;
+
   return (
-    <div style={{ padding: 16, display: 'grid', gap: 10, paddingBottom: 32 }}>
-      <h1 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, marginBottom: 4 }}>Daily check-in</h1>
+    <div style={{ padding: 16, display: 'grid', gap: 10, paddingBottom: 24 }}>
+      <div>
+        <h1 style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>Daily check-in</h1>
+        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
+          Fill in what you measured today; leave the rest empty. The (i) button explains how, why and the risk.
+        </p>
+      </div>
+
       {FIELDS.map(({ key, step }) => (
-        <FieldRow
-          key={key}
-          field={key}
-          step={step}
-          value={form[key] ?? ''}
-          onChange={(v) => setForm((f) => ({ ...f, [key]: v }))}
-        />
+        <FieldRow key={key} field={key} step={step} value={form[key] ?? ''} last={latest?.[key]?.value} onChange={(v) => setForm((f) => ({ ...f, [key]: v }))} />
       ))}
 
-      <div
-        style={{
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-md)',
-          background: 'var(--panel)',
-          overflow: 'hidden',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px' }}>
-          <p style={{ flex: 1, fontSize: 'var(--text-sm)', fontWeight: 500 }}>{EXPLANATIONS.symptoms.label}</p>
+      <div style={card}>
+        <div style={{ display: 'flex', alignItems: 'center', padding: '6px 8px 0 14px' }}>
+          <p style={{ flex: 1, fontSize: 'var(--text-sm)', fontWeight: 500 }}>{EXPLANATIONS.mood.label}</p>
           <button
-            onClick={() => setSymptomsOpen((o) => !o)}
-            aria-label="Why we ask: symptoms"
-            style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', padding: 4 }}
+            onClick={() => setOpenSheet((s) => (s === 'mood' ? null : 'mood'))}
+            aria-label="How, why and risk: mood"
+            style={{ background: 'none', border: 'none', color: openSheet === 'mood' ? 'var(--accent)' : 'var(--text-faint)', cursor: 'pointer', padding: 10 }}
           >
-            <IconInfo size={18} />
+            <IconInfo size={20} />
           </button>
         </div>
-        {symptomsOpen && (
-          <div style={{ padding: '0 14px 10px', display: 'grid', gap: 6, fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-            <p><strong style={{ color: 'var(--text)' }}>How: </strong>{EXPLANATIONS.symptoms.how}</p>
-            <p><strong style={{ color: 'var(--text)' }}>Why: </strong>{EXPLANATIONS.symptoms.why}</p>
-            <p><strong style={{ color: 'var(--text)' }}>Risk: </strong>{EXPLANATIONS.symptoms.risk}</p>
-          </div>
-        )}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '0 14px 14px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6, padding: '4px 14px 14px' }}>
+          {MOODS.map((label, i) => {
+            const selected = mood === i + 1;
+            return (
+              <button
+                key={label}
+                onClick={() => setMood(selected ? null : i + 1)}
+                aria-pressed={selected}
+                style={{
+                  padding: '10px 2px',
+                  borderRadius: 'var(--radius-sm)',
+                  border: `1px solid ${selected ? 'var(--accent)' : 'var(--border)'}`,
+                  background: selected ? 'var(--accent-dim)' : 'var(--panel-raised)',
+                  color: selected ? 'var(--accent)' : 'var(--text-muted)',
+                  cursor: 'pointer',
+                  display: 'grid',
+                  gap: 2,
+                }}
+              >
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-lg)' }}>{i + 1}</span>
+                <span style={{ fontSize: 10 }}>{label}</span>
+              </button>
+            );
+          })}
+        </div>
+        {openSheet === 'mood' && <ExplainSheet field="mood" />}
+      </div>
+
+      <div style={card}>
+        <div style={{ display: 'flex', alignItems: 'center', padding: '6px 8px 0 14px' }}>
+          <p style={{ flex: 1, fontSize: 'var(--text-sm)', fontWeight: 500 }}>{EXPLANATIONS.symptoms.label}</p>
+          <button
+            onClick={() => setOpenSheet((s) => (s === 'symptoms' ? null : 'symptoms'))}
+            aria-label="How, why and risk: symptoms"
+            style={{ background: 'none', border: 'none', color: openSheet === 'symptoms' ? 'var(--accent)' : 'var(--text-faint)', cursor: 'pointer', padding: 10 }}
+          >
+            <IconInfo size={20} />
+          </button>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '4px 14px 14px' }}>
           {SYMPTOM_OPTIONS.map((s) => (
             <button
               key={s}
               onClick={() => toggleSymptom(s)}
+              aria-pressed={symptoms.has(s)}
               style={{
-                padding: '8px 14px',
+                padding: '9px 14px',
                 borderRadius: 999,
                 border: `1px solid ${symptoms.has(s) ? 'var(--accent)' : 'var(--border)'}`,
                 background: symptoms.has(s) ? 'var(--accent-dim)' : 'var(--panel-raised)',
@@ -109,25 +197,17 @@ export function Checkin() {
             </button>
           ))}
         </div>
+        {openSheet === 'symptoms' && <ExplainSheet field="symptoms" />}
       </div>
 
-      <button
-        onClick={save}
-        disabled={saving}
-        style={{
-          marginTop: 8,
-          padding: 16,
-          borderRadius: 'var(--radius-md)',
-          border: 'none',
-          background: saved ? 'var(--green)' : 'var(--accent)',
-          color: '#07222c',
-          fontWeight: 700,
-          fontSize: 'var(--text-base)',
-          cursor: 'pointer',
-        }}
-      >
-        {saved ? 'Saved' : saving ? 'Saving…' : 'Save check-in'}
-      </button>
+      {error && (
+        <p role="alert" style={{ color: 'var(--red)', fontSize: 'var(--text-sm)' }}>
+          Not saved: {error}
+        </p>
+      )}
+      <Button variant="primary" size="lg" onClick={save} disabled={saving || filled === 0} style={{ marginTop: 6 }}>
+        {saving ? 'Saving…' : filled === 0 ? 'Fill in at least one field' : `Save check-in (${filled} value${filled > 1 ? 's' : ''})`}
+      </Button>
     </div>
   );
 }

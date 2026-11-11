@@ -1,7 +1,13 @@
-# Tauri + React + Typescript
+# HESTIA station
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+Desktop interface of the base computer: Tauri 2 shell around a React + Vite
+app. Screens: Crew, Pantry (+ calibration), Forecasts, Alerts, Earth link,
+Mission settings.
 
-## Recommended IDE Setup
+- `pnpm --filter station tauri dev` (or `make station`) opens the desktop window.
+- `pnpm dev:station` (or `make station-web`) serves the same UI at
+  http://localhost:1420 for a browser.
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+It talks to the HESTIA server on `http://localhost:8000` (see
+`src/lib/api.ts`) and listens to `/api/events` (SSE) for live updates. If the
+server is down, it shows how to start it and reconnects by itself.

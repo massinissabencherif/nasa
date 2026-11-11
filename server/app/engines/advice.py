@@ -37,7 +37,11 @@ _STEPS: dict[str, list[str]] = {
     "sleep_h": ["Keep tonight's sleep window protected.", "Avoid caffeine late in the day."],
     "mood": ["Talk to a crewmate.", "Keep tonight's sleep schedule."],
     "symptom": ["Log details at the next check-in.", "Mention it to a crewmate."],
-    "exercise_streak": ["Log a resistive exercise session today."],
+    "exercise_streak": [
+        "Do 30 min of resistive exercise today: squats, deadlifts, heel raises.",
+        "Split it into two 15 min sessions if you are short on time or energy.",
+        "Log the minutes in your next check-in.",
+    ],
     "radiation_pct_of_career_limit": ["No same-day action — this accumulates over the mission."],
 }
 

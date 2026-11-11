@@ -1,32 +1,45 @@
-# React + TypeScript + Vite
+# HESTIA crew app
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + Vite web app for the astronauts' phones: profile, daily check-in,
+meal, history, body silhouette, alerts.
 
-Currently, two official plugins are available:
+## Run
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Normal path**: `pnpm build:crew` (or `make build`), then the station
+  server serves it at `http://<station-ip>:8000/crew/`. Scan the QR code shown
+  on the station under Mission settings.
+- **Development**: `pnpm dev:crew` (Vite on port 5173, bound to the LAN).
 
-## React Compiler
+The station address defaults to port 8000 of the host the page was loaded
+from. It can be changed under Settings, or passed once in the URL:
+`?station=http://192.168.1.20:8000`.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The app polls the station every 5 seconds rather than keeping an SSE stream
+open: polling survives a sleeping phone and a flaky hotspot.
 
-## Expanding the Oxlint configuration
+## Android (Capacitor)
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+`android/` is a generated Capacitor project. `capacitor.config.json` sets
+`androidScheme: "http"` and `cleartext: true`, and the manifest has
+`android:usesCleartextTraffic="true"`, because the station is reached over
+plain HTTP on the base LAN.
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+make android                                  # build the web app + cap sync
+cd apps/crew/android && ./gradlew assembleDebug   # needs the Android SDK
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Not built yet: the Android SDK is not installed on the development machine.
+In the native shell the station address must be entered under Settings.
+
+## iOS (not set up)
+
+Needs full Xcode and CocoaPods: `pnpm add @capacitor/ios && npx cap add ios`.
+Then add to `ios/App/App/Info.plist`:
+
+```xml
+<key>NSAppTransportSecurity</key>
+<dict><key>NSAllowsLocalNetworking</key><true/></dict>
+<key>NSLocalNetworkUsageDescription</key>
+<string>HESTIA connects to the base station on the local network.</string>
+```

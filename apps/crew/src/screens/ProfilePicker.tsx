@@ -25,7 +25,7 @@ export function ProfilePicker() {
       <div style={{ textAlign: 'center', marginBottom: 8 }}>
         <h1 style={{ fontSize: 'var(--text-xl)', fontWeight: 700 }}>HESTIA</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)', marginTop: 4 }}>
-          Who's checking in?
+          Who's checking in? (fictional crew, SIMULATED)
         </p>
       </div>
       {crew.length === 0 && (

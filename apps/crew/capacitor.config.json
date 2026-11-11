@@ -1,0 +1,9 @@
+{
+  "appId": "com.hestia.crew",
+  "appName": "HESTIA Crew",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  }
+}

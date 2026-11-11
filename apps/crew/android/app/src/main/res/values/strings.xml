@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">HESTIA Crew</string>
+    <string name="title_activity_main">HESTIA Crew</string>
+    <string name="package_name">com.hestia.crew</string>
+    <string name="custom_url_scheme">com.hestia.crew</string>
+</resources>

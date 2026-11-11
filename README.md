@@ -1,62 +1,150 @@
 # HESTIA
 
-Offline health-monitoring and food-inventory system for astronauts.
-Built for NASA Space Apps Challenge 2026 (ESGI Paris local edition).
+**Habitat Embedded System for Tracking Individual Astronaut health.**
+A Mars base has no doctor and no internet. HESTIA lets each astronaut
+self-assess their health on a clickable body silhouette, reads the food shelf
+with a camera, forecasts what a decision does to bodies and stocks, and decides
+when to alert the crew or Earth despite the communication delay. Everything,
+including the AI, runs on one laptop with the Wi-Fi off.
 
-All crew data is **simulated**. This is **not a medical device** — thresholds
-are indicative only. See `CLAUDE.md` and `docs/prompt/` for the full spec.
+Built for the NASA Space Apps Challenge 2026 (ESGI Paris local edition, 14–15
+Nov 2026), challenge *Create Health Monitoring Software for Astronauts on Space
+Missions*.
+
+> **Honesty notes — read these first**
+> - **Not a medical device.** Thresholds are indicative. No diagnosis, no drug
+>   name, no dose, anywhere.
+> - **All crew data is simulated.** The four astronauts are invented; their 90
+>   days of history come from a seeded random generator.
+> - **The forecast is a simulator, not a trained model**: day-by-day arithmetic
+>   on NASA reference values plus assumptions that are flagged in the UI.
+> - **Vision accuracy is measured, not claimed**: 11/12 slots exact on the test
+>   photo, with a known weak spot (stacked cans) that the app asks a human to
+>   confirm. See [docs/vision-benchmark.md](docs/vision-benchmark.md).
+> - **Demo scale**: one box on the demo shelf stands for one storage lot of 212
+>   rations, so a 29-unit shelf represents about 412 days for 4 crew.
+> - The shelf test photos are AI-generated and captioned as such in the app.
+> - Code written with AI assistance (Claude Code), disclosed on the project page.
+
+## What it does
+
+| Module | What you see |
+|---|---|
+| **M1 Camera pantry** | Photo of a 12-slot shelf with per-slot counts, an inline "check count" step when a reading is uncertain, days of food autonomy that drop live when boxes are removed, a ration plan per astronaut, a consumption feed |
+| **M2 Crew mobile app** | Profile picker, daily check-in with a how/why/risk sheet per measurement, meal suggestion from the real stock, reminders adapted to the mission context, streak and badges, history charts with green/orange/red bands |
+| **M3 Clickable silhouette** | 8 body zones coloured from live data, each with its function, indicators, HRP hazard, indicative thresholds, why the exam matters, advised action. Icons and words, never colour alone |
+| **M4 Alerts and Earth link** | Orange: guardrailed self-care advice. Red: crew alert plus a compact report queued to Earth with a live countdown and a simulated reply |
+| **M5 Forecast simulator** | Sliders (horizon, ration, exercise, resupply delay, solar storm) driving stock, weight, bone mass and radiation curves, with an Assumptions & sources drawer |
+| **M6 Multi-environment** | Mars base, Earth–Mars transit, Moon base, ISS: changes delay, radiation, resupply, reminders and risk notes |
 
 ## Architecture
 
 ```
-[Webcam] → STATION (MacBook)
-   ├─ FastAPI + SQLite (SQLModel)
-   ├─ Ollama: local VLM (shelf counting) + local LLM (advice, Earth report)
-   ├─ Python engines: nutrition, alerts, forecasts
-   └─ Desktop app: Tauri 2 + React   (apps/station)
-          ▲  local WiFi (laptop hotspot = base network, no internet)
-          ▼
-   CREW mobile app: React + Capacitor (apps/crew)
+[Webcam] ──► STATION (MacBook = the base's computer)
+               ├─ FastAPI + SQLite (SQLModel)            server/app
+               ├─ Vision: OpenCV capture + local VLM      server/vision
+               ├─ Engines: nutrition, status, alerts, advice, forecast, gamification
+               ├─ Ollama on localhost:11434 (qwen2.5vl:7b, one model in RAM)
+               ├─ Serves the built crew app at /crew/
+               └─ Desktop UI: Tauri 2 + React             apps/station
+                      ▲
+                      │  base Wi-Fi, plain HTTP, no internet
+                      ▼
+             CREW phones: React (+ Capacitor shell)       apps/crew
 ```
 
-## Prerequisites
+Shared code: `packages/ui` (silhouette, tokens, components) and
+`packages/api-client` (typed fetch client). Live updates use Server-Sent
+Events on the station and 5-second polling on phones.
 
-Node 22+, pnpm 10+, Python 3.12, [uv](https://docs.astral.sh/uv/), Rust
-(for Tauri), [Ollama](https://ollama.com) running locally with `qwen2.5vl:7b`
-pulled.
+## Run it
 
-## Run
+Prerequisites: Node 22+, pnpm 10+, Python 3.12, [uv](https://docs.astral.sh/uv/),
+Rust (for the Tauri window), [Ollama](https://ollama.com) with `qwen2.5vl:7b`
+pulled. Internet is needed once, for `make install`.
 
 ```bash
-# install JS workspace deps once
-pnpm install
-
-# server — FastAPI on 0.0.0.0:8000
-cd server && uv sync && uv run hestia-server
-
-# station — Tauri desktop app (separate terminal)
-pnpm dev:station
-
-# crew — mobile app, also runs as a plain browser window
-pnpm dev:crew
+make install     # JS + Python dependencies (once, online)
+make demo        # builds the crew app, starts the server and the station window
 ```
 
-Check: `curl http://localhost:8000/health` → `{"status":"ok",...}`. Both the
-station window and the crew page should show "server OK".
+Then:
+
+- Station: the Tauri window (or `make station-web` → http://localhost:1420).
+- Crew app on a phone: open **Mission settings** on the station and scan the QR
+  code, or type `http://<station-ip>:8000/crew/`. On the laptop itself:
+  http://localhost:8000/crew/ in a phone-sized browser window.
+- `make test` runs the 52 backend tests, including an end-to-end smoke test of
+  the demo script. `make reset` reseeds the baseline. `make check-offline`
+  greps the source for non-local URLs.
+
+Individual commands: `cd server && uv run hestia-server` (API on
+`0.0.0.0:8000`, prints the LAN IP), `pnpm dev:station`, `pnpm dev:crew`.
+Set `HESTIA_RELOAD=1` for auto-reload while developing.
+
+### Running with Wi-Fi off / on the base network
+
+Nothing in the app calls a non-local host: fonts are bundled, the QR code is
+generated by the server, the AI is Ollama on localhost. To use phones you need
+a local network without internet. macOS cannot reliably host an internet-less
+hotspot, so use one of these (see [docs/risks.md](docs/risks.md)):
+
+1. **Phone hotspot with mobile data off** — the laptop and the other phones
+   join it. Simplest, and what we plan to use on stage.
+2. **A travel router** with no uplink.
+
+macOS asks once to allow incoming connections for Python (firewall prompt) and
+once for camera access for the terminal: both need a manual click.
+
+### Mobile build
+
+`apps/crew/android` is a ready Capacitor project (cleartext HTTP to the LAN
+enabled). Building the APK needs the Android SDK, which is not installed on the
+development machine yet: `make android`, then open `apps/crew/android` in
+Android Studio. Until then the supported path is the browser: the same app
+served at `/crew/`. iOS needs full Xcode plus an ATS local-networking exception
+(`NSAllowsLocalNetworking`) and `NSLocalNetworkUsageDescription`; see
+[apps/crew/README.md](apps/crew/README.md).
+
+## Demo in 3 minutes
+
+French script: [docs/demo-script.md](docs/demo-script.md). Every step also has
+a button under **Mission settings → Demo controls**, which goes through the
+same code as the real action, in case the phone or the camera fails on stage.
 
 ## Repo layout
 
 ```
 hestia/
-├─ CLAUDE.md          # project context for agents
-├─ apps/station/      # Tauri 2 + React + Vite + TS + Tailwind
-├─ apps/crew/         # React + Vite + Capacitor
-├─ packages/ui/       # shared silhouette, charts, cards, tokens
-├─ packages/api-client/
-├─ server/            # FastAPI + SQLModel + SQLite, uv
-└─ docs/              # spec, status, demo script, NASA project page
+├─ Makefile              one-command entry points
+├─ apps/station/         Tauri 2 + React + Vite + TypeScript
+├─ apps/crew/            React + Vite, Capacitor Android project
+├─ packages/ui/          silhouette, design tokens, shared components
+├─ packages/api-client/  typed client + shared types
+├─ server/app/           FastAPI routes, SQLModel models, engines, seed
+├─ server/vision/        capture, grid, VLM pipeline, benchmark, fixtures
+├─ server/data/          thresholds, NASA reference values, food catalogue, shelf grid
+├─ server/tests/         pytest suite
+└─ docs/                 deliverables (see below)
 ```
 
-## Status
+## Deliverables in `docs/`
 
-See `docs/STATUS.md` for current phase and what works.
+- [nasa-project-page.md](docs/nasa-project-page.md) — project page draft with the "NASA Data" and "Use of AI" sections
+- [demo-script.md](docs/demo-script.md) — 3-minute demo, in French
+- [video-script.md](docs/video-script.md) and [video-subtitles.srt](docs/video-subtitles.srt) — 30-second video
+- [slides-outline.md](docs/slides-outline.md) — 7 slides
+- [vision-benchmark.md](docs/vision-benchmark.md) — measured accuracy and latency
+- [risks.md](docs/risks.md), [licenses.md](docs/licenses.md), [nasa-resources.md](docs/nasa-resources.md)
+- [STATUS.md](docs/STATUS.md) — what works, what does not, what was built when
+
+## Tech note
+
+The original brief asked for Tailwind; the UI uses a small set of CSS design
+tokens (`packages/ui/src/styles/tokens.css`) and inline styles instead, which
+kept the two apps on one shared component package with no build plugin. React
+19, Recharts, hand-made SVG silhouette, IBM Plex fonts bundled locally.
+
+## Licence
+
+MIT, see [LICENSE](LICENSE). Third-party licences: [docs/licenses.md](docs/licenses.md).

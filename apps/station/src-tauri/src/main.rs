@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    hestia-station_lib::run()
+    hestia_station_lib::run()
 }

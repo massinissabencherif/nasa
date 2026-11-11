@@ -32,7 +32,10 @@ export function History() {
 
   return (
     <div style={{ padding: 16, display: 'grid', gap: 14 }}>
-      <h1 style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>History</h1>
+      <div>
+        <h1 style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>History</h1>
+        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>Bands show the indicative green, orange and red ranges. Past values are SIMULATED.</p>
+      </div>
 
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
         {INDICATORS.map((ind) => (

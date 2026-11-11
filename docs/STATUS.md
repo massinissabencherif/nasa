@@ -1,65 +1,96 @@
 # HESTIA — status
 
-## Phase 6 — Alerts + LLM advice with guardrails + Earth link (done)
+Last update: 11 Nov 2026 (pre-event). All phases 0–10 of the brief have been
+worked through. This file says what works, how it was checked, and what is
+still open.
 
-**Alert engine** (`app/engines/alerts.py`, new): `evaluate_and_alert()` checks
-every alertable indicator (BP, HR, glucose, temperature, sleep, mood, weight
-trend, exercise streak, symptoms, radiation) for a crew member and creates an
-`Alert` only when the level actually *changed* — re-running it at the same
-level is a no-op, so check-ins don't spam duplicate alerts (PROMPT_FABLE.md
-§7: "only significant changes are sent"). A red alert also queues an
-`EarthMessage` with a real one-way delay from the active context. Wired into
-`POST /api/crew/{id}/checkin` (runs after measurements are saved) and reused
-by `seed.py` — the two scripted demo anomalies and all seeded data now go
-through the exact same detection path a live check-in would use, instead of
-hand-written rows.
+## What works, and how it was verified
 
-**Guardrailed advice** (`app/engines/advice.py`, new): deterministic
-templates are the default per PROMPT_ADDENDUM.md #2 — ≤4 numbered steps, one
-named onboard Procedure, always ends with "not a diagnosis". The LLM path is
-opt-in (toggle in Mission settings), uses `qwen2.5vl:7b` in **text mode**
-(never `gemma3:4b`, never alongside the vision model), has an 8s timeout, and
-falls back to the template on *any* failure — verified both paths live:
-~4.4s for a real guardrailed LLM response, and confirmed the fallback fires
-correctly when forced to time out.
+| Area | State | Verified by |
+|---|---|---|
+| Backend engines (nutrition, thresholds/status, alerts, advice, forecast, gamification) | done | `make test`: 52 tests pass |
+| Demo script end to end through the HTTP API (check-in → orange, 412 → 398, delayed cargo → ration, red alert → Earth report → reply) | done | `server/tests/test_demo_e2e.py` |
+| Station UI: Crew, Pantry, Calibration, Forecasts, Alerts, Earth link, Mission settings | done | driven in headless Chrome at 1280×800/1000, screenshots reviewed |
+| Crew app: profile, home, check-in, meal, history, settings | done | driven in headless Chrome at 390×844 from `http://localhost:8000/crew/` |
+| Live updates (SSE on the station) | done | SSE stream captured during a real scan: 12 per-slot progress events, then completion |
+| Vision scan through the real model | done | scan of both test images through `POST /api/pantry/scan`; numbers in `docs/vision-benchmark.md` |
+| Tauri desktop window | compiles and starts | `cargo build` + `tauri dev` launched the process; the window content itself was not inspected (it loads the same page verified in Chrome) |
+| Offline rule | no non-local URL in the source | `make check-offline` |
 
-**Earth link, fully modeled**: `EarthMessage` now carries the full round
-trip — `deliver_ts` (arrival at Earth) and `reply_ts` (simulated reply back,
-one more one-way delay), with `status` (queued → delivered → replied)
-computed live from current time rather than stored and drifting. A scripted,
-clearly-labeled "(SIMULATED REPLY)" ground response is generated at queue
-time and revealed only once `reply_ts` passes. `POST /api/earth/advance`
-fast-forwards all queued/pending messages by N seconds — verified the full
-queued → delivered → replied progression live via two "+20m" clicks. Mission
-settings also got a **time-scale** control (×1/10/30/60, applied to new
-alerts' delay) satisfying the brief's "time-scale factor for demos" ask
-separately from the manual skip-ahead button.
+## Review pass of 11 Nov — what was wrong and is now fixed
 
-**On-screen red alerts on mobile**: crew app's Home shows an unacked red
-alert as a full banner (message + "Sent to Earth" + Acknowledge), satisfying
-the "on-screen" half of PROMPT_FABLE.md §7's "on-screen + mobile notification
-banner" — a real OS push notification isn't wired (Capacitor native bridge
-is phase 9 territory), noted honestly below rather than glossed over.
+- **SSE events were published from worker threads straight into asyncio
+  queues**, so they only arrived when the event loop happened to wake up.
+  Now handed over with `call_soon_threadsafe`.
+- **The demo could not be replayed on stage**: both anomalies were baked into
+  the seed, so the Earth message was already "delivered" minutes after
+  seeding, and the seeded "today" row could be in the future before 09:00
+  Paris time, hiding a real check-in. The seed now ends yesterday and starts
+  all green; anomalies are triggered live or by scenario buttons.
+- **A relapse never alerted again** (dedupe compared with the last alert
+  forever). Alerts now have a `resolved` flag.
+- **Two red indicators produced two Earth reports.** Now one report per
+  check-in listing every red finding.
+- **Live camera scans were not saved**, so the overlay was drawn on the test
+  photo. Frames are now stored in `server/captures/` and served.
+- **Low-confidence readings had no confirmation UI**, and confirming did not
+  correct the consumption feed. Both done.
+- **Vision timing in the docs was measured on a cached image.** Re-measured;
+  the pipeline was rebuilt around one schema-constrained call (see
+  `docs/vision-benchmark.md`).
+- The station top bar did not follow a context change; the symptom "fatigue"
+  coloured the eyes zone; zone panels showed "—" for derived indicators; the
+  QR code and LAN address required by the addendum were missing; the crew app
+  defaulted to `localhost` on a phone; no "SIMULATED / not a medical device"
+  banner on mobile; the Tauri entry point did not compile
+  (`hestia-station_lib`); scans of arbitrary file paths were accepted from the
+  LAN; context switches dropped the demo clock and LLM settings.
 
-**Tests**: 31 pass (5 new in `test_alerts.py`) — both scripted anomalies
-produce the expected alerts, a red alert queues a correctly-delayed Earth
-message, unchanged levels don't duplicate, a level change does create a new
-alert, and every deterministic template ends with the disclaimer and stays
-within the step budget.
+## Known limits (true today)
 
-## Known gaps / not yet done
+- **Vision**: 11/12 on the full test photo, 10/12 on the after-removal photo
+  in the default 20 s mode (it read the emptied A1 as 1). The 50 s accurate
+  mode read A1 correctly. Stacked cans (A3) are undercounted by every
+  strategy and are always sent to confirmation. Nothing is known yet about a
+  real shelf under venue lighting.
+- **The ≤ 20 s scan target has almost no margin** (19.4 s measured) and
+  depends on the laptop not throttling.
+- **No APK**: the Android SDK is not installed on this machine (no
+  `~/Library/Android/sdk`, no `ANDROID_HOME`), and there is no full Xcode, so
+  neither mobile build was attempted. The Capacitor Android project exists
+  and is configured for cleartext LAN HTTP. The browser path is the
+  supported one.
+- **No OS push notification** on phones: red alerts are an in-app banner,
+  refreshed every 5 s.
+- **Not tested on a physical phone, and not with Wi-Fi off.** Phone access was
+  only simulated from the laptop through its LAN address. A run with the
+  network disabled was not done in this session.
+- **Tauri production build** (`tauri build`) was not tried; the demo uses
+  `tauri dev` (or the browser with `make station-web`).
+- The forecast's weight model (7,700 kcal/kg with need recomputed from
+  weight) gives large losses for long deficits (about −13 % after 460 days at
+  90 % rations). It is flagged as an assumption; it has not been compared
+  with a published model.
+- QR codes per shelf slot (optional fallback in the brief) and periodic
+  scans (off by default in the brief) were not built.
+- `docs/nasa-project-page.md` still has `[cite]` placeholders: the NASA
+  values have not been checked against the official resources (out 13 Nov).
+- Styling uses CSS tokens and inline styles, not Tailwind as the brief asked.
 
-- No true OS-level push notification for red alerts (needs Capacitor's
-  native notification plugin — phase 9).
-- Forecast simulator (phase 7), gamification (phase 8) still pending.
-- The LLM advice path is opt-in and works, but hasn't been exercised through
-  the full check-in → alert → Earth pipeline in one live run this session
-  (verified the advice engine directly instead, for speed).
+## To do before / during the event
 
-## Next
+1. 13 Nov: follow `docs/nasa-resources.md`, fix values and citations.
+2. Install the Android SDK from Android Studio if an APK is wanted, then
+   `make android`.
+3. Test the phone hotspot (mobile data off) with the real phone; click the
+   macOS firewall and camera prompts once; write the result in
+   `docs/risks.md`.
+4. Mount the real shelf, calibrate the grid (Pantry → Calibrate), run a few
+   live scans in both modes and note the accuracy.
+5. Rehearse `docs/demo-script.md` once with the Wi-Fi off.
+6. Record the 30 s video (`docs/video-script.md`).
 
-Phase 7 — Forecasts (M5) + multi-environments (M6): sliders (mission
-duration, ration %, exercise, resupply delay, solar storm) driving stock/
-weight/bone/radiation curves, reusing the nutrition engine and
-`nasa_reference.json` already in place; context switching already works
-end-to-end from phase 1, this phase is mainly the forecast math + UI.
+## Built before the event
+
+Everything in this repository as of 11 Nov 2026 (commits of 10–11 Nov), as
+allowed by the local organisers. The project page draft lists it.

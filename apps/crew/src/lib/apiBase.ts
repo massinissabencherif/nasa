@@ -1,16 +1,37 @@
 const STORAGE_KEY = 'hestia-api-base';
-const DEFAULT_BASE = 'http://localhost:8000';
+
+function clean(url: string): string {
+  return url.trim().replace(/\/+$/, '');
+}
+
+/** Where the station API most likely is, given how this page was opened. */
+export function defaultApiBase(): string {
+  const { protocol, hostname, port } = window.location;
+  const isNativeShell = protocol === 'capacitor:' || (hostname === 'localhost' && port === '');
+  if (isNativeShell) return 'http://localhost:8000'; // native app: must be set in Settings
+  // Served by the station itself (http://<station>:8000/crew/) or by the Vite
+  // dev server on the same machine: the API is on port 8000 of that host.
+  return `${protocol}//${hostname}:8000`;
+}
 
 export function getApiBase(): string {
-  return localStorage.getItem(STORAGE_KEY) ?? DEFAULT_BASE;
+  return localStorage.getItem(STORAGE_KEY) ?? defaultApiBase();
 }
 
 export function setApiBase(url: string): void {
-  localStorage.setItem(STORAGE_KEY, url.replace(/\/+$/, ''));
+  const value = clean(url);
+  if (value) localStorage.setItem(STORAGE_KEY, value);
+  else localStorage.removeItem(STORAGE_KEY);
   window.dispatchEvent(new Event('hestia-api-base-changed'));
 }
 
 export function subscribeApiBase(cb: () => void): () => void {
   window.addEventListener('hestia-api-base-changed', cb);
   return () => window.removeEventListener('hestia-api-base-changed', cb);
+}
+
+/** `?station=http://192.168.x.x:8000` (e.g. from a QR code) sets the address once. */
+export function adoptStationFromUrl(): void {
+  const station = new URLSearchParams(window.location.search).get('station');
+  if (station && /^https?:\/\//.test(station)) setApiBase(station);
 }
