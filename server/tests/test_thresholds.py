@@ -38,3 +38,23 @@ def test_worst_level():
     assert worst_level(["green", "orange", "green"]) == "orange"
     assert worst_level(["green", "red", "orange"]) == "red"
     assert worst_level([]) == "green"
+
+
+def test_symptoms_only_colour_the_zones_they_concern():
+    from sqlmodel import Session, select
+
+    from app.db import engine
+    from app.engines.checkin import record_checkin
+    from app.engines.status import crew_status
+    from app.models import CrewMember
+    from app.seed import reset_and_seed
+
+    reset_and_seed()
+    with Session(engine) as session:
+        crew = session.exec(select(CrewMember)).first()
+        record_checkin(session, crew, {}, ["Vision blur"])
+        zones = crew_status(session, crew.id)
+        assert zones["eyes_sans"]["level"] == "orange"
+        assert zones["eyes_sans"]["display"]["symptom"] == "Vision blur"
+        assert zones["brain_morale"]["level"] == "green"
+        assert zones["immunity"]["level"] == "green"

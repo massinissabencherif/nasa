@@ -4,7 +4,7 @@ from sqlmodel import Session, select
 
 from app.models import CrewMember, Measurement
 
-from .thresholds import exercise_streak_level, level_for, worst_level
+from .thresholds import exercise_streak_level, level_for, load_thresholds, worst_level
 
 ZONE_INDICATORS: dict[str, list[str]] = {
     "brain_morale": ["mood", "sleep_h", "symptom"],
@@ -14,8 +14,38 @@ ZONE_INDICATORS: dict[str, list[str]] = {
     "muscles": ["exercise_streak", "weight_change_pct"],
     "immunity": ["temperature", "sleep_h", "symptom"],
     "skin": ["radiation_pct_of_career_limit"],
-    "digestive_nutrition": ["weight_change_pct", "glucose"],
+    "digestive_nutrition": ["weight_change_pct", "glucose", "symptom"],
 }
+
+# Which body zones a reported symptom speaks about. Unknown labels go to the
+# brain/morale zone (general wellbeing) so nothing reported is ever dropped.
+SYMPTOM_ZONES: dict[str, set[str]] = {
+    "headache": {"brain_morale"},
+    "fatigue": {"brain_morale", "immunity"},
+    "dizziness": {"brain_morale"},
+    "vision blur": {"eyes_sans"},
+    "nausea": {"digestive_nutrition"},
+    "congestion": {"immunity"},
+}
+SYMPTOM_WINDOW = timedelta(hours=24)
+
+
+def recent_symptoms(session: Session, crew_member_id: int, zone: str | None = None) -> list[str]:
+    rows = session.exec(
+        select(Measurement)
+        .where(Measurement.crew_member_id == crew_member_id, Measurement.type == "symptom")
+        .order_by(Measurement.ts.desc())
+        .limit(12)
+    ).all()
+    out: list[str] = []
+    for row in rows:
+        if datetime.now(row.ts.tzinfo) - row.ts >= SYMPTOM_WINDOW or not row.note:
+            continue
+        zones = SYMPTOM_ZONES.get(row.note.lower(), {"brain_morale"})
+        if (zone is None or zone in zones) and row.note not in out:
+            out.append(row.note)
+    return out
+
 
 HRP_HAZARD: dict[str, str] = {
     "brain_morale": "isolation & confinement",
@@ -54,13 +84,11 @@ def _recent_values(
     return [row.value for row in rows]
 
 
-def indicator_level(session: Session, crew_member_id: int, indicator: str) -> str | None:
+def indicator_level(
+    session: Session, crew_member_id: int, indicator: str, zone: str | None = None
+) -> str | None:
     if indicator == "symptom":
-        row = _latest_row(session, crew_member_id, "symptom")
-        if row is None:
-            return "green"
-        recent = datetime.now(row.ts.tzinfo) - row.ts < timedelta(hours=24)
-        return "orange" if recent else "green"
+        return "orange" if recent_symptoms(session, crew_member_id, zone) else "green"
     if indicator == "exercise_streak":
         minutes = _recent_values(session, crew_member_id, "exercise_min", limit=14)
         if not minutes:
@@ -85,19 +113,59 @@ def indicator_level(session: Session, crew_member_id: int, indicator: str) -> st
     return level_for(indicator, value)
 
 
+def indicator_display(
+    session: Session, crew_member_id: int, indicator: str, zone: str | None = None
+) -> str:
+    """Human-readable current value of an indicator, for the zone panel."""
+    if indicator == "symptom":
+        recent = recent_symptoms(session, crew_member_id, zone)
+        return ", ".join(recent) if recent else "none in the last 24 h"
+    if indicator == "exercise_streak":
+        minutes = _recent_values(session, crew_member_id, "exercise_min", limit=14)
+        if not minutes:
+            return "no data"
+        minimum = load_thresholds()["exercise_streak"]["daily_minimum_min"]
+        streak = 0
+        for value in minutes:
+            if value >= minimum:
+                break
+            streak += 1
+        if streak == 0:
+            return f"{minutes[0]:g} min last session"
+        return f"{streak} day{'s' if streak > 1 else ''} in a row under {minimum} min"
+    if indicator == "weight_change_pct":
+        crew = session.get(CrewMember, crew_member_id)
+        weight = _latest(session, crew_member_id, "weight")
+        if crew is None or weight is None or crew.weight_kg == 0:
+            return "no data"
+        pct = (weight - crew.weight_kg) / crew.weight_kg * 100
+        return f"{pct:+.1f} % vs baseline ({weight:g} kg)"
+    if indicator == "radiation_pct_of_career_limit":
+        dose = _latest(session, crew_member_id, "radiation_dose_msv")
+        if dose is None:
+            return "no data"
+        return f"{dose:.0f} mSv ({dose / 600 * 100:.0f} % of 600 mSv)"
+    row = _latest_row(session, crew_member_id, indicator)
+    if row is None:
+        return "no data"
+    unit = "" if row.unit == "1-5" else f" {row.unit}"
+    return f"{row.value:g}{' / 5' if row.unit == '1-5' else unit}"
+
+
 def crew_status(session: Session, crew_member_id: int) -> dict:
     zones = {}
     for zone, indicators in ZONE_INDICATORS.items():
         levels = []
         indicator_detail = {}
         for indicator in indicators:
-            level = indicator_level(session, crew_member_id, indicator)
+            level = indicator_level(session, crew_member_id, indicator, zone)
             indicator_detail[indicator] = level
             if level is not None:
                 levels.append(level)
         zones[zone] = {
             "level": worst_level(levels) if levels else "green",
             "indicators": indicator_detail,
+            "display": {i: indicator_display(session, crew_member_id, i, zone) for i in indicators},
             "hazard": HRP_HAZARD[zone],
         }
     return zones

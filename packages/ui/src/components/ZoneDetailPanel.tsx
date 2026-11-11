@@ -1,6 +1,6 @@
-import type { CrewStatus, LatestMeasurements, Thresholds } from '@hestia/api-client';
+import type { CrewStatus, Thresholds } from '@hestia/api-client';
 import { IconCheck, IconCaution, IconCritical } from '../icons';
-import { INDICATOR_LABELS, ZONE_META, type ZoneKey } from '../zones';
+import { CONTEXT_ZONE_NOTES, INDICATOR_LABELS, ZONE_META, type ZoneKey } from '../zones';
 import { formatThresholdBands } from '../thresholdText';
 import { StatusBadge } from './StatusBadge';
 
@@ -9,18 +9,19 @@ const LEVEL_ICON = { green: IconCheck, orange: IconCaution, red: IconCritical };
 export function ZoneDetailPanel({
   zone,
   status,
-  latest,
   thresholds,
+  contextType,
   onClose,
 }: {
   zone: ZoneKey;
   status: CrewStatus;
-  latest: LatestMeasurements | null;
   thresholds: Thresholds | null;
+  contextType?: string;
   onClose?: () => void;
 }) {
   const meta = ZONE_META[zone];
   const zoneStatus = status[zone];
+  const contextNote = contextType ? CONTEXT_ZONE_NOTES[contextType]?.[zone] : undefined;
 
   return (
     <div style={{ display: 'grid', gap: 14 }}>
@@ -46,12 +47,14 @@ export function ZoneDetailPanel({
         <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginBottom: 6 }}>
           HRP hazard: {zoneStatus.hazard}
         </p>
+        {contextNote && (
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--accent)' }}>{contextNote}</p>
+        )}
       </div>
 
       <div style={{ display: 'grid', gap: 8 }}>
         {meta.indicators.map((indicator) => {
           const level = zoneStatus.indicators[indicator];
-          const value = latest?.[indicator];
           const Icon = level ? LEVEL_ICON[level] : null;
           return (
             <div
@@ -66,11 +69,11 @@ export function ZoneDetailPanel({
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {Icon && <Icon size={14} />}
+                {Icon && level && <Icon size={14} color={`var(--${level})`} />}
                 <span style={{ fontSize: 'var(--text-sm)' }}>{INDICATOR_LABELS[indicator] ?? indicator}</span>
               </div>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-                {value ? `${value.value}${value.unit ? ` ${value.unit}` : ''}` : level == null ? 'no data' : '—'}
+                {zoneStatus.display?.[indicator] ?? 'no data'}
               </span>
             </div>
           );
@@ -95,18 +98,22 @@ export function ZoneDetailPanel({
       )}
 
       <div>
-        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginBottom: 4 }}>Why this matters</p>
+        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginBottom: 4 }}>Why this exam matters</p>
         <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>{meta.why}</p>
       </div>
 
-      {zoneStatus.level !== 'green' && (
+      {(
         <div
           style={{
             padding: 12,
             borderRadius: 'var(--radius-sm)',
-            background: zoneStatus.level === 'red' ? 'var(--red-dim)' : 'var(--orange-dim)',
+            background:
+              zoneStatus.level === 'red' ? 'var(--red-dim)' : zoneStatus.level === 'orange' ? 'var(--orange-dim)' : 'var(--panel-raised)',
           }}
         >
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginBottom: 4 }}>
+            {zoneStatus.level === 'green' ? 'Preventive action' : 'Advised action'}
+          </p>
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text)' }}>{meta.action}</p>
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginTop: 6 }}>
             Indicative only — this is not a diagnosis.

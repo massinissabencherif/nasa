@@ -55,7 +55,7 @@ export function TopBar({
         <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600 }}>{contextLabel}</span>
         {earthDelayLabel && (
           <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-            Earth reply in {earthDelayLabel}
+            Earth reply in {earthDelayLabel} (round trip)
           </span>
         )}
       </div>

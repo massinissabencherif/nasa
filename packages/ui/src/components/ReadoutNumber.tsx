@@ -10,12 +10,15 @@ export function ReadoutNumber({
   size = 'var(--text-display)',
   color = 'var(--text)',
   durationMs = 700,
+  floor = false,
 }: {
   value: number;
   decimals?: number;
   size?: string;
   color?: string;
   durationMs?: number;
+  /** show whole units already completed (412.7 days of food = 412 full days) */
+  floor?: boolean;
 }) {
   const [display, setDisplay] = useState(value);
   const prevValue = useRef(value);
@@ -58,7 +61,7 @@ export function ReadoutNumber({
         letterSpacing: '-0.02em',
       }}
     >
-      {display.toFixed(decimals)}
+      {floor ? Math.floor(display + 1e-9).toString() : display.toFixed(decimals)}
     </span>
   );
 }

@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
-import type { CrewMember, CrewStatus, LatestMeasurements, MissionContext, PantryState, Thresholds } from '@hestia/api-client';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import type { CrewMember, CrewStatus, MissionContext, PantryState, Thresholds } from '@hestia/api-client';
 import { api } from './api';
+import { useRefreshOn } from './useSSE';
 
-export function useConnection(): boolean {
-  const [connected, setConnected] = useState(false);
+export function useConnection(): boolean | null {
+  // null = first check still pending, so the UI does not flash "offline" at startup
+  const [connected, setConnected] = useState<boolean | null>(null);
   useEffect(() => {
     let cancelled = false;
     const check = () => {
@@ -13,7 +15,7 @@ export function useConnection(): boolean {
         .catch(() => !cancelled && setConnected(false));
     };
     check();
-    const id = setInterval(check, 5000);
+    const id = setInterval(check, 4000);
     return () => {
       cancelled = true;
       clearInterval(id);
@@ -22,75 +24,85 @@ export function useConnection(): boolean {
   return connected;
 }
 
-export function useMissionContext(): MissionContext | null {
+export type Station = {
+  connected: boolean | null;
+  context: MissionContext | null;
+  refreshContext: () => void;
+};
+
+export const StationContext = createContext<Station>({
+  connected: null,
+  context: null,
+  refreshContext: () => {},
+});
+
+export function useStation(): Station {
+  return useContext(StationContext);
+}
+
+/** Owns the app-wide state: server reachability and the active mission context. */
+export function useStationState(): Station {
+  const connected = useConnection();
   const [context, setContext] = useState<MissionContext | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    api
-      .getContext()
-      .then((c) => !cancelled && setContext(c))
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
+  const refreshContext = useCallback(() => {
+    api.getContext().then(setContext).catch(() => {});
   }, []);
-  return context;
+  useEffect(() => {
+    if (connected) refreshContext();
+  }, [connected, refreshContext]);
+  useRefreshOn(['context_changed', 'reset'], refreshContext);
+  return { connected, context, refreshContext };
 }
 
 export function useCrew(): CrewMember[] {
+  const { connected } = useStation();
   const [crew, setCrew] = useState<CrewMember[]>([]);
-  useEffect(() => {
+  const refresh = useCallback(() => {
     api.listCrew().then(setCrew).catch(() => {});
   }, []);
+  useEffect(() => {
+    if (connected) refresh();
+  }, [connected, refresh]);
+  useRefreshOn(['reset'], refresh);
   return crew;
 }
 
 export function useCrewStatuses(crew: CrewMember[]): Record<number, CrewStatus> {
   const [statuses, setStatuses] = useState<Record<number, CrewStatus>>({});
-  useEffect(() => {
+  const refresh = useCallback(() => {
     if (crew.length === 0) return;
-    let cancelled = false;
-    Promise.all(crew.map((c) => api.getCrewStatus(c.id).then((s) => [c.id, s] as const))).then(
-      (pairs) => {
-        if (cancelled) return;
-        setStatuses(Object.fromEntries(pairs));
-      },
-    );
-    return () => {
-      cancelled = true;
-    };
+    Promise.all(crew.map((c) => api.getCrewStatus(c.id).then((s) => [c.id, s] as const)))
+      .then((pairs) => setStatuses(Object.fromEntries(pairs)))
+      .catch(() => {});
   }, [crew]);
+  useEffect(refresh, [refresh]);
+  useRefreshOn(['checkin', 'alert_created', 'reset', 'context_changed'], refresh);
   return statuses;
 }
 
-export function useLatestMeasurements(crewId: number | null): LatestMeasurements | null {
-  const [latest, setLatest] = useState<LatestMeasurements | null>(null);
-  useEffect(() => {
-    if (crewId == null) return;
-    let cancelled = false;
-    api.getLatestMeasurements(crewId).then((l) => !cancelled && setLatest(l)).catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [crewId]);
-  return latest;
-}
-
 export function useThresholds(): Thresholds | null {
+  const { connected } = useStation();
   const [thresholds, setThresholds] = useState<Thresholds | null>(null);
   useEffect(() => {
-    api.getThresholds().then(setThresholds).catch(() => {});
-  }, []);
+    if (connected) api.getThresholds().then(setThresholds).catch(() => {});
+  }, [connected]);
   return thresholds;
 }
 
 export function usePantry() {
+  const { connected } = useStation();
   const [pantry, setPantry] = useState<PantryState | null>(null);
   const refresh = useCallback(() => {
     api.getPantry().then(setPantry).catch(() => {});
   }, []);
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (connected) refresh();
+  }, [connected, refresh]);
   return { pantry, refresh };
+}
+
+export function formatDelay(seconds: number): string {
+  if (seconds < 1) return 'near-instant';
+  if (seconds < 60) return `${seconds} s`;
+  return `${Math.round(seconds / 60)} min`;
 }

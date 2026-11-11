@@ -29,7 +29,7 @@ from .catalogue_loader import load_ground_truth, load_removal_slot, load_slot_it
 from .schema import SlotReading
 
 LOW_CONFIDENCE_THRESHOLD = 0.6
-FULL_IMAGE_WIDTH = 1024
+FULL_IMAGE_WIDTH = 768
 DEFAULT_STRATEGY = os.environ.get("HESTIA_VISION_STRATEGY", "full")
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 

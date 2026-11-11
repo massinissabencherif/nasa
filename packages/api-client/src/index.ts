@@ -29,6 +29,7 @@ export type Level = 'green' | 'orange' | 'red';
 export type ZoneStatus = {
   level: Level;
   indicators: Record<string, Level | null>;
+  display: Record<string, string>;
   hazard: string;
 };
 
@@ -267,6 +268,8 @@ export type ScanOptions = {
   image_path?: string;
   camera_index?: number;
   variant?: 'full' | 'after_removal';
+  /** full = one call on the whole shelf (~20 s); row = three row crops (~50 s, more accurate) */
+  strategy?: 'full' | 'row';
 };
 
 /** The server is unreachable (station off, wrong address, Wi-Fi down). */
@@ -351,6 +354,7 @@ export function createApiClient(baseUrl: string) {
       params.set('mode', opts?.mode ?? 'mock');
       if (opts?.image_path) params.set('image_path', opts.image_path);
       if (opts?.variant) params.set('variant', opts.variant);
+      if (opts?.strategy) params.set('strategy', opts.strategy);
       if (opts?.camera_index !== undefined) params.set('camera_index', String(opts.camera_index));
       return request<ScanResponse>(`/api/pantry/scan?${params.toString()}`, { method: 'POST' });
     },

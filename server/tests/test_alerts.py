@@ -43,9 +43,9 @@ def test_red_alert_queues_an_earth_message_with_delay_and_compact_report():
         _m, alerts = record_checkin(session, sofia, {"temperature": 38.6, "heart_rate": 124})
         reds = {a.indicator: a for a in alerts if a.level == "red"}
         assert set(reds) == {"temperature", "heart_rate"}
-        message = session.exec(
-            select(EarthMessage).where(EarthMessage.alert_id == reds["temperature"].id)
-        ).first()
+        messages = session.exec(select(EarthMessage)).all()
+        assert len(messages) == 1  # one report per check-in, not one per indicator
+        message = messages[0]
 
     assert (message.deliver_ts - message.created_ts).total_seconds() == pytest.approx(1200, abs=1)
     assert (message.reply_ts - message.deliver_ts).total_seconds() == pytest.approx(1200, abs=1)
@@ -53,6 +53,7 @@ def test_red_alert_queues_an_earth_message_with_delay_and_compact_report():
     payload = json.loads(message.payload)
     assert payload["who"] == "Sofia Lindqvist" and payload["level"] == "red"
     assert len(payload["summary"]) <= 600 and payload["actions_taken"]
+    assert {f["indicator"] for f in payload["findings"]} == {"temperature", "heart_rate"}
 
 
 def test_unchanged_level_does_not_create_a_duplicate_alert():

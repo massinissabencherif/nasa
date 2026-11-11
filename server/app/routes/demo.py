@@ -61,7 +61,7 @@ def demo_scenario(name: str) -> dict:
         result = _checkin_as(PRIMED_LOW_EXERCISE, {"exercise_min": 10, "sleep_h": 7.5, "mood": 4}, [])
     elif name == "red-alert":
         result = _checkin_as(
-            SCRIPTED_RED, {"temperature": 38.6, "heart_rate": 124, "sleep_h": 7.2, "mood": 4}, ["Fatigue"]
+            SCRIPTED_RED, {"temperature": 38.6, "heart_rate": 124, "sleep_h": 7.2, "mood": 4}, []
         )
     else:
         result = scan_pantry(mode="mock", variant="after_removal")

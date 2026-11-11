@@ -42,15 +42,15 @@ export function CalibrationScreen() {
         onClick={() => navigate('/pantry')}
         style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 'var(--text-sm)', padding: 0, alignSelf: 'start' }}
       >
-        Back to Live pantry
+        ← Back to Live pantry
       </button>
       <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 16, alignItems: 'start' }}>
         <Panel title="Calibration" bodyStyle={{ padding: 0 }}>
-          <div style={{ position: 'relative', width: '100%', aspectRatio: '1448 / 1086', background: '#000' }}>
+          <div style={{ position: 'relative', width: '100%', background: "#000", lineHeight: 0 }}>
             <img
               src={api.snapshotImageUrl()}
               alt="Shelf camera feed"
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+              style={{ width: "100%", height: "auto", display: "block" }}
             />
             {Object.entries(boxes).map(([label, [x0, y0, x1, y1]]) => (
               <div

@@ -133,6 +133,7 @@ def scan_pantry(
     image_path: str | None = None,
     camera_index: int = 0,
     variant: str = "full",
+    strategy: str | None = None,
 ) -> dict:
     resolved = _resolve_image_path(image_path) if image_path else None
 
@@ -147,7 +148,8 @@ def scan_pantry(
         try:
             result = run_scan(
                 mode=mode, image_path=str(resolved) if resolved else None,
-                camera_index=camera_index, variant=variant, on_progress=on_progress,
+                camera_index=camera_index, variant=variant, strategy=strategy,
+                on_progress=on_progress,
             )
         except OllamaUnavailable as exc:
             publish_event({"type": "scan_failed", "detail": str(exc)})

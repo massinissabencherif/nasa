@@ -51,26 +51,36 @@ INDICATOR_TEXT: dict[str, tuple[str, str]] = {
 EARTH_SUMMARY_MAX_CHARS = 600
 
 
-def _earth_payload(crew: CrewMember, indicator: str, value: float | None, level: str, trend: str) -> str:
-    """Compact report for the ground: a human-readable summary (<= 600 chars)
-    plus the same facts as structured fields."""
-    label, unit = INDICATOR_TEXT.get(indicator, (indicator, ""))
-    procedure = PROCEDURES.get(indicator, "Crew wellness check-in procedure")
-    value_text = f"{round(value, 1)} {unit}".strip() if value is not None else "n/a"
+def _earth_payload(crew: CrewMember, findings: list[dict]) -> str:
+    """Compact report for the ground: one message per check-in, however many
+    indicators went red. A human-readable summary (<= 600 chars) plus the same
+    facts as structured fields."""
+    parts = []
+    procedures: list[str] = []
+    for f in findings:
+        label, unit = INDICATOR_TEXT.get(f["indicator"], (f["indicator"], ""))
+        f["unit"] = unit
+        value_text = f"{f['value']} {unit}".strip() if f["value"] is not None else "n/a"
+        parts.append(f"{label} {value_text} ({f['trend_7d']} over 7 d)")
+        procedure = PROCEDURES.get(f["indicator"], "Crew wellness check-in procedure")
+        if procedure not in procedures:
+            procedures.append(procedure)
     summary = (
-        f"{crew.name} ({crew.sex}, {crew.age}y): {label} {value_text}, level {level.upper()}, "
-        f"7-day trend {trend}. Crew applying '{procedure}' and monitoring. "
+        f"RED - {crew.name} ({crew.sex}, {crew.age}y): {'; '.join(parts)}. "
+        f"Crew applying: {', '.join(procedures)}. Monitoring, will report changes. "
         f"Indicative self-assessment, not a diagnosis. SIMULATED DATA."
     )[:EARTH_SUMMARY_MAX_CHARS]
     payload = {
         "summary": summary,
         "who": crew.name,
-        "indicator": indicator,
-        "value": round(value, 1) if value is not None else None,
-        "unit": unit,
-        "level": level,
-        "trend_7d": trend,
-        "actions_taken": [f"Procedure: {procedure}", "crew notified on station and mobile"],
+        "level": "red",
+        "findings": findings,
+        # first finding repeated at top level for simple consumers
+        "indicator": findings[0]["indicator"],
+        "value": findings[0]["value"],
+        "unit": findings[0]["unit"],
+        "trend_7d": findings[0]["trend_7d"],
+        "actions_taken": [f"Procedure: {p}" for p in procedures] + ["crew notified on station and mobile"],
     }
     return json.dumps(payload)
 
@@ -97,6 +107,8 @@ def evaluate_and_alert(session: Session, crew_member_id: int, use_llm: bool = Fa
 
     now = datetime.now(timezone.utc)
     created: list[Alert] = []
+    red_findings: list[dict] = []
+    red_alert_ids: list[int] = []
 
     for indicator in ALERT_INDICATORS:
         level = indicator_level(session, crew_member_id, indicator)
@@ -132,24 +144,31 @@ def evaluate_and_alert(session: Session, crew_member_id: int, use_llm: bool = Fa
         created.append(alert)
 
         if level == "red":
-            context = _active_context(session)
-            delay_s = context.delay_s if context else 1200
-            scale = context.time_scale if context else 1.0
-            effective_delay = max(1, round(delay_s / scale))
             value = _latest(session, crew_member_id, _raw_type(indicator))
-            trend = _trend_7d(session, crew_member_id, indicator)
-            deliver_ts = now + timedelta(seconds=effective_delay)
-            session.add(
-                EarthMessage(
-                    created_ts=now,
-                    deliver_ts=deliver_ts,
-                    reply_ts=deliver_ts + timedelta(seconds=effective_delay),
-                    payload=_earth_payload(crew, indicator, value, level, trend),
-                    reply_payload=_scripted_reply(level),
-                    status="queued",
-                    alert_id=alert.id,
-                )
+            red_findings.append({
+                "indicator": indicator,
+                "value": round(value, 1) if value is not None else None,
+                "trend_7d": _trend_7d(session, crew_member_id, indicator),
+            })
+            red_alert_ids.append(alert.id)
+
+    if red_findings:
+        context = _active_context(session)
+        delay_s = context.delay_s if context else 1200
+        scale = context.time_scale if context else 1.0
+        effective_delay = max(1, round(delay_s / scale))
+        deliver_ts = now + timedelta(seconds=effective_delay)
+        session.add(
+            EarthMessage(
+                created_ts=now,
+                deliver_ts=deliver_ts,
+                reply_ts=deliver_ts + timedelta(seconds=effective_delay),
+                payload=_earth_payload(crew, red_findings),
+                reply_payload=_scripted_reply("red"),
+                status="queued",
+                alert_id=red_alert_ids[0],
             )
-            session.flush()
+        )
+        session.flush()
 
     return created

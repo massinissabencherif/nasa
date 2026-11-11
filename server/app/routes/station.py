@@ -1,3 +1,5 @@
+import io
+
 import segno
 from fastapi import APIRouter
 from fastapi.responses import Response
@@ -32,5 +34,6 @@ def station_info() -> dict:
 def crew_qr() -> Response:
     """QR code of the crew-app URL, generated locally (no external service)."""
     qr = segno.make(_crew_url(), error="m")
-    svg = qr.svg_inline(scale=6, border=2, dark="#0e141b", light="#eaf0f5")
-    return Response(svg, media_type="image/svg+xml", headers={"Cache-Control": "no-store"})
+    buffer = io.BytesIO()
+    qr.save(buffer, kind="svg", scale=6, border=2, dark="#0e141b", light="#eaf0f5")
+    return Response(buffer.getvalue(), media_type="image/svg+xml", headers={"Cache-Control": "no-store"})
