@@ -30,7 +30,8 @@
       "carbs_g": 0,
       "fat_g": 3,
       "mass_g": 142,
-      "expiry_days": 1095
+      "expiry_days": 1095,
+      "stacked": true
     },
     {
       "key": "crackers_pack",

@@ -1,6 +1,9 @@
+from datetime import datetime, timezone
+
 from sqlmodel import Session, select
 
 from app.db import engine
+from app.engines.status import crew_status
 from app.models import CrewMember, FoodItem, InventoryLine, Measurement, MissionContext, ShelfSlot
 from app.seed import HISTORY_DAYS, reset_and_seed
 
@@ -47,7 +50,7 @@ def test_seed_history_depth():
         assert len(rows) == HISTORY_DAYS
 
 
-def test_scripted_anomaly_chen_low_exercise_streak():
+def test_primed_anomaly_chen_has_two_low_exercise_days():
     reset_and_seed()
     with Session(engine) as session:
         chen = session.exec(select(CrewMember).where(CrewMember.name == "Chen Wei")).first()
@@ -57,25 +60,19 @@ def test_scripted_anomaly_chen_low_exercise_streak():
             .order_by(Measurement.ts.desc())
             .limit(3)
         ).all()
-        assert all(m.value < 30 for m in last_3)
+        assert [m.value < 30 for m in last_3] == [True, True, False]
 
 
-def test_scripted_anomaly_sofia_fever():
+def test_seeded_history_ends_yesterday_and_starts_all_green():
     reset_and_seed()
+    now = datetime.now(timezone.utc)
     with Session(engine) as session:
-        sofia = session.exec(select(CrewMember).where(CrewMember.name == "Sofia Lindqvist")).first()
-        latest_temp = session.exec(
-            select(Measurement)
-            .where(Measurement.crew_member_id == sofia.id, Measurement.type == "temperature")
-            .order_by(Measurement.ts.desc())
-        ).first()
-        latest_hr = session.exec(
-            select(Measurement)
-            .where(Measurement.crew_member_id == sofia.id, Measurement.type == "heart_rate")
-            .order_by(Measurement.ts.desc())
-        ).first()
-        assert latest_temp.value > 38.0
-        assert latest_hr.value > 110
+        latest = session.exec(select(Measurement).order_by(Measurement.ts.desc())).first()
+        assert latest.ts < now
+        assert latest.ts.date() < now.date() or now.hour < 12
+        for crew in session.exec(select(CrewMember)).all():
+            zones = crew_status(session, crew.id)
+            assert {z["level"] for z in zones.values()} == {"green"}, crew.name
 
 
 def test_demo_scale_autonomy_is_roughly_412_days():

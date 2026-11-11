@@ -21,6 +21,9 @@ from app.models import (
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 SEED = 20261114  # event date, for reproducibility
 HISTORY_DAYS = 90
+QUIET_DAYS = 3  # most recent seeded days are kept green (see seed_crew_and_history)
+PRIMED_LOW_EXERCISE = "Chen Wei"
+SCRIPTED_RED = "Sofia Lindqvist"
 
 CREW_SPEC = [
     {"name": "Alex Mercer", "sex": "M", "age": 38, "height_cm": 178, "weight_kg": 75.0,
@@ -55,6 +58,7 @@ def seed_mission_contexts(session: Session) -> dict[str, MissionContext]:
             delay_s=cfg["delay_s_default"],
             radiation_msv_day=cfg["radiation_msv_day"],
             resupply_days=cfg.get("resupply_days"),
+            next_resupply_in_days=cfg.get("next_resupply_in_days"),
             active=(key == "mars_base"),
         )
         session.add(context)
@@ -102,7 +106,7 @@ def seed_inventory_snapshot(session: Session, slots: list[ShelfSlot]) -> None:
     ground_truth = {s["label"]: s["ground_truth_count"] for s in catalogue["shelf_grid"]}
     snapshot = InventorySnapshot(
         ts=_now(),
-        image_path="server/vision/fixtures/shelf_full.png",
+        image_path="vision/fixtures/shelf_full.png",
         raw_json=json.dumps(ground_truth),
     )
     session.add(snapshot)
@@ -131,14 +135,17 @@ def seed_crew_and_history(session: Session, mars_base: MissionContext) -> list[C
         crew_rows.append(crew)
     session.flush()
 
-    today = _now().replace(hour=8, minute=0, second=0, microsecond=0)
+    # History covers the 90 days *before* today (latest row = yesterday 12:00 UTC).
+    # Today is deliberately empty: it is filled by a live check-in from the crew
+    # app or by a demo scenario, so the demo shows the system reacting.
+    anchor = _now().replace(hour=12, minute=0, second=0, microsecond=0)
 
-    for idx, crew in enumerate(crew_rows):
+    for crew in crew_rows:
         rng = random.Random(SEED + crew.id)
         weight = crew.weight_kg
         for day in range(HISTORY_DAYS):
-            ts = today - timedelta(days=HISTORY_DAYS - 1 - day)
-            is_today = day == HISTORY_DAYS - 1
+            days_ago = HISTORY_DAYS - day
+            ts = anchor - timedelta(days=days_ago)
 
             systolic = _gauss_clamped(rng, 112, 6, 95, 135)
             diastolic = _gauss_clamped(rng, 72, 5, 58, 88)
@@ -150,40 +157,42 @@ def seed_crew_and_history(session: Session, mars_base: MissionContext) -> list[C
             exercise_min = _gauss_clamped(rng, 45, 15, 0, 90)
             weight += rng.gauss(-0.008, 0.045)
 
-            # Scripted anomaly (a): Chen Wei — low-exercise streak culminating today.
-            if crew.name == "Chen Wei" and day >= HISTORY_DAYS - 3:
-                exercise_min = rng.uniform(5, 25)
+            if days_ago <= QUIET_DAYS:
+                # Keep the most recent days inside the green bands so the demo starts
+                # from a calm baseline and every colour change on stage is caused live.
+                systolic = min(max(systolic, 96), 118)
+                diastolic = min(max(diastolic, 62), 78)
+                heart_rate = min(max(heart_rate, 54), 88)
+                glucose = min(max(glucose, 72), 98)
+                temperature = min(max(temperature, 36.2), 37.1)
+                sleep_h = max(sleep_h, 7.1)
+                mood = max(mood, 4)
+                exercise_min = max(exercise_min, 35)
 
-            # Scripted anomaly (b): Sofia Lindqvist — fever + elevated HR today.
-            if crew.name == "Sofia Lindqvist" and is_today:
-                temperature = rng.uniform(38.3, 38.7)
-                heart_rate = rng.uniform(118, 130)
+            # Primed anomaly (a): Chen Wei skipped exercise the last two days. One more
+            # low day — today's check-in — turns his bone zone orange.
+            if crew.name == PRIMED_LOW_EXERCISE and days_ago <= 2:
+                exercise_min = rng.uniform(8, 22)
 
             radiation_dose = round(day * mars_base.radiation_msv_day, 3)
 
-            measurements = [
-                Measurement(ts=ts, crew_member_id=crew.id, type="systolic_bp",
-                            value=round(systolic, 1), unit="mmHg", source="simulated"),
-                Measurement(ts=ts, crew_member_id=crew.id, type="diastolic_bp",
-                            value=round(diastolic, 1), unit="mmHg", source="simulated"),
-                Measurement(ts=ts, crew_member_id=crew.id, type="heart_rate",
-                            value=round(heart_rate, 1), unit="bpm", source="simulated"),
-                Measurement(ts=ts, crew_member_id=crew.id, type="glucose",
-                            value=round(glucose, 1), unit="mg/dL", source="simulated"),
-                Measurement(ts=ts, crew_member_id=crew.id, type="temperature",
-                            value=round(temperature, 2), unit="°C", source="simulated"),
-                Measurement(ts=ts, crew_member_id=crew.id, type="sleep_h",
-                            value=round(sleep_h, 1), unit="h", source="simulated"),
-                Measurement(ts=ts, crew_member_id=crew.id, type="mood",
-                            value=mood, unit="1-5", source="simulated"),
-                Measurement(ts=ts, crew_member_id=crew.id, type="exercise_min",
-                            value=round(exercise_min, 1), unit="min", source="simulated"),
-                Measurement(ts=ts, crew_member_id=crew.id, type="weight",
-                            value=round(weight, 1), unit="kg", source="simulated"),
-                Measurement(ts=ts, crew_member_id=crew.id, type="radiation_dose_msv",
-                            value=radiation_dose, unit="mSv", source="simulated"),
+            rows = [
+                ("systolic_bp", round(systolic, 1), "mmHg"),
+                ("diastolic_bp", round(diastolic, 1), "mmHg"),
+                ("heart_rate", round(heart_rate, 1), "bpm"),
+                ("glucose", round(glucose, 1), "mg/dL"),
+                ("temperature", round(temperature, 2), "°C"),
+                ("sleep_h", round(sleep_h, 1), "h"),
+                ("mood", mood, "1-5"),
+                ("exercise_min", round(exercise_min, 1), "min"),
+                ("weight", round(weight, 1), "kg"),
+                ("radiation_dose_msv", radiation_dose, "mSv"),
             ]
-            if rng.random() < 0.05:
+            measurements = [
+                Measurement(ts=ts, crew_member_id=crew.id, type=t, value=v, unit=u, source="simulated")
+                for t, v, u in rows
+            ]
+            if days_ago > QUIET_DAYS and rng.random() < 0.05:
                 measurements.append(
                     Measurement(ts=ts, crew_member_id=crew.id, type="symptom",
                                 value=1, unit="count", source="simulated",
@@ -191,19 +200,20 @@ def seed_crew_and_history(session: Session, mars_base: MissionContext) -> list[C
                 )
             session.add_all(measurements)
 
-        session.add(Gamification(crew_member_id=crew.id, streak=rng.randint(2, 14),
-                                  badges_json="[]", score=rng.randint(10, 80)))
+        session.add(Gamification(
+            crew_member_id=crew.id, streak=rng.randint(2, 14), badges_json="[]",
+            score=rng.randint(10, 80),
+            last_checkin_date=(anchor - timedelta(days=1)).date().isoformat(),
+        ))
 
     session.flush()
     return crew_rows
 
 
 def seed_scripted_alerts(session: Session, crew_rows: list[CrewMember]) -> None:
-    """Run the real alert-evaluation engine over the seeded history instead of
-    hand-writing Alert/EarthMessage rows — the two scripted anomalies (Chen
-    Wei's exercise streak, Sofia Lindqvist's fever) and any incidental
-    orange/red noise from the random walk are all detected the same way a
-    live check-in would trigger them."""
+    """Run the real alert engine over the seeded history (no hand-written
+    Alert rows). With the quiet baseline this normally creates nothing; the
+    scripted anomalies are triggered live, see app/routes/demo.py."""
     for crew in crew_rows:
         evaluate_and_alert(session, crew.id)
 

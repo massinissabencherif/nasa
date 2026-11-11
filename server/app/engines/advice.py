@@ -60,6 +60,23 @@ _SYSTEM_PROMPT = (
 )
 
 
+# Output-side guardrail: the prompt asks for this, the code enforces it. Any hit
+# discards the LLM text and returns the deterministic template instead.
+_BANNED_FRAGMENTS = (
+    " mg", "mg ", "milligram", " dose", "dosage", "tablet", "pill", "ibuprofen", "paracetamol",
+    "acetaminophen", "aspirin", "antibiotic", "medication", "prescri", "diagnos",
+    "you have ", "you are suffering", "definitely", "certainly",
+)
+
+
+def passes_guardrails(text: str) -> bool:
+    lowered = text.lower()
+    if any(fragment in lowered for fragment in _BANNED_FRAGMENTS):
+        return False
+    steps = [line for line in text.splitlines() if line.strip()[:1].isdigit()]
+    return 1 <= len(steps) <= 4 and "Procedure:" in text and len(text) <= 700
+
+
 def generate_advice(indicator: str, use_llm: bool = False, timeout_s: float = 8.0) -> tuple[str, str]:
     """Returns (advice_text, source) where source is 'llm' or 'template'."""
     if not use_llm:
@@ -73,10 +90,8 @@ def generate_advice(indicator: str, use_llm: bool = False, timeout_s: float = 8.
     try:
         result = ollama_client.generate(prompt, timeout=timeout_s, json_mode=False)
         text = result.get("response", "").strip()
-        if not text or "Procedure:" not in text:
+        if not text or not passes_guardrails(text):
             return deterministic_advice(indicator), "template"
-        if DISCLAIMER not in text:
-            text = f"{text}\n{DISCLAIMER}"
-        return text, "llm"
+        return f"{text}\n{DISCLAIMER}", "llm"
     except Exception:
         return deterministic_advice(indicator), "template"

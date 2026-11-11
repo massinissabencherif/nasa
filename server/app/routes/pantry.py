@@ -1,43 +1,82 @@
 import json
+import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import cv2
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
 from app.db import engine
-from app.engines.nutrition import autonomy_report
-from app.models import ConsumptionEvent, FoodItem, InventoryLine, InventorySnapshot, ShelfSlot
+from app.engines.nutrition import autonomy_report, crew_daily_need
+from app.models import (
+    ConsumptionEvent,
+    CrewMember,
+    FoodItem,
+    InventoryLine,
+    InventorySnapshot,
+    ShelfSlot,
+)
 from app.routes.events import publish_event
 from vision import grid as vision_grid
-from vision.pipeline import run_scan
+from vision.ollama_client import OllamaUnavailable
+from vision.pipeline import LOW_CONFIDENCE_THRESHOLD, run_scan
 
 router = APIRouter(prefix="/api/pantry", tags=["pantry"])
 
 SERVER_DIR = Path(__file__).resolve().parent.parent.parent
-DEFAULT_FIXTURE = SERVER_DIR / "vision" / "fixtures" / "shelf_full.png"
+FIXTURES_DIR = SERVER_DIR / "vision" / "fixtures"
+DEFAULT_FIXTURE = FIXTURES_DIR / "shelf_full.png"
+CAPTURES_DIR = SERVER_DIR / "captures"  # git-ignored; webcam frames of live scans
+MEAL_ATTRIBUTION_WINDOW = timedelta(minutes=10)
+
+_scan_lock = threading.Lock()  # one scan at a time: the VLM is the bottleneck
+
+
+def _latest_snapshot(session: Session) -> InventorySnapshot | None:
+    return session.exec(
+        select(InventorySnapshot).order_by(InventorySnapshot.ts.desc(), InventorySnapshot.id.desc())
+    ).first()
+
+
+def _needs_confirmation(line: InventoryLine, slot: ShelfSlot) -> bool:
+    if line.source == "manual":
+        return False
+    unexpected = slot.food_item_id is None and line.count > 0
+    return line.confidence < LOW_CONFIDENCE_THRESHOLD or line.count > slot.capacity or unexpected
 
 
 @router.get("")
 def get_pantry() -> dict:
     with Session(engine) as session:
-        snapshot = session.exec(
-            select(InventorySnapshot).order_by(InventorySnapshot.ts.desc())
-        ).first()
+        snapshot = _latest_snapshot(session)
         slots = session.exec(select(ShelfSlot).order_by(ShelfSlot.label)).all()
         lines_by_slot = {}
+        pending_meals = 0
         if snapshot is not None:
             lines = session.exec(
                 select(InventoryLine).where(InventoryLine.snapshot_id == snapshot.id)
             ).all()
             lines_by_slot = {line.slot_id: line for line in lines}
+            pending_meals = len(
+                session.exec(
+                    select(ConsumptionEvent).where(ConsumptionEvent.ts > snapshot.ts)
+                ).all()
+            )
 
+        need = crew_daily_need(session)
+        units_per_lot = 1.0
         out = []
         for slot in slots:
             food = session.get(FoodItem, slot.food_item_id) if slot.food_item_id else None
             line = lines_by_slot.get(slot.id)
+            slot_days = 0.0
+            if food is not None:
+                units_per_lot = food.units_per_lot
+                if line is not None and need > 0:
+                    slot_days = line.count * food.units_per_lot * food.kcal / need
             out.append({
                 "slot": slot.label,
                 "item": food.name if food else None,
@@ -46,135 +85,183 @@ def get_pantry() -> dict:
                 "count": line.count if line else None,
                 "confidence": line.confidence if line else None,
                 "source": line.source if line else None,
-                "needs_confirmation": bool(
-                    line and (line.confidence < 0.6 or line.count > slot.capacity)
-                ),
+                "needs_confirmation": bool(line and _needs_confirmation(line, slot)),
+                "autonomy_days": round(slot_days, 1),
             })
         report = autonomy_report(session)
+        stock = report.stock
+
+        def macro_days(stock_g: float, kcal_per_g: int, share: float) -> float:
+            # days until this macro runs out at a standard energy split of the crew's need
+            return round(stock_g * kcal_per_g / (need * share), 1) if need > 0 else 0.0
+
         return {
             "snapshot_ts": snapshot.ts if snapshot else None,
             "slots": out,
             "autonomy_days": round(report.autonomy_days, 1),
             "daily_need_kcal": round(report.daily_need_kcal, 1),
-            "stock_kcal": round(report.stock.kcal, 1),
+            "stock_kcal": round(stock.kcal, 1),
             "expiry_warning": report.expiry_warning,
-            "assumption": "kcal values are demo-scaled via food_item.units_per_lot "
-                          "(see docs/prompt/PROMPT_ADDENDUM.md #1) — not real ration sizes.",
+            "min_expiry_days": stock.min_expiry_days,
+            "units_per_lot": units_per_lot,
+            "macro_autonomy_days": {
+                "protein": macro_days(stock.protein_g, 4, 0.15),
+                "carbs": macro_days(stock.carbs_g, 4, 0.55),
+                "fat": macro_days(stock.fat_g, 9, 0.30),
+            },
+            "pending_meals": pending_meals,
+            "assumption": f"Demo scale: 1 box on the shelf = 1 storage lot of {units_per_lot:g} rations. "
+                          "Per-unit kcal are plausible simulated values, not lab-measured.",
         }
 
 
+def _resolve_image_path(image_path: str) -> Path:
+    """Only images inside the server folder may be scanned through the API
+    (fixtures and saved captures) — the endpoint is open on the LAN."""
+    path = Path(image_path)
+    if not path.is_absolute():
+        path = SERVER_DIR / path
+    path = path.resolve()
+    if SERVER_DIR.resolve() not in path.parents:
+        raise HTTPException(400, "image_path must point inside the server folder (e.g. vision/fixtures/…)")
+    return path
+
+
 @router.post("/scan")
-def scan_pantry(mode: str = "mock", image_path: str | None = None, camera_index: int = 0) -> dict:
-    def on_row_done(row_letter: str, entries: dict[str, dict]) -> None:
-        publish_event({"type": "scan_row_done", "row": row_letter, "labels": list(entries.keys())})
+def scan_pantry(
+    mode: str = "mock",
+    image_path: str | None = None,
+    camera_index: int = 0,
+    variant: str = "full",
+) -> dict:
+    resolved = _resolve_image_path(image_path) if image_path else None
 
+    if not _scan_lock.acquire(blocking=False):
+        raise HTTPException(409, "a scan is already running — wait for it to finish")
     try:
-        result = run_scan(
-            mode=mode, image_path=image_path, camera_index=camera_index, on_row_done=on_row_done
-        )
-    except (FileNotFoundError, RuntimeError, ValueError) as exc:
-        raise HTTPException(400, str(exc)) from exc
+        publish_event({"type": "scan_started", "mode": mode})
 
-    stored_image_path = image_path or (str(DEFAULT_FIXTURE) if mode == "mock" else None)
+        def on_progress(done_labels: list[str]) -> None:
+            publish_event({"type": "scan_progress", "labels": done_labels})
 
-    with Session(engine) as session:
-        slots = session.exec(select(ShelfSlot)).all()
-        prev_snapshot = session.exec(
-            select(InventorySnapshot).order_by(InventorySnapshot.ts.desc())
-        ).first()
-        prev_lines = {}
-        if prev_snapshot is not None:
-            prev_lines = {
-                line.slot_id: line
-                for line in session.exec(
-                    select(InventoryLine).where(InventoryLine.snapshot_id == prev_snapshot.id)
-                ).all()
-            }
+        try:
+            result = run_scan(
+                mode=mode, image_path=str(resolved) if resolved else None,
+                camera_index=camera_index, variant=variant, on_progress=on_progress,
+            )
+        except OllamaUnavailable as exc:
+            publish_event({"type": "scan_failed", "detail": str(exc)})
+            raise HTTPException(503, str(exc)) from exc
+        except (FileNotFoundError, RuntimeError, ValueError) as exc:
+            publish_event({"type": "scan_failed", "detail": str(exc)})
+            raise HTTPException(400, str(exc)) from exc
 
         snapshot_ts = datetime.now(timezone.utc)
-        snapshot = InventorySnapshot(
-            ts=snapshot_ts,
-            image_path=stored_image_path,
-            raw_json=json.dumps({k: v.model_dump() for k, v in result.readings.items()}),
-        )
-        session.add(snapshot)
-        session.flush()
+        if result.frame is not None:  # live camera: keep the frame so the overlay matches reality
+            CAPTURES_DIR.mkdir(exist_ok=True)
+            capture_path = CAPTURES_DIR / f"scan-{snapshot_ts:%Y%m%d-%H%M%S}.jpg"
+            cv2.imwrite(str(capture_path), result.frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+            stored_image_path = str(capture_path.relative_to(SERVER_DIR))
+        else:
+            stored_image_path = str(Path(result.image_path).relative_to(SERVER_DIR))
 
-        out = []
-        for slot in slots:
-            reading = result.readings.get(slot.label)
-            if reading is None:
-                continue
-            prev_count = prev_lines[slot.id].count if slot.id in prev_lines else None
-            needs_confirmation = (
-                slot.label in result.needs_confirmation or reading.count > slot.capacity
+        with Session(engine) as session:
+            slots = session.exec(select(ShelfSlot)).all()
+            prev_snapshot = _latest_snapshot(session)
+            prev_lines = {}
+            if prev_snapshot is not None:
+                prev_lines = {
+                    line.slot_id: line
+                    for line in session.exec(
+                        select(InventoryLine).where(InventoryLine.snapshot_id == prev_snapshot.id)
+                    ).all()
+                }
+
+            snapshot = InventorySnapshot(
+                ts=snapshot_ts,
+                image_path=stored_image_path,
+                raw_json=json.dumps(result.raw_json),
             )
+            session.add(snapshot)
+            session.flush()
+
+            out = []
             source = "simulated" if mode == "mock" else "camera"
-            session.add(
-                InventoryLine(
-                    snapshot_id=snapshot.id,
-                    slot_id=slot.id,
-                    count=reading.count,
-                    confidence=reading.confidence,
-                    source=source,
+            for slot in slots:
+                reading = result.readings.get(slot.label)
+                if reading is None:
+                    continue
+                line = InventoryLine(
+                    snapshot_id=snapshot.id, slot_id=slot.id, count=reading.count,
+                    confidence=reading.confidence, source=source,
                 )
-            )
-            if slot.food_item_id is not None and prev_count is not None:
-                delta = reading.count - prev_count
-                if delta < 0:
-                    # A crew member may have already logged this as a meal (M2) within the
-                    # last 10 min — don't double-count it as an anonymous scan event.
-                    recent_meal_qty = sum(
-                        e.qty
-                        for e in session.exec(
-                            select(ConsumptionEvent).where(
-                                ConsumptionEvent.food_item_id == slot.food_item_id,
-                                ConsumptionEvent.crew_member_id.is_not(None),
-                                ConsumptionEvent.ts >= snapshot_ts - timedelta(minutes=10),
-                                ConsumptionEvent.ts <= snapshot_ts,
-                            )
-                        )
-                    )
-                    remainder = delta - recent_meal_qty
-                    if remainder < 0:
-                        session.add(
-                            ConsumptionEvent(ts=snapshot_ts, food_item_id=slot.food_item_id, qty=remainder)
-                        )
-                elif delta != 0:
-                    session.add(
-                        ConsumptionEvent(ts=snapshot_ts, food_item_id=slot.food_item_id, qty=delta)
-                    )
-            out.append({
-                "slot": slot.label,
-                "count": reading.count,
-                "confidence": reading.confidence,
-                "needs_confirmation": needs_confirmation,
-            })
-        session.commit()
+                session.add(line)
+                prev_count = prev_lines[slot.id].count if slot.id in prev_lines else None
+                if slot.food_item_id is not None and prev_count is not None:
+                    _record_delta(session, slot.food_item_id, reading.count - prev_count, snapshot_ts)
+                out.append({
+                    "slot": slot.label,
+                    "count": reading.count,
+                    "confidence": reading.confidence,
+                    "needs_confirmation": _needs_confirmation(line, slot),
+                    "note": reading.note,
+                })
+            session.commit()
+            autonomy = round(autonomy_report(session).autonomy_days, 1)
 
-    publish_event({"type": "scan_complete", "snapshot_ts": snapshot_ts.isoformat(), "slots": out})
-    return {
-        "snapshot_ts": snapshot_ts,
-        "strategy": result.strategy,
-        "elapsed_s": round(result.elapsed_s, 1),
-        "slots": out,
-    }
+        publish_event({
+            "type": "scan_complete", "snapshot_ts": snapshot_ts.isoformat(),
+            "autonomy_days": autonomy, "slots": out,
+        })
+        return {
+            "snapshot_ts": snapshot_ts,
+            "mode": mode,
+            "strategy": result.strategy,
+            "elapsed_s": round(result.elapsed_s, 1),
+            "autonomy_days": autonomy,
+            "slots": out,
+        }
+    finally:
+        _scan_lock.release()
+
+
+def _record_delta(session: Session, food_item_id: int, delta: int, snapshot_ts: datetime) -> None:
+    """Turn a count change between two scans into a consumption (negative) or
+    restock (positive) event. Units a crew member already logged as a meal in
+    the last 10 minutes are attributed to them, not counted a second time."""
+    if delta == 0:
+        return
+    if delta > 0:
+        session.add(ConsumptionEvent(ts=snapshot_ts, food_item_id=food_item_id, qty=delta))
+        return
+    recent_meal_qty = sum(
+        e.qty
+        for e in session.exec(
+            select(ConsumptionEvent).where(
+                ConsumptionEvent.food_item_id == food_item_id,
+                ConsumptionEvent.crew_member_id.is_not(None),
+                ConsumptionEvent.ts >= snapshot_ts - MEAL_ATTRIBUTION_WINDOW,
+                ConsumptionEvent.ts < snapshot_ts,
+            )
+        )
+    )
+    remainder = delta - recent_meal_qty
+    if remainder < 0:
+        session.add(ConsumptionEvent(ts=snapshot_ts, food_item_id=food_item_id, qty=remainder))
 
 
 class ConfirmBody(BaseModel):
     slot: str
-    count: int
+    count: int = Field(ge=0, le=99)
 
 
 @router.post("/confirm")
-def confirm_count(body: ConfirmBody) -> InventoryLine:
+def confirm_count(body: ConfirmBody) -> dict:
     with Session(engine) as session:
         slot = session.exec(select(ShelfSlot).where(ShelfSlot.label == body.slot)).first()
         if slot is None:
             raise HTTPException(404, f"no slot '{body.slot}'")
-        snapshot = session.exec(
-            select(InventorySnapshot).order_by(InventorySnapshot.ts.desc())
-        ).first()
+        snapshot = _latest_snapshot(session)
         if snapshot is None:
             raise HTTPException(404, "no scan to confirm — run /api/pantry/scan first")
         line = session.exec(
@@ -184,13 +271,36 @@ def confirm_count(body: ConfirmBody) -> InventoryLine:
         ).first()
         if line is None:
             raise HTTPException(404, f"no inventory line for slot '{body.slot}' in the latest scan")
+
+        correction = body.count - line.count
         line.count = body.count
         line.confidence = 1.0
         line.source = "manual"
         session.add(line)
+
+        # Keep the consumption feed consistent with the corrected count: fold the
+        # correction into the anonymous event this scan produced for that item.
+        if correction != 0 and slot.food_item_id is not None:
+            event = session.exec(
+                select(ConsumptionEvent).where(
+                    ConsumptionEvent.food_item_id == slot.food_item_id,
+                    ConsumptionEvent.crew_member_id.is_(None),
+                    ConsumptionEvent.ts == snapshot.ts,
+                )
+            ).first()
+            if event is None:
+                session.add(
+                    ConsumptionEvent(ts=snapshot.ts, food_item_id=slot.food_item_id, qty=correction)
+                )
+            elif event.qty + correction == 0:
+                session.delete(event)
+            else:
+                event.qty += correction
+                session.add(event)
         session.commit()
-        session.refresh(line)
-        return line
+        autonomy = round(autonomy_report(session).autonomy_days, 1)
+    publish_event({"type": "slot_confirmed", "slot": body.slot, "count": body.count, "autonomy_days": autonomy})
+    return {"slot": body.slot, "count": body.count, "source": "manual", "autonomy_days": autonomy}
 
 
 @router.get("/grid")
@@ -201,7 +311,7 @@ def get_grid() -> list[ShelfSlot]:
 
 class GridUpdateBody(BaseModel):
     label: str
-    capacity: int | None = None
+    capacity: int | None = Field(default=None, ge=1, le=99)
     food_item_id: int | None = None
 
 
@@ -222,25 +332,35 @@ def update_grid(body: GridUpdateBody) -> ShelfSlot:
 
 
 @router.get("/consumption")
-def get_consumption() -> list[ConsumptionEvent]:
+def get_consumption(limit: int = 30) -> list[dict]:
     with Session(engine) as session:
-        return session.exec(
-            select(ConsumptionEvent).order_by(ConsumptionEvent.ts.desc())
+        events = session.exec(
+            select(ConsumptionEvent).order_by(ConsumptionEvent.ts.desc(), ConsumptionEvent.id.desc()).limit(limit)
         ).all()
+        foods = {f.id: f.name for f in session.exec(select(FoodItem)).all()}
+        crew = {c.id: c.name for c in session.exec(select(CrewMember)).all()}
+        return [
+            {
+                "id": e.id, "ts": e.ts, "food_item_id": e.food_item_id, "qty": e.qty,
+                "crew_member_id": e.crew_member_id,
+                "food_name": foods.get(e.food_item_id),
+                "crew_name": crew.get(e.crew_member_id) if e.crew_member_id else None,
+            }
+            for e in events
+        ]
 
 
 @router.get("/snapshot-image")
 def get_snapshot_image() -> FileResponse:
     with Session(engine) as session:
-        snapshot = session.exec(
-            select(InventorySnapshot).order_by(InventorySnapshot.ts.desc())
-        ).first()
-    path = Path(snapshot.image_path) if snapshot and snapshot.image_path else DEFAULT_FIXTURE
-    if not path.is_absolute():
-        path = SERVER_DIR / path
-    if not path.is_file():
-        path = DEFAULT_FIXTURE
-    return FileResponse(path, media_type="image/png")
+        snapshot = _latest_snapshot(session)
+    path = DEFAULT_FIXTURE
+    if snapshot and snapshot.image_path:
+        candidate = (SERVER_DIR / snapshot.image_path).resolve()
+        if candidate.is_file() and SERVER_DIR.resolve() in candidate.parents:
+            path = candidate
+    media_type = "image/jpeg" if path.suffix.lower() in (".jpg", ".jpeg") else "image/png"
+    return FileResponse(path, media_type=media_type, headers={"Cache-Control": "no-store"})
 
 
 @router.get("/grid-boxes")
@@ -255,8 +375,11 @@ class GridBoxUpdateBody(BaseModel):
 
 @router.put("/grid-boxes")
 def update_grid_boxes(body: GridBoxUpdateBody) -> dict[str, list[float]]:
-    if len(body.box) != 4:
-        raise HTTPException(400, "box must be [x0, y0, x1, y1]")
+    if len(body.box) != 4 or not all(0 <= v <= 1 for v in body.box):
+        raise HTTPException(400, "box must be [x0, y0, x1, y1] with normalised 0-1 values")
+    x0, y0, x1, y1 = body.box
+    if x1 - x0 < 0.02 or y1 - y0 < 0.02:
+        raise HTTPException(400, "box is too small or inverted (x1 must be > x0, y1 > y0)")
     boxes = vision_grid.load_boxes()
     if body.label not in boxes:
         raise HTTPException(404, f"no slot '{body.label}'")

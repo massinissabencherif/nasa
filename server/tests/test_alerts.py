@@ -1,12 +1,13 @@
-from datetime import datetime, timezone
+import json
 
 import pytest
 from sqlmodel import Session, select
 
 from app.db import engine
-from app.engines.advice import DISCLAIMER, deterministic_advice
-from app.engines.alerts import evaluate_and_alert
-from app.models import Alert, CrewMember, EarthMessage, Measurement
+from app.engines.advice import DISCLAIMER, deterministic_advice, passes_guardrails
+from app.engines.checkin import record_checkin
+from app.engines.status import crew_status
+from app.models import Alert, CrewMember, EarthMessage
 from app.seed import reset_and_seed
 
 
@@ -16,65 +17,72 @@ def seeded_db():
     yield
 
 
-def test_scripted_anomalies_produce_the_expected_alerts():
+def _crew(session, name):
+    return session.exec(select(CrewMember).where(CrewMember.name == name)).first()
+
+
+def test_seeded_baseline_is_calm():
     with Session(engine) as session:
-        chen = session.exec(select(CrewMember).where(CrewMember.name == "Chen Wei")).first()
-        sofia = session.exec(select(CrewMember).where(CrewMember.name == "Sofia Lindqvist")).first()
-
-        chen_alerts = session.exec(select(Alert).where(Alert.crew_member_id == chen.id)).all()
-        sofia_alerts = session.exec(select(Alert).where(Alert.crew_member_id == sofia.id)).all()
-
-    assert any(a.indicator == "exercise_streak" and a.level == "orange" for a in chen_alerts)
-    assert any(a.level == "red" for a in sofia_alerts)
-    assert all(not a.sent_to_earth for a in chen_alerts if a.level == "orange")
+        assert session.exec(select(Alert)).all() == []
+        assert session.exec(select(EarthMessage)).all() == []
 
 
-def test_red_alert_queues_an_earth_message_with_delay():
+def test_third_low_exercise_day_turns_bones_orange_without_an_earth_message():
     with Session(engine) as session:
-        sofia = session.exec(select(CrewMember).where(CrewMember.name == "Sofia Lindqvist")).first()
-        red_alert = session.exec(
-            select(Alert).where(Alert.crew_member_id == sofia.id, Alert.level == "red")
-        ).first()
+        chen = _crew(session, "Chen Wei")
+        _m, alerts = record_checkin(session, chen, {"exercise_min": 10})
+        assert [(a.indicator, a.level) for a in alerts] == [("exercise_streak", "orange")]
+        assert not alerts[0].sent_to_earth
+        assert crew_status(session, chen.id)["bones"]["level"] == "orange"
+        assert session.exec(select(EarthMessage)).all() == []
+
+
+def test_red_alert_queues_an_earth_message_with_delay_and_compact_report():
+    with Session(engine) as session:
+        sofia = _crew(session, "Sofia Lindqvist")
+        _m, alerts = record_checkin(session, sofia, {"temperature": 38.6, "heart_rate": 124})
+        reds = {a.indicator: a for a in alerts if a.level == "red"}
+        assert set(reds) == {"temperature", "heart_rate"}
         message = session.exec(
-            select(EarthMessage).where(EarthMessage.alert_id == red_alert.id)
+            select(EarthMessage).where(EarthMessage.alert_id == reds["temperature"].id)
         ).first()
 
-    assert message is not None
     assert (message.deliver_ts - message.created_ts).total_seconds() == pytest.approx(1200, abs=1)
+    assert (message.reply_ts - message.deliver_ts).total_seconds() == pytest.approx(1200, abs=1)
     assert "SIMULATED" in message.reply_payload
+    payload = json.loads(message.payload)
+    assert payload["who"] == "Sofia Lindqvist" and payload["level"] == "red"
+    assert len(payload["summary"]) <= 600 and payload["actions_taken"]
 
 
 def test_unchanged_level_does_not_create_a_duplicate_alert():
     with Session(engine) as session:
-        chen = session.exec(select(CrewMember).where(CrewMember.name == "Chen Wei")).first()
-        before = len(session.exec(select(Alert).where(Alert.crew_member_id == chen.id)).all())
-
-        created = evaluate_and_alert(session, chen.id)
-        session.commit()
-
-        after = len(session.exec(select(Alert).where(Alert.crew_member_id == chen.id)).all())
-
-    assert created == []
-    assert before == after
+        chen = _crew(session, "Chen Wei")
+        record_checkin(session, chen, {"exercise_min": 10})
+        _m, again = record_checkin(session, chen, {"exercise_min": 12})
+        assert again == []
 
 
-def test_level_change_creates_a_new_alert():
+def test_recovery_resolves_the_alert_and_a_relapse_alerts_again():
     with Session(engine) as session:
-        priya = session.exec(select(CrewMember).where(CrewMember.name == "Priya Nair")).first()
-        # Priya is seeded healthy; push her heart rate into the red band.
-        session.add(
-            Measurement(
-                ts=datetime.now(timezone.utc), crew_member_id=priya.id, type="heart_rate",
-                value=150, unit="bpm", source="manual",
-            )
-        )
-        session.commit()
+        priya = _crew(session, "Priya Nair")
+        _m, first = record_checkin(session, priya, {"heart_rate": 150})
+        assert [(a.indicator, a.level) for a in first] == [("heart_rate", "red")]
+        _m, recovered = record_checkin(session, priya, {"heart_rate": 70})
+        assert recovered == []
+        session.refresh(first[0])
+        assert first[0].resolved is True
+        _m, relapse = record_checkin(session, priya, {"heart_rate": 150})
+        assert [(a.indicator, a.level) for a in relapse] == [("heart_rate", "red")]
 
-        created = evaluate_and_alert(session, priya.id)
-        session.commit()
-        created_pairs = [(a.indicator, a.level) for a in created]
 
-    assert ("heart_rate", "red") in created_pairs
+def test_llm_output_guardrails():
+    ok = "1. Rest and hydrate.\n2. Recheck in a few hours.\n3. See Procedure: Fever procedure."
+    assert passes_guardrails(ok)
+    assert not passes_guardrails(ok + "\n4. Take 500 mg of paracetamol.")
+    assert not passes_guardrails("You have an infection.\n1. See Procedure: Fever procedure.")
+    assert not passes_guardrails("1. a\n2. b\n3. c\n4. d\n5. See Procedure: Fever procedure.")
+    assert not passes_guardrails("1. Rest.")  # no procedure reference
 
 
 def test_deterministic_advice_always_ends_with_disclaimer_and_a_procedure():

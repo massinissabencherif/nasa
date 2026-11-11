@@ -53,3 +53,16 @@ def encode_png_base64(img: np.ndarray) -> str:
     if not ok:
         raise RuntimeError("failed to encode crop as PNG")
     return base64.b64encode(buf).decode("ascii")
+
+
+def encode_jpeg_base64(img: np.ndarray, quality: int = 90) -> str:
+    ok, buf = cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, quality])
+    if not ok:
+        raise RuntimeError("failed to encode image as JPEG")
+    return base64.b64encode(buf).decode("ascii")
+
+
+def load_capacities() -> dict[str, int]:
+    from .catalogue_loader import load_capacities as _load
+
+    return _load()

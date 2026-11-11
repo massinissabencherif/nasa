@@ -7,6 +7,7 @@ export type MissionContext = {
   delay_s: number;
   radiation_msv_day: number;
   resupply_days: number | null;
+  next_resupply_in_days: number | null;
   active: boolean;
   time_scale: number;
   use_llm_advice: boolean;
@@ -55,6 +56,7 @@ export type PantrySlot = {
   confidence: number | null;
   source: string | null;
   needs_confirmation: boolean;
+  autonomy_days: number;
 };
 
 export type PantryState = {
@@ -64,6 +66,10 @@ export type PantryState = {
   daily_need_kcal: number;
   stock_kcal: number;
   expiry_warning: boolean;
+  min_expiry_days: number | null;
+  units_per_lot: number;
+  macro_autonomy_days: { protein: number; carbs: number; fat: number };
+  pending_meals: number;
   assumption: string;
 };
 
@@ -71,6 +77,7 @@ export type ScanSlotResult = { slot: string; count: number; confidence: number; 
 
 export type ScanResponse = {
   snapshot_ts: string;
+  mode: string;
   strategy: string;
   elapsed_s: number;
   slots: ScanSlotResult[];
@@ -82,12 +89,27 @@ export type ConsumptionEvent = {
   food_item_id: number;
   qty: number;
   crew_member_id: number | null;
+  food_name: string | null;
+  crew_name: string | null;
+};
+
+export type RationCrewLine = {
+  crew_member_id: number;
+  name: string;
+  need_kcal: number;
+  ration_kcal: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  weight_change_kg: number;
 };
 
 export type RationPlan = {
   target_days: number;
   ration_pct: number;
   below_safety_floor: boolean;
+  safety_floor_pct: number;
+  per_crew: RationCrewLine[];
   daily_kcal_per_crew: Record<string, number>;
   projected_weight_change_kg_per_crew: Record<string, number>;
   assumptions: string[];
@@ -102,6 +124,7 @@ export type Alert = {
   message: string;
   sent_to_earth: boolean;
   acked: boolean;
+  resolved: boolean;
 };
 
 export type EarthMessage = {
@@ -138,6 +161,8 @@ export type MealProposal = {
   daily_need_kcal: number;
   kcal_eaten_today: number;
   kcal_remaining_today: number;
+  nasa_reference_kcal: number;
+  suggestion: { food_item_id: number; name: string; kcal: number }[];
   available: MealItem[];
 };
 
@@ -147,6 +172,105 @@ export type ShelfSlot = {
   food_item_id: number | null;
   capacity: number;
 };
+
+export type CheckinAlert = {
+  id: number;
+  indicator: string;
+  level: Level;
+  message: string;
+  sent_to_earth: boolean;
+};
+
+export type CheckinResult = { saved: number; alerts: CheckinAlert[]; status: CrewStatus };
+
+export type Badge = { key: string; label: string; rule: string; earned: boolean };
+
+export type GamificationReport = {
+  streak: number;
+  score: number;
+  rank: number | null;
+  crew_size: number;
+  crew_score: number;
+  meals_logged_today: number;
+  badges: Badge[];
+};
+
+export type Reminder = { key: string; label: string; detail: string; done: boolean };
+
+export type OllamaStatus = {
+  running: boolean;
+  model: string;
+  installed: boolean;
+  loaded: boolean;
+  models_in_ram?: string[];
+};
+
+export type StationInfo = {
+  lan_ip: string;
+  port: number;
+  api_url: string;
+  crew_url: string;
+  on_lan: boolean;
+  ollama: OllamaStatus;
+};
+
+export type ForecastParams = {
+  mission_days: number;
+  ration_pct: number;
+  exercise_h_per_day: number;
+  resupply_delay_days: number;
+  solar_storm: boolean;
+  storm_dose_msv: number;
+  storm_day: number;
+};
+
+export type ForecastPoint = {
+  day: number;
+  stock_days: number;
+  weight_change_pct: number;
+  bone_pct: number;
+  radiation_msv: number;
+};
+
+export type ForecastSummary = {
+  crew_need_kcal_day: number;
+  autonomy_days_at_ration: number | null;
+  resupply_day: number | null;
+  stockout_day: number | null;
+  days_without_food: number;
+  required_ration_pct: number;
+  required_ration_below_floor: boolean;
+  ration_below_floor: boolean;
+  safety_floor_pct: number;
+  weight_change_pct_final: number;
+  weight_per_crew: { crew_member_id: number; name: string; weight_kg: number; change_kg: number; change_pct: number }[];
+  bone_pct_final: number;
+  bone_loss_pct_per_month: number;
+  radiation_msv_final: number;
+  radiation_pct_of_limit: number;
+  radiation_limit_msv: number;
+  radiation_limit_day: number | null;
+};
+
+export type ForecastAssumption = { kind: 'method' | 'nasa' | 'assumption'; label: string; text: string };
+
+export type ForecastResponse = {
+  context: { type: string; label: string; radiation_msv_day: number; next_resupply_in_days: number | null };
+  inputs: ForecastParams;
+  series: ForecastPoint[];
+  summary: ForecastSummary;
+  assumptions: ForecastAssumption[];
+};
+
+export type ScanOptions = {
+  mode?: 'mock' | 'image' | 'camera';
+  image_path?: string;
+  camera_index?: number;
+  variant?: 'full' | 'after_removal';
+};
+
+/** The server is unreachable (station off, wrong address, Wi-Fi down). */
+export class NetworkError extends Error {}
 
 export class ApiError extends Error {
   status: number;
@@ -158,15 +282,24 @@ export class ApiError extends Error {
 
 export function createApiClient(baseUrl: string) {
   async function request<T>(path: string, init?: RequestInit): Promise<T> {
-    const res = await fetch(`${baseUrl}${path}`, {
-      headers: init?.body ? { 'Content-Type': 'application/json' } : undefined,
-      ...init,
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${baseUrl}${path}`, {
+        headers: init?.body ? { 'Content-Type': 'application/json' } : undefined,
+        ...init,
+      });
+    } catch {
+      throw new NetworkError(`Station unreachable at ${baseUrl}`);
+    }
     if (!res.ok) {
       const body = await res.text().catch(() => '');
       let detail = body;
       try {
-        detail = JSON.parse(body).detail ?? body;
+        const parsed = JSON.parse(body).detail ?? body;
+        // FastAPI validation errors come back as a list of {loc, msg}
+        detail = Array.isArray(parsed)
+          ? parsed.map((e) => `${(e.loc ?? []).slice(-1)[0]}: ${e.msg}`).join('; ')
+          : String(parsed);
       } catch {
         // not JSON, use raw text
       }
@@ -202,7 +335,9 @@ export function createApiClient(baseUrl: string) {
       return request<Measurement[]>(`/api/crew/${id}/measurements${qs ? `?${qs}` : ''}`);
     },
     checkin: (id: number, body: Record<string, unknown>) =>
-      request<Measurement[]>(`/api/crew/${id}/checkin`, { method: 'POST', body: JSON.stringify(body) }),
+      request<CheckinResult>(`/api/crew/${id}/checkin`, { method: 'POST', body: JSON.stringify(body) }),
+    getGamification: (id: number) => request<GamificationReport>(`/api/crew/${id}/gamification`),
+    getReminders: (id: number) => request<Reminder[]>(`/api/crew/${id}/reminders`),
     getMealProposal: (id: number) => request<MealProposal>(`/api/crew/${id}/meal`),
     eatMeal: (id: number, foodItemId: number, qty = 1) =>
       request(`/api/crew/${id}/meal`, {
@@ -211,10 +346,11 @@ export function createApiClient(baseUrl: string) {
       }),
 
     getPantry: () => request<PantryState>('/api/pantry'),
-    scanPantry: (opts?: { mode?: 'mock' | 'image' | 'camera'; image_path?: string; camera_index?: number }) => {
+    scanPantry: (opts?: ScanOptions) => {
       const params = new URLSearchParams();
       params.set('mode', opts?.mode ?? 'mock');
       if (opts?.image_path) params.set('image_path', opts.image_path);
+      if (opts?.variant) params.set('variant', opts.variant);
       if (opts?.camera_index !== undefined) params.set('camera_index', String(opts.camera_index));
       return request<ScanResponse>(`/api/pantry/scan?${params.toString()}`, { method: 'POST' });
     },
@@ -236,6 +372,15 @@ export function createApiClient(baseUrl: string) {
     getEarthMessages: () => request<EarthMessage[]>('/api/earth/messages'),
     advanceEarthTime: (seconds: number) =>
       request<{ advanced_seconds: number }>(`/api/earth/advance?seconds=${seconds}`, { method: 'POST' }),
+
+    forecast: (params: ForecastParams) =>
+      request<ForecastResponse>('/api/forecast', { method: 'POST', body: JSON.stringify(params) }),
+
+    getStationInfo: () => request<StationInfo>('/api/station/info'),
+    crewQrUrl: () => `${baseUrl}/api/station/qr.svg`,
+
+    runScenario: (name: string) =>
+      request<{ status: string }>(`/api/demo/scenario/${name}`, { method: 'POST' }),
 
     getThresholds: () => request<Thresholds>('/api/thresholds'),
 

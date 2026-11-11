@@ -4,6 +4,7 @@ from sqlmodel import Session, select
 
 from app.db import engine
 from app.models import MissionContext
+from app.routes.events import publish_event
 
 router = APIRouter(prefix="/api/context", tags=["context"])
 
@@ -34,6 +35,13 @@ def set_active_context(body: SetContextBody) -> MissionContext:
             ).first()
             if target is None:
                 raise HTTPException(404, f"unknown context type '{body.type}'")
+            previous = session.exec(
+                select(MissionContext).where(MissionContext.active == True)  # noqa: E712
+            ).first()
+            if previous is not None and previous.id != target.id:
+                # demo settings are global, not per context: carry them over
+                target.time_scale = previous.time_scale
+                target.use_llm_advice = previous.use_llm_advice
             for context in session.exec(select(MissionContext)):
                 context.active = context.id == target.id
                 session.add(context)
@@ -56,4 +64,5 @@ def set_active_context(body: SetContextBody) -> MissionContext:
 
         session.commit()
         session.refresh(target)
+        publish_event({"type": "context_changed", "context": target.type})
         return target

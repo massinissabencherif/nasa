@@ -18,3 +18,13 @@ def load_ground_truth() -> dict[str, int]:
     with open(DATA_DIR / "food_catalogue.json") as f:
         catalogue = json.load(f)
     return {s["label"]: s["ground_truth_count"] for s in catalogue["shelf_grid"]}
+
+
+def load_removal_slot() -> str:
+    with open(DATA_DIR / "food_catalogue.json") as f:
+        return json.load(f)["demo_removal_slot"]
+
+
+def load_capacities() -> dict[str, int]:
+    with open(DATA_DIR / "food_catalogue.json") as f:
+        return {s["label"]: s["capacity"] for s in json.load(f)["shelf_grid"]}
