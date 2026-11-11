@@ -2,7 +2,7 @@
 SHELL := /bin/sh
 SERVER_PORT ?= 8000
 
-.PHONY: help install build demo server station station-web crew-dev test reset check-offline android clean
+.PHONY: help install build demo server station station-web crew-dev test reset check-offline android ios clean
 
 help:
 	@echo "make install       install JS and Python dependencies (needs internet, once)"
@@ -13,6 +13,7 @@ help:
 	@echo "make test          run the backend test suite (53 tests)"
 	@echo "make reset         reseed the database (Mars-base baseline, ~412 days)"
 	@echo "make check-offline list every non-local URL found in the source"
+	@echo "make ios           sync the crew app into the Xcode project (needs full Xcode)"
 	@echo "make android       sync the crew app into the Android project (needs the Android SDK)"
 
 install:
@@ -62,6 +63,10 @@ check-offline:
 android: build
 	cd apps/crew && npx cap sync android
 	@echo "Open apps/crew/android in Android Studio, or: cd apps/crew/android && ./gradlew assembleDebug"
+
+ios: build
+	cd apps/crew && npx cap sync ios
+	@echo "Open apps/crew/ios/App/App.xcodeproj in Xcode (full Xcode required), select your iPhone, Run."
 
 clean:
 	rm -rf apps/crew/dist apps/station/dist server/captures

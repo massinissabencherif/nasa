@@ -222,6 +222,7 @@ export type StationInfo = {
   port: number;
   api_url: string;
   crew_url: string;
+  crew_url_secure: string | null;
   on_lan: boolean;
   ollama: OllamaStatus;
 };
@@ -419,7 +420,7 @@ export function createApiClient(baseUrl: string) {
       request<ForecastResponse>('/api/forecast', { method: 'POST', body: JSON.stringify(params) }),
 
     getStationInfo: () => request<StationInfo>('/api/station/info'),
-    crewQrUrl: () => `${baseUrl}/api/station/qr.svg`,
+    crewQrUrl: (secure = false) => `${baseUrl}/api/station/qr.svg?secure=${secure}`,
 
     runScenario: (name: string) =>
       request<{ status: string }>(`/api/demo/scenario/${name}`, { method: 'POST' }),

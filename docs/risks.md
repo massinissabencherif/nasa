@@ -11,6 +11,7 @@
 | Venue Wi-Fi is flaky, filtered or isolates clients | High | Do not use it. Dedicated base network: a phone hotspot with mobile data switched off, laptop and phones joined to it. Alternative: a travel router without uplink. Not assumed: an internet-less hotspot hosted by macOS (unreliable). |
 | Hotspot isolates clients from each other | Medium | Test the exact phone the day before. Fallback: show the crew app in a phone-sized browser window on the laptop (`http://localhost:8000/crew/`). |
 | Phone cannot reach the station (firewall) | Medium | macOS asks once to allow incoming connections for Python: click Allow before the demo. The crew app shows "Station unreachable" with a link to the address setting. |
+| iPhone shows "connection is not private" on the HTTPS address | Certain, once | Expected: the station signs its own certificate. Accept it before the demo (Show Details → visit this website). If Safari refuses, use the plain `http://…:8000/crew/` address: everything works except the in-app viewfinder. |
 | Camera permission prompt appears mid-demo | Medium | Run one live scan before going on stage so macOS has already asked. |
 | An Earth message was queued too early and has already "arrived" | Low | The red alert is triggered live (check-in or demo button), so the countdown starts on stage; "Reset" clears everything. |
 | The demo script numbers drift (412 → 398) | Low | Seeded data and a test that pins both values (`test_demo_e2e.py`). The autonomy readout shows whole days. |

@@ -136,15 +136,35 @@ accurate mode 10/12 slots in 47 s, fast mode 7/12 in 28 s, so accurate mode is
 the default for photos. A demo reset removes added products and slot changes;
 the grid in `server/data/shelf_grid.json` is kept.
 
-### Mobile build
+### On an iPhone
 
-`apps/crew/android` is a ready Capacitor project (cleartext HTTP to the LAN
-enabled). Building the APK needs the Android SDK, which is not installed on the
-development machine yet: `make android`, then open `apps/crew/android` in
-Android Studio. Until then the supported path is the browser: the same app
-served at `/crew/`. iOS needs full Xcode plus an ATS local-networking exception
-(`NSAllowsLocalNetworking`) and `NSLocalNetworkUsageDescription`; see
-[apps/crew/README.md](apps/crew/README.md).
+Three ways, from the quickest to the most "native":
+
+1. **Safari, HTTPS address (recommended).** The station also serves the crew
+   app at `https://<station-ip>:8443/crew/` with a certificate it generates
+   itself (`server/certs/`, made locally with openssl). Scan the QR code under
+   Mission settings. The first time, Safari says the connection is not
+   private, because no authority vouches for a home-made certificate: tap
+   **Show Details → visit this website**. A secure page is what lets Safari
+   show the camera inside the app (Pantry tab → "Open the live camera" and
+   Live mode). Then **Share → Add to Home Screen** for a full-screen HESTIA
+   icon.
+2. **Safari, plain address** `http://<station-ip>:8000/crew/`: no warning, and
+   everything works except the in-app viewfinder; "Take a photo" opens the
+   iPhone camera instead.
+3. **Native app (Capacitor).** `apps/crew/ios` is a ready Xcode project with
+   the local-network exception, `NSLocalNetworkUsageDescription` and
+   `NSCameraUsageDescription` set. Building it needs the full Xcode from the
+   App Store (only the command-line tools are installed on the development
+   machine) and an Apple ID for signing: `make ios`, pick your iPhone as the
+   target, Run. Enter the station address under Settings in the app.
+
+The iPhone can also be the **station's** camera: with Continuity Camera it
+appears to macOS as a webcam; choose "cam 1" or "cam 2" next to "Live camera"
+on the Pantry screen.
+
+Android: `apps/crew/android` is the equivalent Capacitor project
+(`make android`, needs the Android SDK).
 
 ## Demo in 3 minutes
 

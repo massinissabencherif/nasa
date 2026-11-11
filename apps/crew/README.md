@@ -32,14 +32,15 @@ cd apps/crew/android && ./gradlew assembleDebug   # needs the Android SDK
 Not built yet: the Android SDK is not installed on the development machine.
 In the native shell the station address must be entered under Settings.
 
-## iOS (not set up)
+## iPhone
 
-Needs full Xcode and CocoaPods: `pnpm add @capacitor/ios && npx cap add ios`.
-Then add to `ios/App/App/Info.plist`:
-
-```xml
-<key>NSAppTransportSecurity</key>
-<dict><key>NSAllowsLocalNetworking</key><true/></dict>
-<key>NSLocalNetworkUsageDescription</key>
-<string>HESTIA connects to the base station on the local network.</string>
-```
+- **Safari over HTTPS**: `https://<station-ip>:8443/crew/` (QR code on the
+  station). Accept the one-time certificate warning; this secure address is
+  what allows the in-page camera viewfinder. "Add to Home Screen" makes it
+  full screen.
+- **Native app**: `ios/` is a generated Capacitor project (Swift Package
+  Manager). `Info.plist` already has `NSAllowsLocalNetworking`,
+  `NSLocalNetworkUsageDescription` and `NSCameraUsageDescription`.
+  `make ios`, then open `ios/App/App.xcodeproj` in the full Xcode, choose a
+  signing team and your iPhone, Run. Not built yet: only the command-line
+  tools are installed on the development machine.

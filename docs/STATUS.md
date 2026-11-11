@@ -74,6 +74,20 @@ still open.
   real phone, and not in the installed app** (no APK yet), so the in-app
   viewfinder and its permission prompt are unverified on Android.
 
+## Added 11 Nov: iPhone support
+
+- The server also listens on HTTPS (`:8443`) with a self-signed certificate
+  for the LAN address, so Safari treats the crew app as a secure page and
+  allows the in-page camera. The QR code on the station points to it.
+- Home-screen metadata and icon; `apps/crew/ios` Capacitor project with the
+  camera and local-network keys.
+- Checked in headless Chrome at 402 × 874 against `https://<lan-ip>:8443`,
+  with certificate errors ignored and a fake camera: secure context, live
+  update after a scan made on the HTTP listener, viewfinder opened.
+  **Not checked on the iPhone itself**: Safari's handling of the certificate
+  warning and its camera prompt are expected to work but are unverified. The
+  native iOS project has never been compiled (no full Xcode here).
+
 ## Known limits (true today)
 
 - **Vision**: 11/12 on the full test photo, 10/12 on the after-removal photo
@@ -85,7 +99,7 @@ still open.
   depends on the laptop not throttling.
 - **No APK**: the Android SDK is not installed on this machine (no
   `~/Library/Android/sdk`, no `ANDROID_HOME`), and there is no full Xcode, so
-  neither mobile build was attempted. The Capacitor Android project exists
+  neither native build was attempted (both Capacitor projects exist). The Capacitor Android project exists
   and is configured for cleartext LAN HTTP. The browser path is the
   supported one.
 - **No OS push notification** on phones: red alerts are an in-app banner,

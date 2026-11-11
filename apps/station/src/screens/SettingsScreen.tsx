@@ -157,19 +157,36 @@ export function SettingsScreen() {
       <div style={{ display: 'grid', gap: 16 }}>
         <Panel title="Crew app on the base network">
           {info ? (
-            <div style={{ display: 'grid', gridTemplateColumns: '150px minmax(0, 1fr)', gap: 16, alignItems: 'center' }}>
-              <img src={api.crewQrUrl()} alt="QR code of the crew app address" width={150} height={150} style={{ borderRadius: 6, background: '#eaf0f5' }} />
-              <div style={{ display: 'grid', gap: 6, minWidth: 0 }}>
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>Scan with a phone on the same Wi-Fi, or open</p>
-                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-lg)', wordBreak: 'break-all' }}>{info.crew_url}</p>
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                  Station API: <span style={{ fontFamily: 'var(--font-mono)' }}>{info.api_url}</span>
-                </p>
-                {!info.on_lan && (
-                  <StatusBadge level="orange" label="no local network: join the base hotspot" />
-                )}
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>The QR code is generated on this machine. No internet involved.</p>
+            <div style={{ display: 'grid', gap: 14 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '150px minmax(0, 1fr)', gap: 16, alignItems: 'center' }}>
+                <img
+                  src={api.crewQrUrl(Boolean(info.crew_url_secure))}
+                  alt="QR code of the crew app address"
+                  width={150}
+                  height={150}
+                  style={{ borderRadius: 6, background: '#eaf0f5' }}
+                />
+                <div style={{ display: 'grid', gap: 6, minWidth: 0 }}>
+                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>Scan with a phone on the same Wi-Fi, or open</p>
+                  <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-base)', wordBreak: 'break-all' }}>
+                    {info.crew_url_secure ?? info.crew_url}
+                  </p>
+                  {!info.on_lan && <StatusBadge level="orange" label="no local network: join the base hotspot" />}
+                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>The QR code is generated on this machine. No internet involved.</p>
+                </div>
               </div>
+              {info.crew_url_secure && (
+                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                  This is the HTTPS address: it lets the phone show the shelf camera inside the app. The first time, the phone warns that
+                  the connection is not private, because the station signed its own certificate: on iPhone tap "Show Details" then
+                  "visit this website". Plain address without the warning (no in-app viewfinder):{' '}
+                  <span style={{ fontFamily: 'var(--font-mono)' }}>{info.crew_url}</span>
+                </p>
+              )}
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>
+                On iPhone, Share → "Add to Home Screen" gives a full-screen HESTIA icon. Station API:{' '}
+                <span style={{ fontFamily: 'var(--font-mono)' }}>{info.api_url}</span>
+              </p>
             </div>
           ) : (
             <p style={{ color: 'var(--text-faint)' }}>Reading the network address…</p>

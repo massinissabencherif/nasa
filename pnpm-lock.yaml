@@ -16,6 +16,9 @@ importers:
       '@capacitor/core':
         specifier: ^8.6.0
         version: 8.6.0
+      '@capacitor/ios':
+        specifier: ^8.6.0
+        version: 8.6.0(@capacitor/core@8.6.0)
       '@hestia/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
@@ -135,6 +138,11 @@ packages:
 
   '@capacitor/core@8.6.0':
     resolution: {integrity: sha512-9F2zzuGYTJu+wqmQSEmqnFBfGrhC/njjMCfmxbvg9mq8xJT4wNh5pxbMFZxvW/yDhYJWPEBFQxeqzfo1gKrvxg==}
+
+  '@capacitor/ios@8.6.0':
+    resolution: {integrity: sha512-Y2PE4zoBqMrSTWoVMJmX2byBznjn6egmATzoEUJiGVbVubkNpAvkF/tl0SBKDyP67ngyedTx1tQq5IGYIhby1A==}
+    peerDependencies:
+      '@capacitor/core': ^8.6.0
 
   '@ionic/cli-framework-output@2.2.8':
     resolution: {integrity: sha512-TshtaFQsovB4NWRBydbNFawql6yul7d5bMiW1WYYf17hd99V6xdDdk3vtF51bw6sLkxON3bDQpWsnUc9/hVo3g==}
@@ -1350,6 +1358,10 @@ snapshots:
   '@capacitor/core@8.6.0':
     dependencies:
       tslib: 2.9.1
+
+  '@capacitor/ios@8.6.0(@capacitor/core@8.6.0)':
+    dependencies:
+      '@capacitor/core': 8.6.0
 
   '@ionic/cli-framework-output@2.2.8':
     dependencies:

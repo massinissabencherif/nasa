@@ -9,8 +9,10 @@ export function defaultApiBase(): string {
   const { protocol, hostname, port } = window.location;
   const isNativeShell = protocol === 'capacitor:' || (hostname === 'localhost' && port === '');
   if (isNativeShell) return 'http://localhost:8000'; // native app: must be set in Settings
-  // Served by the station itself (http://<station>:8000/crew/) or by the Vite
-  // dev server on the same machine: the API is on port 8000 of that host.
+  // Served by the station itself, over HTTP (:8000) or HTTPS (:8443): the API
+  // is on the very same origin, which also avoids any mixed-content block.
+  if (window.location.pathname.startsWith('/crew')) return window.location.origin;
+  // Vite dev server: the API is on port 8000 of the same host.
   return `${protocol}//${hostname}:8000`;
 }
 

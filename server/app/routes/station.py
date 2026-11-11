@@ -9,31 +9,35 @@ from vision import ollama_client
 router = APIRouter(prefix="/api/station", tags=["station"])
 
 
-def _crew_url() -> str:
-    from app.main import PORT, lan_ip
+def _crew_url(secure: bool = False) -> str:
+    from app import main
 
-    return f"http://{lan_ip()}:{PORT}/crew/"
+    if secure:
+        return f"https://{main.lan_ip()}:{main.HTTPS_PORT}/crew/"
+    return f"http://{main.lan_ip()}:{main.PORT}/crew/"
 
 
 @router.get("/info")
 def station_info() -> dict:
-    from app.main import PORT, lan_ip
+    from app import main
 
-    ip = lan_ip()
+    ip = main.lan_ip()
     return {
         "lan_ip": ip,
-        "port": PORT,
-        "api_url": f"http://{ip}:{PORT}",
+        "port": main.PORT,
+        "api_url": f"http://{ip}:{main.PORT}",
         "crew_url": _crew_url(),
+        # HTTPS copy of the crew app: needed for the in-page camera viewfinder on phones
+        "crew_url_secure": _crew_url(secure=True) if main.https_enabled else None,
         "on_lan": ip != "127.0.0.1",
         "ollama": ollama_client.status(),
     }
 
 
 @router.get("/qr.svg")
-def crew_qr() -> Response:
+def crew_qr(secure: bool = False) -> Response:
     """QR code of the crew-app URL, generated locally (no external service)."""
-    qr = segno.make(_crew_url(), error="m")
+    qr = segno.make(_crew_url(secure), error="m")
     buffer = io.BytesIO()
     qr.save(buffer, kind="svg", scale=6, border=2, dark="#0e141b", light="#eaf0f5")
     return Response(buffer.getvalue(), media_type="image/svg+xml", headers={"Cache-Control": "no-store"})
