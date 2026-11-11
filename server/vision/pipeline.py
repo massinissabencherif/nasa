@@ -126,6 +126,23 @@ def _plausibility(label: str, count: int | None, item: dict | None, capacity: in
     return 0.95, ""
 
 
+SHELF_CROP_MARGIN = 0.03
+
+
+def _crop_to_shelf(image, boxes):
+    """On a real photo the shelf may fill only part of the frame. When the
+    calibrated grid covers less than 60 % of the picture, send only the shelf
+    (plus a small margin) so the model does not count the background."""
+    x0 = min(b[0] for b in boxes.values())
+    y0 = min(b[1] for b in boxes.values())
+    x1 = max(b[2] for b in boxes.values())
+    y1 = max(b[3] for b in boxes.values())
+    if (x1 - x0) * (y1 - y0) >= 0.6:
+        return image
+    m = SHELF_CROP_MARGIN
+    return grid.crop_box(image, (max(0.0, x0 - m), max(0.0, y0 - m), min(1.0, x1 + m), min(1.0, y1 + m)))
+
+
 def scan_live(
     image, boxes, slot_items, strategy: str | None = None,
     capacities: dict[str, int] | None = None,
@@ -135,7 +152,9 @@ def scan_live(
     labels = list(boxes.keys())
     start = time.perf_counter()
     if strategy == "full":
-        counts = _call(capture.downscale(image, FULL_IMAGE_WIDTH), labels, slot_items, True, on_progress)
+        counts = _call(
+            capture.downscale(_crop_to_shelf(image, boxes), FULL_IMAGE_WIDTH), labels, slot_items, True, on_progress
+        )
     elif strategy == "row":
         counts = {}
         for row_labels in grid.ROWS.values():
@@ -181,13 +200,16 @@ def scan_mock(variant: str = "full") -> ScanResult:
 def run_scan(
     mode: str, image_path: str | None = None, camera_index: int = 0, variant: str = "full",
     strategy: str | None = None, on_progress: ProgressCallback | None = None,
+    slot_items: dict[str, dict | None] | None = None, capacities: dict[str, int] | None = None,
 ) -> ScanResult:
+    """slot_items / capacities: what each slot is supposed to hold (from the
+    database). Defaults to the seeded catalogue when not given."""
     if mode == "mock":
         return scan_mock(variant)
 
     boxes = grid.load_boxes()
-    slot_items = load_slot_items()
-    capacities = grid.load_capacities()
+    slot_items = slot_items or load_slot_items()
+    capacities = capacities or grid.load_capacities()
     if mode == "image":
         if image_path is None:
             raise ValueError("mode='image' requires image_path")

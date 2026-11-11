@@ -4,7 +4,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import cv2
-from fastapi import APIRouter, HTTPException
+import numpy as np
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlmodel import Session, select
@@ -115,6 +116,20 @@ def get_pantry() -> dict:
         }
 
 
+def _slot_expectations() -> tuple[dict[str, dict | None], dict[str, int]]:
+    """What the vision model is told to expect in each slot, from the database
+    (so a shelf re-assigned on the calibration screen is read correctly)."""
+    with open(SERVER_DIR / "data" / "food_catalogue.json") as f:
+        stacked = {i["name"] for i in json.load(f)["items"] if i.get("stacked")}
+    with Session(engine) as session:
+        slots = session.exec(select(ShelfSlot)).all()
+        items: dict[str, dict | None] = {}
+        for slot in slots:
+            food = session.get(FoodItem, slot.food_item_id) if slot.food_item_id else None
+            items[slot.label] = {"name": food.name, "stacked": food.name in stacked} if food else None
+        return items, {slot.label: slot.capacity for slot in slots}
+
+
 def _resolve_image_path(image_path: str) -> Path:
     """Only images inside the server folder may be scanned through the API
     (fixtures and saved captures) — the endpoint is open on the LAN."""
@@ -146,10 +161,11 @@ def scan_pantry(
             publish_event({"type": "scan_progress", "labels": done_labels})
 
         try:
+            slot_items, capacities = _slot_expectations()
             result = run_scan(
                 mode=mode, image_path=str(resolved) if resolved else None,
                 camera_index=camera_index, variant=variant, strategy=strategy,
-                on_progress=on_progress,
+                on_progress=on_progress, slot_items=slot_items, capacities=capacities,
             )
         except OllamaUnavailable as exc:
             publish_event({"type": "scan_failed", "detail": str(exc)})
@@ -160,7 +176,7 @@ def scan_pantry(
 
         snapshot_ts = datetime.now(timezone.utc)
         if result.frame is not None:  # live camera: keep the frame so the overlay matches reality
-            CAPTURES_DIR.mkdir(exist_ok=True)
+            CAPTURES_DIR.mkdir(parents=True, exist_ok=True)
             capture_path = CAPTURES_DIR / f"scan-{snapshot_ts:%Y%m%d-%H%M%S}.jpg"
             cv2.imwrite(str(capture_path), result.frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
             stored_image_path = str(capture_path.relative_to(SERVER_DIR))
@@ -252,6 +268,83 @@ def _record_delta(session: Session, food_item_id: int, delta: int, snapshot_ts: 
         session.add(ConsumptionEvent(ts=snapshot_ts, food_item_id=food_item_id, qty=remainder))
 
 
+MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+UPLOAD_MAX_WIDTH = 1600
+
+
+@router.post("/photo")
+def scan_photo(
+    file: UploadFile = File(...),
+    scan: bool = True,
+    strategy: str | None = None,
+) -> dict:
+    """Use any camera as the shelf camera: a phone (or a file picker on the
+    station) uploads a photo. With scan=true it is read by the vision model
+    like a webcam frame; with scan=false it only becomes the reference image
+    for calibrating the slot grid, and the counts are left untouched."""
+    data = file.file.read(MAX_UPLOAD_BYTES + 1)
+    if len(data) > MAX_UPLOAD_BYTES:
+        raise HTTPException(413, "photo is larger than 20 MB")
+    img = cv2.imdecode(np.frombuffer(data, dtype=np.uint8), cv2.IMREAD_COLOR)
+    if img is None:
+        raise HTTPException(400, "could not read this file as an image (use JPEG or PNG)")
+    h, w = img.shape[:2]
+    if w > UPLOAD_MAX_WIDTH:
+        img = cv2.resize(img, (UPLOAD_MAX_WIDTH, int(h * UPLOAD_MAX_WIDTH / w)), interpolation=cv2.INTER_AREA)
+    CAPTURES_DIR.mkdir(parents=True, exist_ok=True)
+    now = datetime.now(timezone.utc)
+    path = CAPTURES_DIR / f"photo-{now:%Y%m%d-%H%M%S}.jpg"
+    cv2.imwrite(str(path), img, [cv2.IMWRITE_JPEG_QUALITY, 88])
+    relative = str(path.relative_to(SERVER_DIR))
+
+    if scan:
+        return scan_pantry(mode="image", image_path=relative, strategy=strategy)
+
+    with Session(engine) as session:
+        previous = _latest_snapshot(session)
+        snapshot = InventorySnapshot(ts=now, image_path=relative, raw_json=json.dumps({"reference_only": True}))
+        session.add(snapshot)
+        session.flush()
+        if previous is not None:  # carry the counts over: only the picture changes
+            for line in session.exec(
+                select(InventoryLine).where(InventoryLine.snapshot_id == previous.id)
+            ).all():
+                session.add(InventoryLine(
+                    snapshot_id=snapshot.id, slot_id=line.slot_id, count=line.count,
+                    confidence=line.confidence, source=line.source,
+                ))
+        session.commit()
+    publish_event({"type": "reference_photo", "snapshot_ts": now.isoformat()})
+    return {"snapshot_ts": now, "mode": "reference", "image_path": relative}
+
+
+class GridFrameBody(BaseModel):
+    """Outer frame of the shelf in the picture, normalised 0-1."""
+    left: float = Field(ge=0, le=1)
+    top: float = Field(ge=0, le=1)
+    right: float = Field(ge=0, le=1)
+    bottom: float = Field(ge=0, le=1)
+
+
+@router.put("/grid-frame")
+def set_grid_from_frame(body: GridFrameBody) -> dict[str, list[float]]:
+    """Fast calibration for a real shelf: give the outer frame, get 3 x 4 equal slots."""
+    if body.right - body.left < 0.2 or body.bottom - body.top < 0.2:
+        raise HTTPException(400, "frame is too small or inverted")
+    col_w = (body.right - body.left) / 4
+    row_h = (body.bottom - body.top) / 3
+    boxes = {}
+    for r, row in enumerate("ABC"):
+        for c in range(4):
+            boxes[f"{row}{c + 1}"] = (
+                round(body.left + c * col_w, 4), round(body.top + r * row_h, 4),
+                round(body.left + (c + 1) * col_w, 4), round(body.top + (r + 1) * row_h, 4),
+            )
+    vision_grid.save_boxes(boxes)
+    publish_event({"type": "grid_changed"})
+    return vision_grid.load_boxes()
+
+
 class ConfirmBody(BaseModel):
     slot: str
     count: int = Field(ge=0, le=99)
@@ -326,11 +419,45 @@ def update_grid(body: GridUpdateBody) -> ShelfSlot:
         if body.capacity is not None:
             slot.capacity = body.capacity
         if body.food_item_id is not None:
-            slot.food_item_id = body.food_item_id
+            # 0 clears the slot (expected empty)
+            if body.food_item_id != 0 and session.get(FoodItem, body.food_item_id) is None:
+                raise HTTPException(404, f"no food item {body.food_item_id}")
+            slot.food_item_id = body.food_item_id or None
         session.add(slot)
         session.commit()
         session.refresh(slot)
         return slot
+
+
+class FoodItemBody(BaseModel):
+    name: str = Field(min_length=2, max_length=40)
+    kcal: float = Field(ge=0, le=20000)
+    protein_g: float = Field(default=0, ge=0, le=2000)
+    carbs_g: float = Field(default=0, ge=0, le=5000)
+    fat_g: float = Field(default=0, ge=0, le=2000)
+
+
+@router.get("/items")
+def list_items() -> list[FoodItem]:
+    with Session(engine) as session:
+        return session.exec(select(FoodItem).order_by(FoodItem.name)).all()
+
+
+@router.post("/items")
+def add_item(body: FoodItemBody) -> FoodItem:
+    """Add a product of the real shelf to the catalogue (per-unit values typed
+    from its label). It gets the same demo scale as the seeded items."""
+    with Session(engine) as session:
+        template = session.exec(select(FoodItem)).first()
+        item = FoodItem(
+            name=body.name.strip(), kcal=body.kcal, protein_g=body.protein_g, carbs_g=body.carbs_g,
+            fat_g=body.fat_g, mass_g=0, expiry_days=365,
+            units_per_lot=template.units_per_lot if template else 1.0, note="added on the station",
+        )
+        session.add(item)
+        session.commit()
+        session.refresh(item)
+        return item
 
 
 @router.get("/consumption")

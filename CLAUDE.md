@@ -80,7 +80,7 @@ cards, tokens) and `packages/api-client` (typed fetch client + shared types).
 ## Run
 
 - `make demo` — builds the crew app, starts the server and the station window.
-- `make test` — 52 backend tests incl. the end-to-end demo smoke test.
+- `make test` — 53 backend tests incl. the end-to-end demo smoke test.
 - Server alone: `cd server && uv run hestia-server` (`0.0.0.0:8000`, prints
   the LAN IP; `HESTIA_RELOAD=1` for auto-reload; the DB schema changes need
   `make reset`).

@@ -8,7 +8,7 @@ still open.
 
 | Area | State | Verified by |
 |---|---|---|
-| Backend engines (nutrition, thresholds/status, alerts, advice, forecast, gamification) | done | `make test`: 52 tests pass |
+| Backend engines (nutrition, thresholds/status, alerts, advice, forecast, gamification) | done | `make test`: 53 tests pass |
 | Demo script end to end through the HTTP API (check-in → orange, 412 → 398, delayed cargo → ration, red alert → Earth report → reply) | done | `server/tests/test_demo_e2e.py` |
 | Station UI: Crew, Pantry, Calibration, Forecasts, Alerts, Earth link, Mission settings | done | driven in headless Chrome at 1280×800/1000, screenshots reviewed |
 | Crew app: profile, home, check-in, meal, history, settings | done | driven in headless Chrome at 390×844 from `http://localhost:8000/crew/` |
@@ -45,6 +45,20 @@ still open.
   banner on mobile; the Tauri entry point did not compile
   (`hestia-station_lib`); scans of arbitrary file paths were accepted from the
   LAN; context switches dropped the demo clock and LLM settings.
+
+## Added 11 Nov: any camera, real inventory
+
+- `POST /api/pantry/photo`: a phone (crew app → Settings → Shelf camera) or a
+  file picker on the station uploads a photo; it is scanned like a webcam
+  frame, or only stored as the reference picture for calibration.
+- Calibration screen: outer frame → 3 × 4 slots, per-slot item and capacity,
+  add products of the real shelf. Scans now use the slot assignments from the
+  database, and crop the photo to the calibrated shelf when it fills less
+  than 60 % of the frame.
+- Checked with a simulated phone photo (test shelf pasted into a larger
+  frame) through the real model: accurate mode 10/12 in 47 s, fast mode 7/12
+  in 28 s. **Not checked with a real phone or a real shelf.** The phone page
+  was only rendered, its camera button was not exercised on a device.
 
 ## Known limits (true today)
 

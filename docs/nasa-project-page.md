@@ -79,7 +79,7 @@ The station interface is a Tauri desktop app in React; the crew app is a
 React web app served by the station to phones on the base Wi-Fi.
 
 **What is real and what is not.** The software, the vision reading, the
-calculations and the alert logic are real and tested (52 automated tests).
+calculations and the alert logic are real and tested (53 automated tests).
 The crew, their measurements and the ground replies are simulated and
 labelled so. The shelf uses a demo scale: one box stands for one storage lot
 of rations. HESTIA is not a medical device and gives no diagnosis.

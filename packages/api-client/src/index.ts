@@ -79,9 +79,10 @@ export type ScanSlotResult = { slot: string; count: number; confidence: number; 
 export type ScanResponse = {
   snapshot_ts: string;
   mode: string;
-  strategy: string;
-  elapsed_s: number;
-  slots: ScanSlotResult[];
+  strategy?: string;
+  elapsed_s?: number;
+  autonomy_days?: number;
+  slots?: ScanSlotResult[];
 };
 
 export type ConsumptionEvent = {
@@ -165,6 +166,16 @@ export type MealProposal = {
   nasa_reference_kcal: number;
   suggestion: { food_item_id: number; name: string; kcal: number }[];
   available: MealItem[];
+};
+
+export type FoodItem = {
+  id: number;
+  name: string;
+  kcal: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  units_per_lot: number;
 };
 
 export type ShelfSlot = {
@@ -358,11 +369,38 @@ export function createApiClient(baseUrl: string) {
       if (opts?.camera_index !== undefined) params.set('camera_index', String(opts.camera_index));
       return request<ScanResponse>(`/api/pantry/scan?${params.toString()}`, { method: 'POST' });
     },
+    /** Upload a photo taken by any camera (phone, file). scan=false: reference image only. */
+    uploadShelfPhoto: async (file: Blob, opts?: { scan?: boolean; strategy?: 'full' | 'row' }): Promise<ScanResponse> => {
+      const params = new URLSearchParams();
+      params.set('scan', String(opts?.scan ?? true));
+      if (opts?.strategy) params.set('strategy', opts.strategy);
+      const form = new FormData();
+      form.append('file', file, 'shelf.jpg');
+      let res: Response;
+      try {
+        res = await fetch(`${baseUrl}/api/pantry/photo?${params.toString()}`, { method: 'POST', body: form });
+      } catch {
+        throw new NetworkError(`Station unreachable at ${baseUrl}`);
+      }
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new ApiError(res.status, String(body.detail ?? res.statusText));
+      }
+      return res.json();
+    },
+    setGridFrame: (frame: { left: number; top: number; right: number; bottom: number }) =>
+      request<Record<string, [number, number, number, number]>>('/api/pantry/grid-frame', {
+        method: 'PUT',
+        body: JSON.stringify(frame),
+      }),
     confirmSlot: (slot: string, count: number) =>
       request(`/api/pantry/confirm`, { method: 'POST', body: JSON.stringify({ slot, count }) }),
     getGrid: () => request<ShelfSlot[]>('/api/pantry/grid'),
     updateGridSlot: (label: string, body: { capacity?: number; food_item_id?: number }) =>
       request<ShelfSlot>('/api/pantry/grid', { method: 'PUT', body: JSON.stringify({ label, ...body }) }),
+    listFoodItems: () => request<FoodItem[]>('/api/pantry/items'),
+    addFoodItem: (item: { name: string; kcal: number; protein_g?: number; carbs_g?: number; fat_g?: number }) =>
+      request<FoodItem>('/api/pantry/items', { method: 'POST', body: JSON.stringify(item) }),
     getGridBoxes: () => request<Record<string, [number, number, number, number]>>('/api/pantry/grid-boxes'),
     updateGridBox: (label: string, box: [number, number, number, number]) =>
       request('/api/pantry/grid-boxes', { method: 'PUT', body: JSON.stringify({ label, box }) }),

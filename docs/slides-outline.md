@@ -35,7 +35,7 @@ One idea per slide. Screenshots come from the running app. Keep
    a report under 600 characters. Works for Mars, transit, Moon and ISS.
 
 7. **What is real, what is not, what is next.**
-   Real: the software, 52 automated tests, local AI, fully offline.
+   Real: the software, 53 automated tests, local AI, fully offline.
    Simulated: crew, measurements, ground replies, demo scale.
    NASA data used (radiation rates, career limit, bone loss, delays).
    AI disclosed: local vision model, optional local text model with

@@ -8,6 +8,7 @@ import { Checkin } from './screens/Checkin';
 import { Meal } from './screens/Meal';
 import { History } from './screens/History';
 import { Settings } from './screens/Settings';
+import { ShelfCamera } from './screens/ShelfCamera';
 
 const TABS = [
   { key: 'home', label: 'Home', icon: IconHome, path: '/home' },
@@ -24,7 +25,7 @@ function Shell() {
   const connected = useConnection();
   const context = useMissionContext();
 
-  const onSettings = location.pathname === '/settings';
+  const onSettings = location.pathname === '/settings' || location.pathname === '/shelf';
   if (crewId == null && location.pathname !== '/profile' && !onSettings) {
     return <Navigate to="/profile" replace />;
   }
@@ -112,6 +113,7 @@ function Shell() {
           <Route path="/meal" element={<Meal />} />
           <Route path="/history" element={<History />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/shelf" element={<ShelfCamera />} />
         </Routes>
       </main>
 

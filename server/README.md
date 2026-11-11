@@ -6,7 +6,7 @@ FastAPI + SQLite (SQLModel), Python 3.12, managed with uv.
 uv sync
 uv run hestia-server      # API on 0.0.0.0:8000, crew app at /crew/, docs at /docs
 uv run hestia-reset-db    # drop and reseed (needed after a model change)
-uv run pytest -q          # 52 tests
+uv run pytest -q          # 53 tests
 ```
 
 - `app/engines/` — nutrition, thresholds, status, alerts, advice, check-in,

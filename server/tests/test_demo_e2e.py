@@ -129,3 +129,42 @@ def test_gamification_reminders_station_info_and_validation(client):
     assert info["crew_url"].endswith("/crew/")
     qr = client.get("/api/station/qr.svg")
     assert qr.status_code == 200 and "<svg" in qr.text
+
+
+def test_phone_photo_reference_frame_calibration_and_slot_assignment(client, tmp_path, monkeypatch):
+    import cv2
+    import numpy as np
+
+    from app.routes import pantry
+    from vision import grid
+
+    monkeypatch.setattr(pantry, "CAPTURES_DIR", pantry.SERVER_DIR / "captures" / "test")
+    grid_copy = tmp_path / "shelf_grid.json"
+    grid_copy.write_text(grid.GRID_PATH.read_text())
+    monkeypatch.setattr(grid, "GRID_PATH", grid_copy)
+
+    ok, jpg = cv2.imencode(".jpg", np.full((600, 800, 3), 127, dtype=np.uint8))
+    before = client.get("/api/pantry").json()
+
+    # a photo used only as the reference picture keeps the counts
+    r = client.post("/api/pantry/photo", params={"scan": "false"}, files={"file": ("p.jpg", jpg.tobytes(), "image/jpeg")})
+    assert r.status_code == 200 and r.json()["mode"] == "reference"
+    after = client.get("/api/pantry").json()
+    assert after["autonomy_days"] == before["autonomy_days"]
+    assert client.get("/api/pantry/snapshot-image").headers["content-type"] == "image/jpeg"
+    assert client.post("/api/pantry/photo", files={"file": ("x.txt", b"not an image", "text/plain")}).status_code == 400
+
+    # frame calibration: 12 equal slots inside the given frame
+    boxes = client.put("/api/pantry/grid-frame", json={"left": 0.1, "top": 0.2, "right": 0.9, "bottom": 0.8}).json()
+    assert len(boxes) == 12 and boxes["A1"] == [0.1, 0.2, 0.3, 0.4] and boxes["C4"] == [0.7, 0.6, 0.9, 0.8]
+
+    # a real product can be added and assigned to a slot; the model is told about it
+    item = client.post("/api/pantry/items", json={"name": "Lentil can", "kcal": 300}).json()
+    assert client.put("/api/pantry/grid", json={"label": "A4", "food_item_id": item["id"], "capacity": 5}).status_code == 200
+    assert client.put("/api/pantry/grid", json={"label": "A1", "food_item_id": 0}).status_code == 200
+    expected, capacities = pantry._slot_expectations()
+    assert expected["A4"]["name"] == "Lentil can" and capacities["A4"] == 5 and expected["A1"] is None
+    assert expected["A3"]["stacked"] is True
+
+    for f in (pantry.SERVER_DIR / "captures" / "test").glob("*.jpg"):
+        f.unlink()

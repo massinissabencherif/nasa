@@ -145,6 +145,8 @@ export function PantryScreen() {
   const [elapsed, setElapsed] = useState(0);
   const [sourceIndex, setSourceIndex] = useState(0);
   const [accurate, setAccurate] = useState(false);
+  const [cameraIndex, setCameraIndex] = useState(0);
+  const fileInput = useRef<HTMLInputElement>(null);
   const [consumption, setConsumption] = useState<ConsumptionEvent[]>([]);
   const [rationDays, setRationDays] = useState(30);
   const [rationPlan, setRationPlan] = useState<RationPlan | null>(null);
@@ -189,7 +191,15 @@ export function PantryScreen() {
     if (event.type === 'scan_progress' && Array.isArray(event.labels)) {
       setSlotsDone(new Set(event.labels as string[]));
     }
-    if (['scan_complete', 'slot_confirmed', 'meal_logged', 'reset'].includes(event.type)) {
+    if (event.type === 'scan_started') {
+      // a scan started elsewhere (a phone sending a photo): show it here too
+      setScanning(true);
+      setSlotsDone(new Set());
+    }
+    if (event.type === 'scan_failed') setScanning(false);
+    if (event.type === 'grid_changed') api.getGridBoxes().then(setBoxes).catch(() => {});
+    if (['scan_complete', 'slot_confirmed', 'meal_logged', 'reset', 'reference_photo'].includes(event.type)) {
+      if (event.type === 'scan_complete') setScanning(false);
       refresh();
       refreshFeed();
       if (event.type !== 'meal_logged') setImageUrl(api.snapshotImageUrl());
@@ -201,19 +211,22 @@ export function PantryScreen() {
     }
   });
 
-  async function runScan() {
+  async function runScan(photo?: File) {
     setError(null);
     setScanning(true);
     setSlotsDone(new Set());
     const source = SCAN_SOURCES[sourceIndex];
     try {
-      const result = await api.scanPantry({
-        ...source.options,
-        strategy: source.usesModel ? (accurate ? 'row' : 'full') : undefined,
-      });
-      const flagged = result.slots.filter((s) => s.needs_confirmation).length;
+      const result = photo
+        ? await api.uploadShelfPhoto(photo, { strategy: accurate ? 'row' : 'full' })
+        : await api.scanPantry({
+            ...source.options,
+            camera_index: source.options.mode === 'camera' ? cameraIndex : undefined,
+            strategy: source.usesModel ? (accurate ? 'row' : 'full') : undefined,
+          });
+      const flagged = (result.slots ?? []).filter((s) => s.needs_confirmation).length;
       setLastScan(
-        `${result.mode === 'mock' ? 'Replay' : `Vision model, ${result.strategy === 'row' ? 'row crops' : 'single image'}`} · ${result.elapsed_s.toFixed(1)} s` +
+        `${photo ? 'Photo · ' : ''}${result.mode === 'mock' ? 'Replay' : `Vision model, ${result.strategy === 'row' ? 'row crops' : 'single image'}`} · ${(result.elapsed_s ?? 0).toFixed(1)} s` +
           (flagged ? ` · ${flagged} slot${flagged > 1 ? 's' : ''} to confirm` : ''),
       );
     } catch (err) {
@@ -345,7 +358,30 @@ export function PantryScreen() {
                   </option>
                 ))}
               </select>
-              <Button variant="primary" onClick={runScan} disabled={scanning} icon={<IconScan size={15} />}>
+              {source.options.mode === 'camera' && (
+                <select
+                  value={cameraIndex}
+                  onChange={(e) => setCameraIndex(Number(e.target.value))}
+                  disabled={scanning}
+                  aria-label="Camera"
+                  title="Camera number. A phone used as a webcam (e.g. iPhone Continuity Camera) usually shows up as 1 or 2."
+                  style={{
+                    background: 'var(--panel-raised)',
+                    color: 'var(--text)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: '8px 6px',
+                    fontSize: 'var(--text-sm)',
+                  }}
+                >
+                  {[0, 1, 2, 3].map((i) => (
+                    <option key={i} value={i}>
+                      cam {i}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <Button variant="primary" onClick={() => runScan()} disabled={scanning} icon={<IconScan size={15} />}>
                 {scanning ? `Scanning… ${elapsed}s` : 'Scan now'}
               </Button>
             </div>
@@ -376,6 +412,26 @@ export function PantryScreen() {
                   Accurate mode (3 passes, about 50 s instead of 20 s)
                 </label>
               )}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', borderTop: '1px solid var(--border-soft)', paddingTop: 10 }}>
+              <input
+                ref={fileInput}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = '';
+                  if (file) runScan(file);
+                }}
+              />
+              <Button onClick={() => fileInput.current?.click()} disabled={scanning}>
+                Scan a photo file…
+              </Button>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', flex: 1, minWidth: 200 }}>
+                Or use a phone as the shelf camera: open the crew app on it, then Settings → Shelf camera. The photo is read here.
+              </p>
             </div>
 
             {error && (

@@ -74,7 +74,7 @@ Then:
 - Crew app on a phone: open **Mission settings** on the station and scan the QR
   code, or type `http://<station-ip>:8000/crew/`. On the laptop itself:
   http://localhost:8000/crew/ in a phone-sized browser window.
-- `make test` runs the 52 backend tests, including an end-to-end smoke test of
+- `make test` runs the 53 backend tests, including an end-to-end smoke test of
   the demo script. `make reset` reseeds the baseline. `make check-offline`
   greps the source for non-local URLs.
 
@@ -95,6 +95,31 @@ hotspot, so use one of these (see [docs/risks.md](docs/risks.md)):
 
 macOS asks once to allow incoming connections for Python (firewall prompt) and
 once for camera access for the terminal: both need a manual click.
+
+### Inventory of a real shelf with a phone as the camera
+
+Any camera works, not only the laptop webcam:
+
+1. **Reference photo.** On the phone, open the crew app → Settings → **Shelf
+   camera**, tick "Reference photo only" and photograph the shelf from where
+   the camera will stay. (On the station: Pantry → Calibrate → "Use a photo
+   file as reference…".)
+2. **Calibrate** on the station (Pantry → Calibrate the slot grid): set the
+   outer frame of the shelf and split it into 3 × 4 slots, fine-tune a slot if
+   needed, say what each slot holds and its capacity, and add your own
+   products (name + kcal per unit).
+3. **Scan.** Take a new photo from the same page (reference box unticked):
+   the station reads it, updates the counts and the autonomy, and asks you to
+   confirm uncertain slots. A photo file can also be scanned from the Pantry
+   screen, and a phone used as a webcam (e.g. iPhone Continuity Camera) can be
+   picked with the "cam 0/1/2" selector next to "Live camera".
+
+Photos go over plain HTTP on the base network through a file input, so no
+camera permission or HTTPS is needed in the phone browser. Measured on a
+simulated hand-held photo (the test shelf filling 36 % of the frame):
+accurate mode 10/12 slots in 47 s, fast mode 7/12 in 28 s, so accurate mode is
+the default for photos. A demo reset removes added products and slot changes;
+the grid in `server/data/shelf_grid.json` is kept.
 
 ### Mobile build
 
