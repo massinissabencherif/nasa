@@ -23,14 +23,14 @@ build:
 	pnpm build:crew
 
 # Server (API + crew app at /crew/) in the background, station window in the foreground.
-# Ctrl+C stops both.
+# Closing the station window or Ctrl+C stops both. If the Tauri window cannot
+# start, use `make server` and `make station-web` in two terminals instead.
 demo: build
 	@echo "Starting HESTIA. Crew app for phones: see Mission settings in the station (QR code)."
 	@trap 'kill 0' INT TERM EXIT; \
 	(cd server && uv run hestia-server) & \
 	sleep 2; \
-	pnpm --filter station tauri dev || pnpm dev:station; \
-	wait
+	pnpm --filter station tauri dev
 
 server: build
 	cd server && uv run hestia-server
