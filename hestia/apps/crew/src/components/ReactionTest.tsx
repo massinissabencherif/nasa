@@ -9,7 +9,7 @@ import {
   reactionSyncRevision, savedReaction, subscribeReactionSync, syncReactions,
 } from '../lib/reactionStorage';
 
-export function ReactionTest({ crewId, onCancel }: { crewId: number; onCancel: () => void }) {
+export function ReactionTest({ crewId, onCancel, backLabel = 'Back' }: { crewId: number; onCancel: () => void; backLabel?: string }) {
   const api = useApi();
   const [protocol, setProtocol] = useState<ReactionProtocol | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -23,12 +23,12 @@ export function ReactionTest({ crewId, onCancel }: { crewId: number; onCancel: (
   if (!protocol) return <div className="assessment-stack" style={{ padding: 'var(--space-4)' }}>
     <p role={error ? 'alert' : 'status'}>{error ?? 'Loading test protocol…'}</p>
     {error && <Button onClick={() => setRetry((value) => value + 1)}>Retry</Button>}
-    <Button onClick={onCancel}>Back</Button>
+    <Button onClick={onCancel}>{backLabel}</Button>
   </div>;
-  return <TestSession key={`${api.baseUrl}:${crewId}:${protocol.version}`} protocol={protocol} crewId={crewId} onCancel={onCancel} />;
+  return <TestSession key={`${api.baseUrl}:${crewId}:${protocol.version}`} protocol={protocol} crewId={crewId} onCancel={onCancel} backLabel={backLabel} />;
 }
 
-function TestSession({ protocol, crewId, onCancel }: { protocol: ReactionProtocol; crewId: number; onCancel: () => void }) {
+function TestSession({ protocol, crewId, onCancel, backLabel }: { protocol: ReactionProtocol; crewId: number; onCancel: () => void; backLabel: string }) {
   const api = useApi();
   const [deviceId] = useState(installationId);
   const [rendered, setRendered] = useState<ReactionState | null>(null);
@@ -77,13 +77,13 @@ function TestSession({ protocol, crewId, onCancel }: { protocol: ReactionProtoco
       <p className="assessment-muted">Use the same device and similar conditions each time. Distraction, screen refresh and input latency can affect the result. This is not a validated PVT, a fatigue diagnosis or an operational fitness test.</p>
       {!deviceId && <p role="alert">This browser cannot store an installation identifier. A device-matched reference will be unavailable.</p>}
       <Button variant="primary" size="lg" onClick={() => runner.start()}>Start practice</Button>
-      <Button onClick={onCancel}>Back</Button>
+      <Button onClick={onCancel}>{backLabel}</Button>
     </div>
   );
 
   if (state.phase === 'done' || state.phase === 'paused') return (
     <div className="assessment-stack" style={{ padding: 'var(--space-4)' }}>
-      <h1>{state.phase === 'done' ? 'Reaction test complete' : state.result?.status === 'abandoned' ? 'Reaction test abandoned' : 'Reaction test paused'}</h1>
+      <h1>{state.phase === 'done' ? 'Reaction test complete' : state.result?.status === 'abandoned' ? 'Reaction test abandoned' : 'Reaction test interrupted'}</h1>
       {state.feedback && <p role="status">{state.feedback}</p>}
       {result ? (
         <><p role="status">Saved on the station.</p><Panel><ReactionSessionView result={result} /></Panel></>
@@ -99,8 +99,17 @@ function TestSession({ protocol, crewId, onCancel }: { protocol: ReactionProtoco
         </div>
       )}
       <div className="assessment-actions">
-        <Button onClick={() => runner.start()}>Restart from practice</Button>
-        <Button variant="primary" onClick={onCancel}>Back to assessments / check-in</Button>
+        {state.phase === 'done' ? (
+          <>
+            <Button variant="primary" onClick={onCancel}>{backLabel}</Button>
+            <Button onClick={() => runner.start()}>Do it again</Button>
+          </>
+        ) : (
+          <>
+            <Button variant="primary" onClick={() => runner.start()}>Restart from practice</Button>
+            <Button onClick={onCancel}>{backLabel}</Button>
+          </>
+        )}
       </div>
     </div>
   );

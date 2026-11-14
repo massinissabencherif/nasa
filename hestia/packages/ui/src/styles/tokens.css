@@ -94,6 +94,19 @@ a {
   color: inherit;
 }
 
+/* Text for screen readers only (for example "done" after a finished step). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Buttons: one definition of hover, pressed and loading for every variant. */
 .hz-btn {
   transition: border-color 120ms ease, background-color 120ms ease, filter 120ms ease;

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AdviceText, Button, IconCaution, IconCheck, IconCheckin, IconCritical, indicatorLabel, Panel, SilhouetteBody, StatusBadge, unknownCount, worstLevel, ZoneDetailPanel } from '@hestia/ui';
+import { AdviceText, Button, formatAge, IconCaution, IconCheck, IconCheckin, IconCritical, indicatorLabel, Panel, SilhouetteBody, StatusBadge, unknownCount, worstLevel, ZoneDetailPanel } from '@hestia/ui';
 import type { ZoneKey } from '@hestia/ui';
 import { useApi } from '../lib/ApiProvider';
 import {
@@ -35,6 +35,14 @@ export function Home() {
   const overall = status ? worstLevel(Object.values(status).map((z) => z.level)) : null;
   const missing = status ? unknownCount(Object.values(status).map((z) => z.level)) : 0;
   const checkinDone = reminders.find((r) => r.key === 'measurements')?.done ?? false;
+  // the newest reading behind any zone, so the person sees how fresh the body view is
+  const newestTs = status
+    ? Object.values(status)
+        .map((zone) => zone.last_ts)
+        .filter((ts): ts is string => Boolean(ts))
+        .sort()
+        .pop() ?? null
+    : null;
 
   return (
     <div style={{ padding: 16, display: 'grid', gap: 14 }}>
@@ -90,13 +98,16 @@ export function Home() {
         </div>
       ))}
 
-      {!checkinDone && (
-        <Button variant="primary" size="lg" icon={<IconCheckin size={20} />} onClick={() => navigate('/checkin')}>
-          Do today's check-in
+      <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
+        <Button variant={checkinDone ? 'secondary' : 'primary'} size="lg" icon={<IconCheckin size={20} />} onClick={() => navigate('/checkin')}>
+          {checkinDone ? "Update today's check-in" : 'Start my check-in'}
         </Button>
-      )}
+        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
+          {checkinDone ? "Today's check-in is recorded." : 'Nothing recorded today.'}
+        </p>
+      </div>
 
-      <Panel>
+      <Panel title="Your body" action={newestTs ? <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>last reading {formatAge(newestTs)}</span> : undefined}>
         {status ? (
           <div style={{ display: 'grid', gap: 6 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>

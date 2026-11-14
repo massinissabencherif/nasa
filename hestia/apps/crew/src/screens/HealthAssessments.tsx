@@ -12,7 +12,7 @@ export function HealthAssessments() {
   const [deviceId] = useState(installationId);
   useSyncExternalStore(subscribeReactionSync, reactionSyncRevision);
   if (crewId == null) return null;
-  if (testing) return <ReactionTest crewId={crewId} onCancel={() => setTesting(false)} />;
+  if (testing) return <ReactionTest crewId={crewId} onCancel={() => setTesting(false)} backLabel="Back to assessments" />;
   const pending = pendingReactions(api.baseUrl, crewId);
   return <div className="assessment-stack" style={{ padding: 'var(--space-4)' }}>
     <h1>Health assessments</h1>
