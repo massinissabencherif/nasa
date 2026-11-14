@@ -1,0 +1,142 @@
+{
+  "date": "2026-11-14",
+  "timezone": "Europe/Paris",
+  "implementation": "not integrated",
+  "assets": [
+    {
+      "file": "images/home-current.png",
+      "title": "Accueil actuel",
+      "state": "current",
+      "width": 390,
+      "height": 844,
+      "bytes": 46594,
+      "sha256": "ba0c4bc537b8b1f6886c133c21cac8a241339a855f59deb3344ff4ba24645c6a"
+    },
+    {
+      "file": "images/home-proposed.png",
+      "title": "Accueil proposé : grande silhouette",
+      "state": "proposal",
+      "width": 390,
+      "height": 844,
+      "bytes": 55578,
+      "sha256": "16710ca6c8b4adad2ec7a936e30827345fd97abfacdc0b614c71b60aef1fbef7"
+    },
+    {
+      "file": "images/checkin-feel.png",
+      "title": "Bilan : ressenti",
+      "state": "proposal",
+      "width": 390,
+      "height": 844,
+      "bytes": 47554,
+      "sha256": "aef871f027f398f6575774145c7e8bbb240deabb37b32dc5e66deff659564be5"
+    },
+    {
+      "file": "images/checkin-measure.png",
+      "title": "Bilan : mesures",
+      "state": "proposal",
+      "width": 390,
+      "height": 844,
+      "bytes": 45399,
+      "sha256": "76d4b0ad016dc0ca22e0ed3f010ed8b07cf207e368f4481309301267d25683d0"
+    },
+    {
+      "file": "images/reaction.png",
+      "title": "Test de réaction : introduction",
+      "state": "proposal",
+      "width": 390,
+      "height": 844,
+      "bytes": 49055,
+      "sha256": "0bb134cdeaee0a53a19638faf8eb459df9bd6074461dc96cbf9c6de889338911"
+    },
+    {
+      "file": "images/reaction-interrupted.png",
+      "title": "Test interrompu : exemple sauvegardé",
+      "state": "proposal",
+      "width": 390,
+      "height": 844,
+      "bytes": 43913,
+      "sha256": "f7abe15aaa0c3bde14c171c1b6e7dbf94c6a15eeda757624740326c8ca91a722"
+    },
+    {
+      "file": "images/meal.png",
+      "title": "Repas",
+      "state": "proposal",
+      "width": 390,
+      "height": 844,
+      "bytes": 47663,
+      "sha256": "92d4d44a2e25e8ed730410511598b466f6087df5377d204a16d12a6d89ea09a3"
+    },
+    {
+      "file": "images/pantry.png",
+      "title": "Réserve",
+      "state": "proposal",
+      "width": 390,
+      "height": 844,
+      "bytes": 132863,
+      "sha256": "c89c2cf6f698befe2d93135a6c4c73c5ce094edf804fc8d64ce474a2105b477b"
+    },
+    {
+      "file": "images/history.png",
+      "title": "Historique",
+      "state": "proposal",
+      "width": 390,
+      "height": 844,
+      "bytes": 46258,
+      "sha256": "3e99c9aa1c1e7a3d41d0d0d9594c755f95408b11cbbe563b44e96c72e984cbc8"
+    },
+    {
+      "file": "images/station-crew.png",
+      "title": "Station : équipage",
+      "state": "proposal",
+      "width": 1280,
+      "height": 800,
+      "bytes": 84700,
+      "sha256": "8cb04dd3276cbd435c791ebb493bb5d7e608e25866eaa2b3d60886006e6dde0d"
+    },
+    {
+      "file": "images/station-earth.png",
+      "title": "Station : liaison Terre",
+      "state": "proposal",
+      "width": 1280,
+      "height": 800,
+      "bytes": 57377,
+      "sha256": "5a8b87c4df98dca1b9c068318bbbe8ab3d260ef1464e429ecba6304f1f3cd92c"
+    },
+    {
+      "file": "images/station-alerts.png",
+      "title": "Station : alertes",
+      "state": "proposal",
+      "width": 1280,
+      "height": 800,
+      "bytes": 68448,
+      "sha256": "025aa29c66b6aaa28450e834cfb2220f7fa85cf4651d6090893b5378f953c998"
+    },
+    {
+      "file": "images/flow.png",
+      "title": "Planche : bilan et réaction",
+      "state": "board",
+      "width": 1266,
+      "height": 1043,
+      "bytes": 205753,
+      "sha256": "7d07d39bd829b1ace2b78b667b50c1f40cad5de6f27430684255ebe788dbee1d"
+    },
+    {
+      "file": "images/daily.png",
+      "title": "Planche : repas, réserve et historique",
+      "state": "board",
+      "width": 1266,
+      "height": 1043,
+      "bytes": 280074,
+      "sha256": "533a6c2a7b900a13d0630eadf92405aa3d48f03f115c92ab14cf366b7110d399"
+    },
+    {
+      "file": "images/station.png",
+      "title": "Planche : station",
+      "state": "board",
+      "width": 1020,
+      "height": 2113,
+      "bytes": 248238,
+      "sha256": "71691dbd05c0f0a49598c72c5be0cf5276be5ed3a81d20572b7885aa2064a3d3"
+    }
+  ]
+}

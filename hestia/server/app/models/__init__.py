@@ -6,6 +6,7 @@ from .gamification import Gamification
 from .measurement import Measurement
 from .mission import MissionContext
 from .pantry import ConsumptionEvent, InventoryLine, InventorySnapshot, ShelfSlot
+from .reaction import ReactionSession, ReactionTrial
 
 __all__ = [
     "Alert",
@@ -19,4 +20,6 @@ __all__ = [
     "InventoryLine",
     "InventorySnapshot",
     "ShelfSlot",
+    "ReactionSession",
+    "ReactionTrial",
 ]

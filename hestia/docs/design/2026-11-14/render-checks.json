@@ -1,0 +1,83 @@
+[
+  {
+    "page": "checkin-feel",
+    "font": true,
+    "overflow": false,
+    "mainScroll": {
+      "height": 691,
+      "content": 691
+    }
+  },
+  {
+    "page": "checkin-measure",
+    "font": true,
+    "overflow": false,
+    "mainScroll": {
+      "height": 691,
+      "content": 691
+    }
+  },
+  {
+    "page": "reaction",
+    "font": true,
+    "overflow": false,
+    "mainScroll": {
+      "height": 691,
+      "content": 692
+    }
+  },
+  {
+    "page": "reaction-interrupted",
+    "font": true,
+    "overflow": false,
+    "mainScroll": {
+      "height": 691,
+      "content": 691
+    }
+  },
+  {
+    "page": "meal",
+    "font": true,
+    "overflow": false,
+    "mainScroll": {
+      "height": 691,
+      "content": 741
+    }
+  },
+  {
+    "page": "pantry",
+    "font": true,
+    "overflow": false,
+    "mainScroll": {
+      "height": 691,
+      "content": 835
+    }
+  },
+  {
+    "page": "history",
+    "font": true,
+    "overflow": false,
+    "mainScroll": {
+      "height": 691,
+      "content": 786
+    }
+  },
+  {
+    "page": "station-crew",
+    "font": true,
+    "overflow": false,
+    "mainScroll": null
+  },
+  {
+    "page": "station-earth",
+    "font": true,
+    "overflow": false,
+    "mainScroll": null
+  },
+  {
+    "page": "station-alerts",
+    "font": true,
+    "overflow": false,
+    "mainScroll": null
+  }
+]

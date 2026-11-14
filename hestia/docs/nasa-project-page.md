@@ -44,9 +44,12 @@ _[repository link]_
    a consumption feed. Remove three boxes, scan, and the autonomy figure drops
    in front of you.
 2. **Crew mobile app.** Daily check-in (blood pressure, heart rate, glucose,
-   temperature, weight, sleep, mood, symptoms, exercise) and a 20-second
-   reaction test measured by the phone and compared with the astronaut's own
-   baseline. Every field has a "how to measure / why we ask / what risk"
+   temperature, weight, sleep, mood, symptoms, exercise) and a separate
+   reaction time assessment: three practice trials, then fifteen measured
+   trials, with raw attempts, interruption handling and pending sync.
+   Complete sessions are compared with five previous complete sessions
+   of the same protocol, installation and data source. This assessment
+   is informational and does not change body-zone colours or alerts. Every field has a "how to measure / why we ask / what risk"
    sheet. The app suggests a meal
    from what is really on the shelf, shows reminders adapted to the mission
    context, a check-in streak and badges, and history charts with green,
@@ -72,7 +75,8 @@ _[repository link]_
   glucose, thermometer, scale, sleep, mood, symptoms, exercise minutes and a
   reaction test on the phone: things a crew member can do alone in a few
   minutes. The reaction test is inspired by the Reaction Self-Test used on
-  the ISS; ours is a shortened screening aid, not a validated test.
+  the ISS; ours is a team-defined performance task, not a validated PVT, fatigue
+  diagnosis or fitness-for-duty test.
 - *Why is an exam done?* Each check-in field and each body zone says why.
 - *How do hazards affect indicators?* Each zone is tied to one of the five
   HRP hazards and shows the indicators it moves.
@@ -119,7 +123,7 @@ and abstracts; see `docs/nasa-resources.md`.
 | Mars surface radiation ≈ 0.67 mSv/day | RAD instrument on NASA's Curiosity rover (Hassler et al., Science, 2014) | `nasa_reference.json` → Mars base context |
 | Deep-space transit ≈ 1.8 mSv/day | RAD during Curiosity's cruise (Zeitlin et al., Science, 2013) | same file → transit context |
 | One-way Mars delay about 3–22 min | NASA, "Communication Delays, Disruptions, and Blackouts for Crewed Mars Missions" (NTRS) | `nasa_reference.json` → Earth link delay and countdown |
-| Reaction Self-Test used on the ISS | NASA technical reports (NTRS 20090029851, 20140000075) | Inspiration for the reaction test; ours is shortened and not validated |
+| Reaction Self-Test used on the ISS | NASA technical reports (NTRS 20090029851, 20140000075) | Conceptual inspiration only; our protocol is separate and not validated |
 | SANS is detected by eye imaging (OCT) | NASA crew-member SANS overview (NTRS) | eyes zone text: the app cannot rule SANS out |
 
 **Space agency partner and other data**
@@ -135,7 +139,7 @@ found); 7,700 kcal per kg of body-mass change; the energy need formula
 (Mifflin-St Jeor); exercise attenuating bone loss by up to 50 % at 2 h/day; a
 solar storm adding a one-off dose; resupply dates; the 70 % ration safety
 floor; the rules for a report to Earth; the 72-hour freshness rule; the
-reaction-test bands; all per-item food values; the demo scale of the shelf.
+legacy reaction-test bands (new sessions have no colour bands); all per-item food values; the demo scale of the shelf.
 
 Medical thresholds (blood pressure, heart rate, glucose, temperature, sleep,
 mood, weight change, exercise) are common clinical ranges used as indicative

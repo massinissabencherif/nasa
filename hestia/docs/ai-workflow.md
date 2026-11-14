@@ -47,7 +47,9 @@ configuration or a work integration into this repository.
   not edit the same files.
 - Branches of 14 Nov, stacked in this order: `chore/agents-docs` →
   `fix/health-rules` → `feat/reaction-test` → `chore/shared-skills` →
-  `style/memorable-screens`. None is merged or pushed.
+  `style/memorable-screens`. All were merged into `main` and pushed on
+  14 Nov through `5ff5ef3`, after David and Massi's approval. New work branches
+  from `main`; see `STATUS.md` for the active task.
 - A shared change is reviewed by the other person, or by the other agent on
   their behalf, before it is merged. The human approves the commit message
   and is the author.

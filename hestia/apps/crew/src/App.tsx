@@ -9,6 +9,8 @@ import { Meal } from './screens/Meal';
 import { History } from './screens/History';
 import { Settings } from './screens/Settings';
 import { Pantry } from './screens/Pantry';
+import { HealthAssessments } from './screens/HealthAssessments';
+import { ReactionSync } from './components/ReactionSync';
 
 const TABS = [
   { key: 'home', label: 'Home', icon: IconHome, path: '/home' },
@@ -111,6 +113,7 @@ function Shell() {
           <Route path="/profile" element={<ProfilePicker />} />
           <Route path="/home" element={<Home />} />
           <Route path="/checkin" element={<Checkin />} />
+          <Route path="/assessments" element={<HealthAssessments key={crewId} />} />
           <Route path="/meal" element={<Meal />} />
           <Route path="/history" element={<History />} />
           <Route path="/settings" element={<Settings />} />
@@ -140,6 +143,7 @@ function Shell() {
 function App() {
   return (
     <ApiProvider>
+      <ReactionSync />
       <HashRouter>
         <div
           style={{

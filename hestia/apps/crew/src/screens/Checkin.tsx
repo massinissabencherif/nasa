@@ -81,7 +81,6 @@ export function Checkin() {
   const [mood, setMood] = useState<number | null>(null);
   const [symptoms, setSymptoms] = useState<Set<string>>(new Set());
   const [openSheet, setOpenSheet] = useState<'mood' | 'symptoms' | 'reaction_ms' | null>(null);
-  const [reactionMs, setReactionMs] = useState<number | null>(null);
   const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -99,7 +98,6 @@ export function Checkin() {
   const filled =
     FIELDS.filter(({ key }) => form[key] !== '' && form[key] !== undefined).length +
     (mood != null ? 1 : 0) +
-    (reactionMs != null ? 1 : 0) +
     symptoms.size;
 
   async function save() {
@@ -111,7 +109,6 @@ export function Checkin() {
       if (form[key] !== '' && form[key] !== undefined) body[key] = form[key];
     }
     if (mood != null) body.mood = mood;
-    if (reactionMs != null) body.reaction_ms = reactionMs;
     try {
       setResult(await api.checkin(crewId, body));
     } catch (err) {
@@ -122,14 +119,11 @@ export function Checkin() {
   }
 
   if (result) return <Result result={result} onDone={() => navigate('/home')} />;
-  if (testing) {
+  if (testing && crewId != null) {
     return (
       <ReactionTest
+        crewId={crewId}
         onCancel={() => setTesting(false)}
-        onDone={(ms) => {
-          setReactionMs(ms);
-          setTesting(false);
-        }}
       />
     );
   }
@@ -150,20 +144,11 @@ export function Checkin() {
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontSize: 'var(--text-sm)', fontWeight: 500 }}>{EXPLANATIONS.reaction_ms.label}</p>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>
-              {reactionMs != null
-                ? 'measured just now by this phone'
-                : latest?.reaction_ms
-                  ? `last: ${Math.round(latest.reaction_ms.value)} ms · 20 seconds, measured by this phone`
-                  : '20 seconds, measured by this phone'}
+              3 practice + 15 measured trials · saved separately · your form stays here
             </p>
           </div>
-          {reactionMs != null && (
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-lg)' }}>
-              {reactionMs} <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>ms</span>
-            </span>
-          )}
-          <Button variant={reactionMs != null ? 'secondary' : 'primary'} onClick={() => setTesting(true)}>
-            {reactionMs != null ? 'Redo' : 'Start'}
+          <Button variant="primary" onClick={() => setTesting(true)}>
+            Start
           </Button>
           <button
             onClick={() => setOpenSheet((s) => (s === 'reaction_ms' ? null : 'reaction_ms'))}

@@ -26,7 +26,6 @@ make install        # JavaScript and Python dependencies
 ## 3. Run it
 
 ```bash
-make reset          # fresh database with the seeded crew; do it after every pull
 make demo           # server + station window + crew app
 ```
 
@@ -35,7 +34,13 @@ No Rust? Use two terminals: `make server`, then `make station-web`, and open
 open it in a phone-sized browser window, or scan the QR code shown in
 **Mission settings** with a phone on the same network.
 
-Try the product in two minutes: pick a crew member in the crew app, do a
+The reaction update adds tables at startup and preserves existing records.
+Do not reset after a normal pull. `make reset` is an explicit destructive
+demo preparation step: it replaces the database with fictional data,
+including simulated reaction sessions; use a disposable database or back
+up your demo records first. It is not required to install this feature.
+
+Try the product: pick a crew member in the crew app, do a
 check-in with the reaction test, then look at the **Crew** and **Alerts**
 screens of the station. The buttons under **Mission settings → Demo
 controls** replay each step of the demo.
@@ -44,7 +49,7 @@ controls** replay each step of the demo.
 
 | Step | Command or place |
 |---|---|
-| Start from the latest work | `git switch style/memorable-screens` until it is merged into `main`, then branch from `main` |
+| Start from the latest work | `git switch main`, then `git pull --ff-only`; the consolidation through `5ff5ef3` is merged |
 | One task, one branch | `git switch -c fix/short-name` |
 | Find where the code goes | "Where things go" in `.agents/skills/hestia-development/SKILL.md`, and [architecture.md](architecture.md) |
 | A number to change | `server/data/`: sourced value, colour band or demo rule — three different files, see [architecture.md](architecture.md) |
@@ -54,6 +59,7 @@ controls** replay each step of the demo.
 
 ```bash
 make test                               # backend tests
+pnpm --filter crew test                 # reaction timing and pending sync (Node 22.6+)
 pnpm --filter crew exec tsc -b          # types of the crew app
 pnpm build:crew && pnpm build:station   # both apps build
 make check-offline                      # no external URL in the application
@@ -81,7 +87,9 @@ result in `STATUS.md`:
 - [ ] A real phone reaches the station on the base network (phone hotspot
       with mobile data off), and the crew app works on it.
 - [ ] The reaction test with a real finger: the timings look plausible and
-      a tap before the signal is not counted.
+      a tap before the signal is a false start and repeats the trial. Verify
+      3 practice + 15 measured trials, background interruption, and a pending
+      result that syncs once after reconnecting. See [reaction-protocol.md](reaction-protocol.md).
 - [ ] The webcam scan of the real shelf, in both modes; note the accuracy.
 - [ ] The grid calibration on the real shelf.
 - [ ] `make demo` with the Tauri window, and one full run of
@@ -92,7 +100,7 @@ result in `STATUS.md`:
 
 | Symptom | Cause and fix |
 |---|---|
-| A database error after a pull | The seed or a table changed: `make reset` |
+| A database error after a pull | Keep the database; read the error and migration notes before resetting. New reaction tables are created additively at startup |
 | A scan answers 503 | Ollama is not running or the model is missing: `ollama serve`, `ollama pull qwen2.5vl:7b`. Replay scans need neither |
 | The phone cannot reach the station | Firewall prompt not accepted on the Mac, or the network isolates its clients: see [risks.md](risks.md) |
 | `make test` says `uv: command not found` | Install uv, or run `server/.venv/bin/python -m pytest -q` from `server/` if the environment already exists |

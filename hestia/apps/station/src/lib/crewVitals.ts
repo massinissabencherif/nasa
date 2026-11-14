@@ -33,7 +33,7 @@ export function crewVitals(status: CrewStatus): Vital[] {
     },
     { label: 'Temperature', value: temperature ? `${temperature} °C` : 'no data', level: immunity?.indicators.temperature ?? null },
     { label: 'Sleep', value: sleep ? `${sleep} h` : 'no data', level: brain?.indicators.sleep_h ?? null },
-    { label: 'Reaction', value: reaction ? `${Math.round(Number(reaction))} ms` : 'no test', level: brain?.indicators.reaction_change_pct ?? null },
+    { label: 'Legacy reaction', value: reaction ? `${Math.round(Number(reaction))} ms` : 'no test', level: brain?.indicators.reaction_change_pct ?? null },
   ];
 }
 

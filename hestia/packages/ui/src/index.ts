@@ -16,3 +16,5 @@ export * from './adviceText';
 export * from './time';
 export * from './zones';
 export * from './thresholdText';
+export * from './components/ReactionResult';
+export * from './components/ReactionHistory';

@@ -14,6 +14,7 @@ import {
   useThresholds,
 } from '../lib/hooks';
 import { clearSelectedCrewId } from '../lib/profile';
+import { ReactionAssessmentCard } from '../components/ReactionAssessmentCard';
 
 export function Home() {
   const navigate = useNavigate();
@@ -123,8 +124,11 @@ export function Home() {
       {selectedZone && status && (
         <Panel>
           <ZoneDetailPanel zone={selectedZone} status={status} thresholds={thresholds} contextType={context?.type} onClose={() => setSelectedZone(null)} />
+          {selectedZone === 'brain_morale' && <Button onClick={() => navigate('/assessments')}>Open reaction time assessment</Button>}
         </Panel>
       )}
+
+      {crewId != null && <ReactionAssessmentCard key={crewId} crewId={crewId} onOpen={() => navigate('/assessments')} />}
 
       {reminders.length > 0 && (
         <Panel title="Today">

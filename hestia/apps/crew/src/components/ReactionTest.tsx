@@ -1,139 +1,133 @@
-import { useEffect, useRef, useState } from 'react';
-import { Button } from '@hestia/ui';
-import { ANTICIPATION_MS, nextWaitMs, summarise, TRIALS, type ReactionSummary } from '../lib/reactionTest';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { flushSync } from 'react-dom';
+import type { ReactionProtocol } from '@hestia/api-client';
+import { Button, Panel, ReactionSessionView, ReactionTrials } from '@hestia/ui';
+import { useApi } from '../lib/ApiProvider';
+import { previewReaction, ReactionRunner, type ReactionState } from '../lib/reactionTest';
+import {
+  installationId, loadReactionProtocol, pendingReactions, queueReaction, randomId,
+  reactionSyncRevision, savedReaction, subscribeReactionSync, syncReactions,
+} from '../lib/reactionStorage';
 
-type Phase = 'intro' | 'wait' | 'go' | 'early' | 'done';
+export function ReactionTest({ crewId, onCancel }: { crewId: number; onCancel: () => void }) {
+  const api = useApi();
+  const [protocol, setProtocol] = useState<ReactionProtocol | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    let active = true;
+    loadReactionProtocol(api).then((value) => { if (active) { setProtocol(value); setError(null); } })
+      .catch(() => { if (active) setError('Connect to the station once to load the test protocol.'); });
+    return () => { active = false; };
+  }, [api, retry]);
+  if (!protocol) return <div className="assessment-stack" style={{ padding: 'var(--space-4)' }}>
+    <p role={error ? 'alert' : 'status'}>{error ?? 'Loading test protocol…'}</p>
+    {error && <Button onClick={() => setRetry((value) => value + 1)}>Retry</Button>}
+    <Button onClick={onCancel}>Back</Button>
+  </div>;
+  return <TestSession key={`${api.baseUrl}:${crewId}:${protocol.version}`} protocol={protocol} crewId={crewId} onCancel={onCancel} />;
+}
 
-const PAD_TEXT: Record<Exclude<Phase, 'intro' | 'done'>, { title: string; hint: string }> = {
-  wait: { title: 'Wait', hint: 'Tap as soon as this turns blue' },
-  go: { title: 'Tap', hint: '' },
-  early: { title: 'Too early', hint: 'Wait for the blue signal' },
-};
-
-/**
- * Short reaction-time self-test, inspired by NASA's Reaction Self-Test (a
- * 3-minute psychomotor vigilance test used on the ISS). This shortened
- * version is a screening aid, not a validated test.
- */
-export function ReactionTest({ onDone, onCancel }: { onDone: (medianMs: number) => void; onCancel: () => void }) {
-  const [phase, setPhase] = useState<Phase>('intro');
-  const [times, setTimes] = useState<number[]>([]);
-  const [falseStarts, setFalseStarts] = useState(0);
-  const timer = useRef<number | undefined>(undefined);
-  const signalAt = useRef(0);
-
-  // the only effect: never leave a timer running after the screen closes
-  useEffect(() => () => window.clearTimeout(timer.current), []);
-
-  function armSignal() {
-    setPhase('wait');
-    timer.current = window.setTimeout(() => {
-      signalAt.current = performance.now();
-      setPhase('go');
-    }, nextWaitMs());
-  }
-
-  function start() {
-    setTimes([]);
-    setFalseStarts(0);
-    armSignal();
-  }
-
-  function tap() {
-    if (phase === 'wait') {
-      window.clearTimeout(timer.current);
-      setFalseStarts((n) => n + 1);
-      setPhase('early');
-      timer.current = window.setTimeout(armSignal, 900);
-      return;
+function TestSession({ protocol, crewId, onCancel }: { protocol: ReactionProtocol; crewId: number; onCancel: () => void }) {
+  const api = useApi();
+  const [deviceId] = useState(installationId);
+  const [rendered, setRendered] = useState<ReactionState | null>(null);
+  const pad = useRef<HTMLButtonElement>(null);
+  const [runner] = useState(() => new ReactionRunner(protocol, deviceId, {
+    now: () => performance.now(), date: () => new Date().toISOString(), random: Math.random, id: randomId,
+    later: (callback, ms) => window.setTimeout(callback, ms), cancel: window.clearTimeout.bind(window),
+    frame: requestAnimationFrame.bind(window), cancelFrame: cancelAnimationFrame.bind(window),
+  }, (next, signal) => {
+    if (signal) flushSync(() => setRendered(next));
+    else setRendered(next);
+    if (next.result) {
+      queueReaction(api.baseUrl, crewId, next.result);
+      void syncReactions(api, crewId);
     }
-    if (phase !== 'go') return;
-    const reaction = performance.now() - signalAt.current;
-    if (reaction < ANTICIPATION_MS) {
-      setFalseStarts((n) => n + 1);
-      armSignal();
-      return;
-    }
-    const next = [...times, reaction];
-    setTimes(next);
-    if (next.length >= TRIALS) setPhase('done');
-    else armSignal();
-  }
+  }));
+  const state = rendered ?? runner.state;
+  useSyncExternalStore(subscribeReactionSync, reactionSyncRevision);
+  const result = state.result ? savedReaction(state.result.id) : undefined;
+  const pending = state.result ? pendingReactions(api.baseUrl, crewId).find((entry) => entry.body.id === state.result!.id) : undefined;
+  const preview = previewReaction(state.trials);
 
-  if (phase === 'intro') {
-    return (
-      <div style={{ padding: 16, display: 'grid', gap: 14 }}>
-        <h1 style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>Reaction test</h1>
-        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-          {TRIALS} signals, about 20 seconds. Hold the phone as you usually do. When the panel turns blue, tap it as fast as you
-          can. The result is compared with your own earlier tests, not with other people.
-        </p>
-        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>
-          Inspired by the Reaction Self-Test used on the ISS (3 minutes). This short version is a screening aid, not a validated
-          test.
-        </p>
-        <Button variant="primary" size="lg" onClick={start}>
-          Start
-        </Button>
-        <Button variant="ghost" onClick={onCancel}>
-          Back to the check-in
-        </Button>
-      </div>
-    );
-  }
+  useEffect(() => {
+    const interrupt = () => runner.interrupt();
+    const visibility = () => { if (document.hidden) interrupt(); };
+    document.addEventListener('visibilitychange', visibility);
+    window.addEventListener('blur', interrupt);
+    window.addEventListener('pagehide', interrupt);
+    return () => {
+      runner.interrupt();
+      runner.dispose();
+      document.removeEventListener('visibilitychange', visibility);
+      window.removeEventListener('blur', interrupt);
+      window.removeEventListener('pagehide', interrupt);
+    };
+  }, [runner]);
+  useEffect(() => {
+    if (state.phase === 'wait') pad.current?.focus({ preventScroll: true });
+  }, [state.phase]);
 
-  if (phase === 'done') {
-    const summary: ReactionSummary = summarise(times, falseStarts);
-    return (
-      <div style={{ padding: 16, display: 'grid', gap: 14 }}>
-        <h1 style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>Reaction test done</h1>
-        <div style={{ background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: 16 }}>
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-display)', lineHeight: 1 }}>
-            {summary.medianMs}
-            <span style={{ fontSize: 'var(--text-lg)', color: 'var(--text-muted)' }}> ms</span>
-          </p>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', marginTop: 8 }}>
-            Median of {TRIALS} taps, from {summary.fastestMs} to {summary.slowestMs} ms.
-            {summary.falseStarts > 0 && ` ${summary.falseStarts} tap${summary.falseStarts > 1 ? 's' : ''} before the signal, not counted.`}
-          </p>
+  if (state.phase === 'intro') return (
+    <div className="assessment-stack" style={{ padding: 'var(--space-4)' }}>
+      <h1>Reaction time test</h1>
+      <p>{protocol.practice_trials} practice trials, then {protocol.measured_trials} measured trials. Allow about one to two minutes.</p>
+      <p>Wait until the panel says “Tap now”, then tap it. You can also use a mouse, Space or Enter. A tap before the signal is a false start; it repeats that trial.</p>
+      <p className="assessment-muted">Use the same device and similar conditions each time. Distraction, screen refresh and input latency can affect the result. This is not a validated PVT, a fatigue diagnosis or an operational fitness test.</p>
+      {!deviceId && <p role="alert">This browser cannot store an installation identifier. A device-matched reference will be unavailable.</p>}
+      <Button variant="primary" size="lg" onClick={() => runner.start()}>Start practice</Button>
+      <Button onClick={onCancel}>Back</Button>
+    </div>
+  );
+
+  if (state.phase === 'done' || state.phase === 'paused') return (
+    <div className="assessment-stack" style={{ padding: 'var(--space-4)' }}>
+      <h1>{state.phase === 'done' ? 'Reaction test complete' : state.result?.status === 'abandoned' ? 'Reaction test abandoned' : 'Reaction test paused'}</h1>
+      {state.feedback && <p role="status">{state.feedback}</p>}
+      {result ? (
+        <><p role="status">Saved on the station.</p><Panel><ReactionSessionView result={result} /></Panel></>
+      ) : (
+        <div className="assessment-stack assessment-notice">
+          <p role="status">{pending?.persisted ? 'Pending sync — a copy is kept on this device for this station.' : 'Not saved on the station yet. Keep this screen open.'}</p>
+          <p className="assessment-number">{preview.median == null ? 'No valid response' : `${Math.round(preview.median)} ms median`}</p>
+          <p>{preview.valid} valid responses · {preview.falseStarts} false starts · {preview.noResponses} no responses</p>
+          <p className="assessment-muted">Local preview. The station will recompute statistics and compare eligible sessions after saving.{state.result?.status !== 'complete' && ' This incomplete session is excluded from your personal reference.'}</p>
+          <ReactionTrials trials={state.trials} />
+          {pending?.error && <p className="assessment-muted">{pending.error}</p>}
+          <Button onClick={() => { void syncReactions(api, crewId); }}>Retry saving</Button>
         </div>
-        <Button variant="primary" size="lg" onClick={() => onDone(summary.medianMs)}>
-          Add to my check-in
-        </Button>
-        <Button variant="ghost" onClick={start}>
-          Do it again
-        </Button>
+      )}
+      <div className="assessment-actions">
+        <Button onClick={() => runner.start()}>Restart from practice</Button>
+        <Button variant="primary" onClick={onCancel}>Back to assessments / check-in</Button>
       </div>
-    );
-  }
+    </div>
+  );
 
-  const text = PAD_TEXT[phase];
-  const go = phase === 'go';
+  if (state.phase === 'ready') return (
+    <div className="assessment-stack" style={{ padding: 'var(--space-4)' }}>
+      <h1>Practice complete</h1>
+      <p>Your practice responses were not recorded. The next {protocol.measured_trials} trials form your measured session.</p>
+      <Button variant="primary" size="lg" onClick={() => runner.startMeasured()}>Start measured test</Button>
+      <Button onClick={() => runner.abandon()}>Abandon session</Button>
+    </div>
+  );
+
+  const label = state.phase === 'go' ? 'Tap now' : state.phase === 'wait' ? 'Wait for the signal' : state.feedback;
   return (
-    <div style={{ padding: 16, display: 'grid', gap: 12, gridTemplateRows: 'auto 1fr', minHeight: 'calc(100dvh - 180px)' }}>
-      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-        {Math.min(times.length + 1, TRIALS)} / {TRIALS}
-      </p>
-      <button
-        onPointerDown={tap}
-        aria-label={go ? 'Tap now' : text.title}
-        style={{
-          touchAction: 'manipulation',
-          userSelect: 'none',
-          WebkitUserSelect: 'none',
-          border: `1px solid ${go ? 'var(--accent)' : phase === 'early' ? 'var(--orange)' : 'var(--border)'}`,
-          borderRadius: 'var(--radius-md)',
-          background: go ? 'var(--accent)' : 'var(--panel)',
-          color: go ? '#07222c' : phase === 'early' ? 'var(--orange)' : 'var(--text-muted)',
-          display: 'grid',
-          placeContent: 'center',
-          gap: 8,
-          cursor: 'pointer',
-        }}
-      >
-        <span style={{ fontSize: 'var(--text-2xl)', fontWeight: 600 }}>{text.title}</span>
-        {text.hint && <span style={{ fontSize: 'var(--text-sm)' }}>{text.hint}</span>}
+    <div className="assessment-stack" style={{ padding: 'var(--space-4)' }}>
+      <p>{state.mode === 'practice' ? 'Practice' : 'Measured trial'} {state.trialNumber} / {state.mode === 'practice' ? protocol.practice_trials : protocol.measured_trials}</p>
+      <button ref={pad} className="reaction-pad" data-phase={state.phase} aria-label={label}
+        onPointerDown={(event) => { if (event.isPrimary && event.button === 0) { event.preventDefault(); runner.tap(); } }}
+        onKeyDown={(event) => {
+          if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); if (!event.repeat) runner.tap(); }
+        }}>
+        <strong>{label}</strong>
+        {state.phase === 'wait' && <span>Respond only when “Tap now” appears</span>}
       </button>
+      <p className="assessment-muted">Switching tabs or leaving this app interrupts the session. No network request is used to time a response.</p>
+      <Button onClick={() => runner.abandon()}>Abandon session</Button>
     </div>
   );
 }

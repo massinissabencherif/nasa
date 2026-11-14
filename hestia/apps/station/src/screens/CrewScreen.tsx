@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { formatAge, Panel, SilhouetteBody, StatusBadge, StatusDot, ZoneDetailPanel, ZONE_META, ZONES, worstLevel } from '@hestia/ui';
+import { formatAge, Panel, ReactionHistory, SilhouetteBody, StatusBadge, StatusDot, ZoneDetailPanel, ZONE_META, ZONES, worstLevel } from '@hestia/ui';
+import { api } from '../lib/api';
 import { crewVitals, newestReading } from '../lib/crewVitals';
 import type { ZoneLevel } from '@hestia/api-client';
 import type { ZoneKey } from '@hestia/ui';
@@ -117,6 +118,7 @@ export function CrewScreen() {
           </div>
         </Panel>
       )}
+      {expanded != null && <ReactionHistory api={api} crewId={expanded} />}
     </div>
   );
 }

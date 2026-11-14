@@ -34,7 +34,8 @@ shared types).
   reference values and flagged assumptions), `thresholds.json` (indicative
   colour bands) and `demo_rules.json` (rules the team chose for the demo:
   escalation to Earth, data freshness, how exercise and meals are counted).
-  Also `food_catalogue.json` and `shelf_grid.json`.
+  Also `food_catalogue.json`, `shelf_grid.json` and `reaction_protocols.json`
+  (versioned, team-chosen performance-test parameters).
 - Every check-in — phone form, demo scenario, test — goes through
   `engines/checkin.py::record_checkin`.
 
@@ -71,6 +72,17 @@ shared types).
   The tested setups are listed in [risks.md](risks.md).
 - **macOS prompts.** Camera access and the incoming-connection firewall
   prompt need one manual click before the demo.
+
+## Versioned reaction sessions
+
+The existing test runner now implements `reaction-15-v1`. New sessions and
+raw attempts live in additive `ReactionSession` / `ReactionTrial` tables;
+`engines/reaction.py` validates the sequence, recomputes statistics and
+selects a comparable reference. The routes only expose those operations.
+The browser keeps unsynced envelopes for the original station and crew
+member, retrying the same session ID. Shared result/history components
+serve the crew and station apps. No new dependency was added.
+See [reaction-protocol.md](reaction-protocol.md) for limits and legacy data.
 
 ## Known structural debts
 

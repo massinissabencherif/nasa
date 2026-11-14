@@ -14,7 +14,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.db import init_db
-from app.routes import alerts, context, crew, demo, earth, events, forecast, pantry, reference, station
+from app.routes import alerts, context, crew, demo, earth, events, forecast, pantry, reaction, reference, station
 from app.seed import is_seeded, reset_and_seed
 from vision.ollama_client import warmup
 
@@ -46,7 +46,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for module in (context, crew, pantry, forecast, alerts, earth, demo, events, reference, station):
+for module in (context, crew, pantry, forecast, alerts, earth, demo, events, reference, station, reaction):
     app.include_router(module.router)
 
 

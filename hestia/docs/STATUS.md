@@ -4,11 +4,109 @@ Last update: 14 Nov 2026 (first day of the event). This file says what
 works, how it was checked, and what is still open. Decisions are in
 [decisions.md](decisions.md).
 
+## 14 Nov — UI direction and handoff for Fable
+
+David approved a documentation-only handoff: [brief](prompt/2026-11-14-fable-ui-handoff-fr.md),
+[design-system audit](sources/2026-11-14-design-system-audit.md) and
+[portable image gallery](design/2026-11-14/README.md). Astra prepared these
+on the existing `feat/reaction-protocol` working tree, without changing
+application code, installing a plugin, committing or publishing.
+
+**Chosen direction (D16):** Space Grotesk for the interface, Plex Mono for
+short numeric readings, original navy/vivid cyan, large body with eight
+visible zones. David rejected the softened graphite/cyan variant and the
+layout that reduced the body. He wants Fable to add restrained character,
+measurement icons and visual depth. Individual layouts remain proposals.
+
+**Not implemented:** the new font, proposed layouts, step-by-step check-in,
+icon additions and design-system fixes. The running application still uses
+Plex Sans. `hestia-ui-polish` still names that font; D16 takes precedence
+until the skill is synchronised in the authorised implementation lot.
+The existing reaction protocol remains 3 practice + 15 measured trials.
+
+**Evidence and limits:** real-font mockups rendered in Chrome at 390×844,
+width checked at 360×780; station at 1280×800. No horizontal overflow in
+those prototype checks. Some phone pages intentionally scroll vertically.
+Buttons are not connected to the app. No physical-device or user study was
+performed. Code review found low text contrast and inaccurate copy about
+Earth escalation and meal/box attribution; see the audit. Earlier backend
+and frontend tests below were not rerun for this documentation-only pass.
+
+**Handoff checks:** 126 local links resolve; all 15 image dimensions and
+SHA-256 hashes match the manifest. The portable gallery loads its 12
+individual views in Chrome with no external request, script error or
+horizontal overflow at 390 and 1280 px. The 275 tracked/untracked non-doc
+files have identical hashes to the start of this handoff; the existing
+reaction implementation is untouched. `git diff --check` passes.
+
+**Next:** David/Fable select and authorise the next code lot under AGENTS.md;
+first preserve the uncommitted reaction work described below. Confirm task
+ownership with Massi. The handoff is local until explicitly shared: no
+commit, push, merge or external message has been authorised for this pass.
+
 ## 14 Nov — consolidation
 
-Five branches, stacked. `style/memorable-screens` is the top of the stack
-and contains all of them; it was pushed on 14 Nov and is **not merged into
-`main`**. The commits are signed by David.
+The five stacked branches were merged into `main` by fast-forward and pushed
+on 14 Nov, after David and Massi approved it. `main` reached `5ff5ef3` with
+all 11 commits preserved. Astra reran the 60 backend tests and both web
+builds successfully on David's Mac (Python 3.13, Node 25.7.0).
+
+### Current task — Astra, `feat/reaction-protocol`
+
+Approved first lot: archive the [health-assessments brief](prompt/2026-11-14-health-assessments-fr.md),
+update merge documentation and evolve the existing reaction test. Scope:
+3 practice trials, 15 measured trials, interruption handling, versioned
+sessions, server statistics, per-device reference, pending sync and history.
+No wellbeing or injury-journal implementation in this lot. No commit or push
+authorised. End condition: API and browser checks, preserved existing data
+and demo, and an honest verification record. **Implemented and verified in
+software; awaiting David’s review and commit-message approval.** This branch
+has not been committed, pushed or merged.
+
+### Reaction lot — verified 14 Nov by Astra
+
+- Existing test evolved to 3 practice + 15 measured trials. Raw attempts,
+  timeout/false-start/interruption states, device/protocol/source separation,
+  server recomputation and idempotent saving are implemented.
+- Home → Health assessments, contextual brain link, preserved check-in form,
+  shared crew/station history and offline pending-sync states are connected.
+  Legacy five-trial measurements stay separate and labelled. New sessions
+  cause no automatic colour, alert or Earth report.
+- Additive tables preserve the database. A fresh/reset demo database includes
+  simulated complete/interrupted sessions. Existing databases need no reset.
+  Protocol and limits: [reaction-protocol.md](reaction-protocol.md).
+- Brief archived; product/architecture/development/pitch/NASA-page draft
+  updated. The pitch shows a previously saved result, rather than claiming
+  to complete a 1–2 minute protocol in 20 seconds. Nothing was submitted.
+
+| Check | Machine | Result |
+|---|---|---|
+| Backend suite, including existing demo and 9 new reaction tests | David’s Mac, Python 3.13 | **69 pass**; one existing Starlette/httpx deprecation warning |
+| Runner and storage tests, `pnpm --filter crew test` | David’s Mac, Node 25.7.0 | **10 pass**; false starts, timeouts, duplicate events, interruption, reference exclusions covered across frontend/API tests |
+| Type checks + production builds | David’s Mac, Node 25.7.0 / pnpm 10.30.3 | Both pass; existing bundle-size warning remains |
+| Crew lint | David’s Mac | No new warning; 5 existing React warnings in ApiProvider, hooks, Home and Pantry remain |
+| Complete reaction UI → real local API | Chrome headless, 390×844, throwaway SQLite | 3 practice + 15 measured; false start, timeout, keyboard/pointer inputs; 14 valid / 1 false start / 1 timeout saved once. Full session driven by Playwright’s clock, not human timing |
+| Pending save | Same browser/API | Station API requests deliberately failed; interrupted result survived page reload; retry saved one record and cleared the pending copy |
+| Check-in integration | Same browser | Blood pressure, mood and symptom selections preserved after leaving the test |
+| Real-clock practice + lifecycle | Same browser, without clock replacement | Touch input produced a time; abandon and hidden-page interruption saved incomplete sessions |
+| Station individual history | Chrome headless, 1280×800 | Raw attempts, source labels and reference from 5 simulated comparable sessions displayed; body status loaded |
+| Layout/runtime | Both browser sizes | Screenshots inspected; no horizontal overflow, JavaScript page error or external runtime request in the tested path |
+| Offline URL check / whitespace | David’s Mac | `make check-offline` and `git diff --check` pass |
+
+Browser evidence is local to this machine in
+`/private/tmp/hestia-reaction-review/` (scripts, results and PNGs); it is not
+part of the repository. All browser/API experiments used a disposable
+SQLite file; `server/hestia.db` was not reset or used for these checks.
+
+**Not verified in this lot:** a physical phone, native Capacitor/Tauri,
+actual Wi-Fi loss, timing accuracy, camera/vision/real shelf or a full
+five-minute stage rehearsal. Existing demo behaviour passed through the
+API with a mock shelf scan; that does not validate real hardware.
+
+**Next owner/action:** David reviews the first lot, approves a commit
+message if ready, then David/Massi run the hardware checklist. Do not start
+P4/P5 without their scope decision; wellbeing still needs the mood/sleep
+integration choice. No publication is authorised by this record.
 
 | Branch | Content |
 |---|---|
@@ -45,8 +143,9 @@ flagged. Each reference value now has a source line in
 
 Still open:
 
-- The seed and the meaning of meal events changed: run `make reset` once
-  after pulling these branches.
+- The old meal-event seed changed during consolidation. Prepare fresh
+  fictional data only on a disposable demo database; a reset erases records.
+  The new reaction tables are additive and do not require a reset.
 - Nothing was run on a physical phone, with the vision model, on a real
   shelf or in the Tauri window on 14 Nov by the agent. The checklist to
   tick is in [development.md](development.md), section 7.
@@ -197,7 +296,7 @@ date says otherwise.
 
 ## To do before / during the event
 
-1. Massi: pull the branches, `make reset`, run `make test` and one full
+1. Massi: pull `main`, run `make test` and one full
    demo with the camera and a phone; write the result here.
 2. Install the Android SDK from Android Studio if an APK is wanted, then
    `make android`.

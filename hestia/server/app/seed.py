@@ -7,6 +7,7 @@ from sqlmodel import Session, select
 
 from app.db import engine, reset_db
 from app.engines.alerts import evaluate_and_alert
+from app.seed_reaction import seed_reaction_sessions
 from app.models import (
     CrewMember,
     FoodItem,
@@ -233,6 +234,7 @@ def reset_and_seed() -> None:
         crew_rows = seed_crew_and_history(session, mars_base)
         seed_scripted_alerts(session, crew_rows)
         session.commit()
+        seed_reaction_sessions(session, crew_rows)
 
 
 def is_seeded() -> bool:

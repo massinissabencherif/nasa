@@ -33,7 +33,7 @@ export const ZONE_META: Record<ZoneKey, ZoneMeta> = {
     label: 'Brain / morale',
     bodyPart: 'head',
     indicators: ['mood', 'sleep_h', 'reaction_change_pct', 'symptom'],
-    function: 'Mood, sleep, reaction time measured by the phone, and symptoms such as headache, fatigue or dizziness: your behavioural and cognitive baseline.',
+    function: 'Mood, sleep, legacy reaction readings and declared symptoms. The new 15-trial reaction sessions are separate information and do not change this zone’s colour.',
     why: 'Isolation and confinement wear on morale and decision-making over a long mission; catching a dip early keeps it from compounding.',
     action: "Talk to a crewmate, stick to your sleep schedule, and flag it in today's check-in.",
   },
@@ -107,8 +107,8 @@ export const INDICATOR_LABELS: Record<string, string> = {
   exercise_streak: 'Exercise streak',
   weight_change_pct: 'Weight change',
   radiation_pct_of_career_limit: 'Radiation dose',
-  reaction_change_pct: 'Reaction time',
-  reaction_ms: 'Reaction time',
+  reaction_change_pct: 'Legacy reaction time',
+  reaction_ms: 'Legacy reaction time',
   symptom: 'Symptoms',
 };
 

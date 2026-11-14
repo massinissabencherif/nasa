@@ -12,7 +12,7 @@ says nothing about the code.
 | D2 | 14 Nov 2026 | Work done on 10–11 Nov stays in the git history as it is and is declared on the NASA project page | David | decided | The local organisers allow preparatory work. David confirms this also covers international eligibility; the agents did not check it themselves |
 | D3 | 14 Nov 2026 | Scope as written in [product.md](product.md): check-in, silhouette, alerts, Earth link and history are the core; the pantry is in the main demo; forecasts close the demo as the next step; calibration gets one sentence; gamification leaves the main path | David (Massi to confirm) | decided, not implemented | Five minutes of demo; fit with the challenge text |
 | D4 | 14 Nov 2026 | No feature code is deleted without a line in this file | David | decided | "Not in the pitch" is not "to remove" |
-| D5 | 14 Nov 2026 | `AGENTS.md` at the repository root is the only rule file for agents; `CLAUDE.md` imports it; `docs/prompt/` is history | David | implemented on branch `chore/agents-docs`, not merged | Two agents, two people, one set of rules |
+| D5 | 14 Nov 2026 | `AGENTS.md` at the repository root is the only rule file for agents; `CLAUDE.md` imports it; `docs/prompt/` is history | David | implemented; merged into `main` through `5ff5ef3` (D14) | Two agents, two people, one set of rules |
 | D6 | 14 Nov 2026 | The exercise minutes of a check-in are the total for that calendar day; the latest check-in of a day replaces the earlier ones; a streak counts days | Fable, under David's delegation — **David and Massi to confirm** | implemented, verified by tests | Seven check-ins in one day counted as seven days. Rule text: `server/data/demo_rules.json` |
 | D7 | 14 Nov 2026 | A report goes to Earth when one red indicator is in its critical band, or when two or more indicators are red together. A single red reading outside the critical band stays with the crew. Critical bands: systolic ≥ 180 or < 80, diastolic ≥ 120 or < 50, heart rate > 130 or < 40, temperature ≥ 39.5 or < 35.0, glucose ≥ 250 or < 55, dose > 100 % of the limit | Fable, under David's delegation — **David and Massi to confirm the bands** | implemented, verified by tests | A systolic pressure of 140 alone queued a report. These are demo rules, not a medical protocol |
 | D8 | 14 Nov 2026 | A meal removes real portions; a shelf scan adds or removes boxes, each box being a whole lot at the demo scale. **A box removed between two scans is no longer attributed to the person who logged a meal just before** | Fable, under David's delegation — **David and Massi to confirm, since a behaviour was removed** | implemented, verified by tests | One 212 kcal meal removed 44,944 kcal. Attributing a whole lot to one meal has no meaning at the demo scale |
@@ -22,6 +22,43 @@ says nothing about the code.
 | D12 | 14 Nov 2026 | The station opens on Crew and its navigation is health first; streak and badges are collapsed on the phone; the forecast screen is named "What-if simulator" | Fable, applying D3 | implemented | The challenge is about health self-assessment |
 | D13 | 14 Nov 2026 | Five shared skills live in `.agents/skills/`; `.claude/skills` is a symlink to it | Fable, applying the consolidation brief | implemented; discovery verified in Claude Code and Codex on David's Mac | One source for both agents. See [ai-workflow.md](ai-workflow.md) |
 
+### Decisions following consolidation:
+
+- **D14 (decided and verified, 14 Nov):** David and Massi approved merging
+  the completed consolidation. Astra fast-forwarded and pushed `main` to
+  `5ff5ef3`; 60 backend tests and both web builds passed before publication.
+- **D15 (implemented and software-verified, 14 Nov):** David approved the
+  reaction-test first lot from the [new brief](prompt/2026-11-14-health-assessments-fr.md).
+  Evolve the existing test to 3 unrecorded practice trials and 15 measured
+  trials, version and store its raw attempts, compare only with 5 previous
+  complete sessions of the same protocol, installation and data source.
+  D15 supersedes D11 for new sessions. New sessions are informational:
+  no automatic colour, alert or Earth report.
+  Existing `reaction_ms` measurements and their old colour rule remain legacy
+  data, separate from the new protocol. Additive tables preserve existing data.
+  Verified: 69 backend tests, 10 frontend tests, both builds and Chrome
+  crew/station paths; physical hardware remains unverified. Uncommitted on
+  `feat/reaction-protocol`. Wellbeing and injury specifications below are
+  not authorised for coding yet.
+
+- **D16 (decided, not implemented, 14 Nov):** David chose **Space Grotesk**
+  (font comparison B), retaining Plex Mono for numbers, and the original
+  navy/vivid cyan palette. He rejected the softened graphite/cyan palette.
+  The large silhouette and eight visible zones stay central; the first
+  redesign made the body too small. Keep the clearer copy and timestamps.
+  Fable is to develop restrained character, measurement icons and visual
+  depth around existing functions. This direction supersedes the Plex Sans
+  line in hestia-ui-polish; it does not change health colours' meanings,
+  health rules or the reaction protocol. Specific layouts, icon drawings,
+  the monogram and a mascot are not all approved by this decision.
+- **D17 (authorised and prepared, 14 Nov):** David explicitly approved a
+  repository handoff with the [Fable brief](prompt/2026-11-14-fable-ui-handoff-fr.md),
+  [mockups](design/2026-11-14/README.md), [audit](sources/2026-11-14-design-system-audit.md)
+  and linked documentation updates, **without application-code changes**.
+  This pass does not authorise a commit, push, merge, installation or
+  external communication. The next implementation lot still follows
+  AGENTS.md. The existing reaction work remains uncommitted.
+
 ## Proposed, not decided
 
 | # | Idea | State |
@@ -29,6 +66,10 @@ says nothing about the code.
 | P1 | Compare every vital sign with the astronaut's own 30-day baseline, in addition to the fixed bands ("your heart rate has been rising for five days") | Proposed by Fable. David: interesting if it is quick and useful, otherwise not. Done only for the reaction test so far |
 | P2 | Heart rate measured by the camera from the face (remote photoplethysmography) | Proposed by Fable. David: maybe, possibly for Massi. Not started. Sensitive to lighting; the typed value must remain as a fallback |
 | P3 | Other self-tests run by the phone (for example a near-vision check for the eyes zone) | Raised by David. Not started. Any such test needs a source and a "screening only" label |
+| P4 | Six-dimension wellbeing questionnaire, partial answers and explicitly shared support requests | User brief received 14 Nov; proposed for a later lot, including the decision about existing mood/sleep fields |
+| P5 | Injury journal, observations and local photos with comparison and deletion | User brief received 14 Nov; proposed for a later lot |
+| P6 | Guided check-in using the existing mood, symptoms and measurement fields, plus coordinated page layouts | Visual prototypes in the [handoff gallery](design/2026-11-14/README.md); final review/error/save states and functional validation still needed; no second wellbeing questionnaire |
+| P7 | Shorten the reaction protocol | Discussed during UX review, not decided. D15 remains 3 practice + 15 measured; any future protocol change must be versioned and have separate comparable references |
 
 ## Open
 

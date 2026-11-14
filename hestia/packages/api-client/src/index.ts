@@ -298,6 +298,59 @@ export type ScanOptions = {
   strategy?: 'full' | 'row';
 };
 
+export type ReactionProtocol = {
+  version: string;
+  practice_trials: number;
+  measured_trials: number;
+  wait_min_ms: number;
+  wait_max_ms: number;
+  response_timeout_ms: number;
+  feedback_ms: number;
+  max_attempts: number;
+  reference_sessions: number;
+  note: string;
+};
+
+export type ReactionTrialInput = {
+  trial_number: number;
+  outcome: 'valid' | 'false_start' | 'no_response' | 'interrupted';
+  reaction_ms?: number | null;
+};
+
+export type ReactionSessionInput = {
+  id: string;
+  protocol_version: string;
+  device_id: string | null;
+  started_at: string;
+  ended_at: string;
+  status: 'complete' | 'interrupted' | 'abandoned';
+  source: 'manual' | 'simulated';
+  practice_completed: number;
+  trials: ReactionTrialInput[];
+};
+
+export type ReactionReference = {
+  count: number;
+  required: number;
+  median_ms: number | null;
+  difference_ms: number | null;
+  difference_pct: number | null;
+};
+
+export type ReactionSessionSummary = Omit<ReactionSessionInput, 'trials'> & {
+  crew_member_id: number;
+  created_at: string;
+  median_ms: number | null;
+  valid_responses: number;
+  false_starts: number;
+  no_responses: number;
+  reference: ReactionReference;
+};
+
+export type ReactionSessionDetail = ReactionSessionSummary & {
+  trials: (ReactionTrialInput & { attempt: number })[];
+};
+
 /** The server is unreachable (station off, wrong address, Wi-Fi down). */
 export class NetworkError extends Error {}
 
@@ -354,6 +407,20 @@ export function createApiClient(baseUrl: string) {
       }),
 
     listCrew: () => request<CrewMember[]>('/api/crew'),
+    getReactionProtocol: () => request<ReactionProtocol>('/api/reaction/protocol', { signal: AbortSignal.timeout(5000) }),
+    saveReactionSession: (crewId: number, body: ReactionSessionInput) =>
+      request<ReactionSessionDetail>(`/api/crew/${crewId}/reaction-sessions`, {
+        method: 'POST', body: JSON.stringify(body), signal: AbortSignal.timeout(10000),
+      }),
+    getReactionSessions: (crewId: number, opts?: { device_id?: string; protocol_version?: string; limit?: number; offset?: number }) => {
+      const params = new URLSearchParams();
+      for (const [key, value] of Object.entries(opts ?? {})) {
+        if (value != null) params.set(key, String(value));
+      }
+      return request<ReactionSessionSummary[]>(`/api/crew/${crewId}/reaction-sessions?${params}`);
+    },
+    getReactionSession: (crewId: number, id: string) =>
+      request<ReactionSessionDetail>(`/api/crew/${crewId}/reaction-sessions/${encodeURIComponent(id)}`),
     getCrewStatus: (id: number) => request<CrewStatus>(`/api/crew/${id}/status`),
     getLatestMeasurements: (id: number) => request<LatestMeasurements>(`/api/crew/${id}/latest`),
     getMeasurements: (id: number, opts?: { type?: string; days?: number }) => {

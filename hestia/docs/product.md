@@ -16,7 +16,7 @@ HESTIA is not a medical device. It does not diagnose. Crew data is simulated.
 | Feature | Place | Why |
 |---|---|---|
 | Daily check-in on the phone | Core | It is the self-assessment the challenge asks for |
-| Reaction self-test in the check-in | Core | A measurement taken by the phone itself, not typed; the challenge allows any input that represents a health indicator |
+| Reaction time assessment, accessible from Home and check-in | Core, D15 | Three practice + fifteen measured trials, saved separately with raw attempts and personal history. Informational only; no fatigue or fitness diagnosis, automatic colour or alert |
 | Clickable silhouette, each zone explained | Core | The challenge's own example of a good interface |
 | Vigilance levels and advice | Core | "When might a result warrant attention", "what actions can be taken" |
 | Earth link with the communication delay | Core | Attention "from flight surgeons on the ground" |
@@ -50,3 +50,11 @@ ideas as optional.
 
 The defects these checks replaced are described in
 [sources/2026-11-14-counter-review-claude.md](sources/2026-11-14-counter-review-claude.md).
+
+## Assessment extension approved on 14 Nov (D15)
+
+Only the reaction protocol is in the current implementation lot. It
+replaces the old five-trial input for new sessions, while keeping existing
+measurements and their legacy rule visible and labelled. The check-in
+keeps its current mood and sleep fields. The wellbeing questionnaire and
+injury journal remain proposals (P4/P5); they are not available in the UI.

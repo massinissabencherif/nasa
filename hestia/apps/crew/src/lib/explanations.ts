@@ -71,11 +71,11 @@ export const EXPLANATIONS: Record<string, FieldExplanation> = {
     risk: 'Too little, too consistently, accelerates bone density loss.',
   },
   reaction_ms: {
-    label: 'Reaction test',
+    label: 'Reaction time test',
     unit: 'ms',
-    how: 'Tap the panel as soon as it turns blue, five times. The phone measures the delay; nothing to type.',
-    why: 'Slower reactions are an early sign of fatigue and sleep loss. Crews on the ISS take a 3-minute test of this kind, the Reaction Self-Test; this is a shortened screening version.',
-    risk: 'A clear slowdown against your own baseline is a reason to rest before a critical task. It is not a diagnosis.',
+    how: 'Complete three practice trials, then fifteen measured trials. Respond only when the panel says “Tap now”. Results are saved separately from this check-in.',
+    why: 'View response times and compare complete sessions using the same protocol and installation. The first five comparable sessions build a personal reference.',
+    risk: 'Distraction and device latency affect timing. This is not a validated PVT, a fatigue diagnosis or an operational fitness test. It does not change a body-zone colour.',
   },
   symptoms: {
     label: 'Symptoms',
