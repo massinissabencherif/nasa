@@ -31,8 +31,31 @@ components/{Button,TabBar,NavRail,Panel,StatusBadge,SilhouetteBody}.tsx}`,
 Checks run: both apps type-check and build, `make check-offline` passes, 69
 backend tests pass, icons rendered at 16/20/24/48 px.
 
-**Still not implemented:** the proposed layouts, the step-by-step check-in,
-visual depth between surfaces, the remaining lots 2 to 4 of the brief.
+**Lots 2 and 3 done later on 14 Nov by Fable (D19), branch `style/health-flow`.**
+The check-in is three steps with a review; Home has a clear primary action;
+the interrupted reaction test and its back button are explicit; History states
+the newest value, date and origin; Meal separates estimate from logged; the
+station crew board distinguishes today, no check-in today, too old and no
+data. Checks run: 69 backend tests, 16 crew and 4 station frontend tests
+(Node 22.22.2; Node 20 cannot run them), both type checks and builds,
+`make check-offline`. Browser run at 390×844 against a throwaway database:
+step 1 to 3, back without losing 64 bpm and 0 min, a deliberately failed save
+that kept the answers and an error message, then a successful save. Station
+board at 1280×800 with one stale, one yesterday, one red and one current
+astronaut.
+
+**Honest note about that run:** a preview server started earlier by someone
+else (Python, port 8000, a temporary database) was already listening, so the
+first browser checks of lots 1 and 2 ran against it, not against a server of
+mine. No server code changed in these lots, so their behaviour is the same,
+but a few demo scenarios were triggered on that temporary database. The
+station checks of lot 3 used my own server on port 8010 and a copy of the
+station build pointed at it.
+
+**Still not implemented:** visual depth between surfaces and the light
+harmonisation of lot 4 (profile, settings, calibration, simulator), the
+pantry screens (lot 3), the alerts and Earth screens beyond the corrected
+texts.
 Small texts written with `var(--red)` or `var(--green)` outside the shared
 components (for example the red values on the station crew board and the
 reaction card) still need the ink colours: they belong to the screens of

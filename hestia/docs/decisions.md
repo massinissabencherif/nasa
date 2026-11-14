@@ -72,6 +72,24 @@ says nothing about the code.
   fields. Two wrong texts were corrected (meal attribution removed by D8;
   escalation described as in D7).
 
+- **D19 (implemented and checked in a browser, 14 Nov, not pushed):** UI lots
+  2 and 3 of the handoff, done by Fable on David's "prends toute la suite".
+  They change no health rule, colour meaning or reaction protocol.
+  *Check-in:* three steps (Feel, Measure, Review) with a stepper, back
+  navigation that keeps every answer, a review before saving that lists each
+  value with its unit, and a failed save that keeps the answers. A skipped
+  question stays unknown: the review says "Not answered" for mood and "None
+  selected" for symptoms, never "none", because the station cannot tell a
+  skipped question from a no (open point below). *Home:* a visible primary
+  action with the state of the day, "Your body" with the age of the last
+  reading. *Reaction test:* an interrupted session is titled "interrupted";
+  the main action is "Restart from practice" and the back button names where
+  it goes. *History:* each series states its newest value, date and origin.
+  *Meal:* the estimated need is separate from what was logged. *Station
+  crew board:* "Checked in today", "No check-in today", "Data too old" and
+  "No data yet" are different; a stale reading keeps its number but loses its
+  colour; an old board is never badged "nominal".
+
 ## Proposed, not decided
 
 | # | Idea | State |
@@ -88,6 +106,7 @@ says nothing about the code.
 
 | # | Question | Proposal | Who decides |
 |---|---|---|---|
+| O7 | Should the check-in tell a skipped symptom question from "no symptoms"? Today the request carries a list, so both look the same | Add an explicit "No symptoms today" choice and a field the server stores, with a decision on what a skipped question means | David and Massi |
 | O3 | Which machine runs the demo, and which is the spare? | Massi's Mac runs it today. David's Mac lacks `uv`, `ollama` and `cargo`; installing them would give a spare | David and Massi |
 | O4 | NASA submission: 30-second video or 7 slides? | — | David and Massi |
 | O5 | ISS dose rate 0.523 mSv/day has no source; it is now flagged as an assumption in the app | Source it (the CSA radiation resource of the challenge is a lead) or keep it as an assumption | Whoever takes the science task |

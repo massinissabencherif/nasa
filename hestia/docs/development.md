@@ -59,7 +59,8 @@ controls** replay each step of the demo.
 
 ```bash
 make test                               # backend tests
-pnpm --filter crew test                 # reaction timing and pending sync (Node 22.6+)
+pnpm --filter crew test                 # reaction timing, sync, check-in flow, newest reading (Node 22.6+)
+pnpm --filter station test              # crew data freshness and readings (Node 22.6+)
 pnpm --filter crew exec tsc -b          # types of the crew app
 pnpm build:crew && pnpm build:station   # both apps build
 make check-offline                      # no external URL in the application
