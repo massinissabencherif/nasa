@@ -44,6 +44,9 @@ def advance_time(seconds: int = Query(default=300, ge=1, le=86400)) -> dict:
         messages = session.exec(select(EarthMessage)).all()
         shift = timedelta(seconds=seconds)
         for m in messages:
+            # skipping ahead ages the whole message: its sending time moves too,
+            # otherwise a reply could be shown as received before the report left
+            m.created_ts -= shift
             m.deliver_ts -= shift
             m.reply_ts -= shift
             session.add(m)

@@ -44,7 +44,7 @@ controls** replay each step of the demo.
 
 | Step | Command or place |
 |---|---|
-| Start from the latest work | `git switch chore/shared-skills` until it is merged into `main`, then branch from `main` |
+| Start from the latest work | `git switch style/memorable-screens` until it is merged into `main`, then branch from `main` |
 | One task, one branch | `git switch -c fix/short-name` |
 | Find where the code goes | "Where things go" in `.agents/skills/hestia-development/SKILL.md`, and [architecture.md](architecture.md) |
 | A number to change | `server/data/`: sourced value, colour band or demo rule — three different files, see [architecture.md](architecture.md) |

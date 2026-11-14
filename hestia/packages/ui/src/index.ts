@@ -13,5 +13,6 @@ export * from './components/SilhouetteBody';
 export * from './components/ZoneDetailPanel';
 export * from './components/AdviceText';
 export * from './adviceText';
+export * from './time';
 export * from './zones';
 export * from './thresholdText';

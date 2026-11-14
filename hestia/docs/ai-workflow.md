@@ -46,8 +46,8 @@ configuration or a work integration into this repository.
   task in progress in `STATUS.md` before starting, so the other agent does
   not edit the same files.
 - Branches of 14 Nov, stacked in this order: `chore/agents-docs` →
-  `fix/health-rules` → `feat/reaction-test` → `chore/shared-skills`. None
-  is merged or pushed.
+  `fix/health-rules` → `feat/reaction-test` → `chore/shared-skills` →
+  `style/memorable-screens`. None is merged or pushed.
 - A shared change is reviewed by the other person, or by the other agent on
   their behalf, before it is merged. The human approves the commit message
   and is the author.

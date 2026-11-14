@@ -6,7 +6,7 @@ works, how it was checked, and what is still open. Decisions are in
 
 ## 14 Nov — consolidation
 
-Four local branches, stacked, **not merged and not pushed**. The commits are
+Five local branches, stacked, **not merged and not pushed**. The commits are
 unsigned because the signing key could not be unlocked from the agent's
 shell; they can be re-signed before pushing.
 
@@ -15,7 +15,8 @@ shell; they can be re-signed before pushing.
 | `chore/agents-docs` | `AGENTS.md`, documentation index, `product.md`, `decisions.md`, old briefs marked as history |
 | `fix/health-rules` | The five defects below, science wording and sources |
 | `feat/reaction-test` | Reaction self-test; station navigation health first |
-| `chore/shared-skills` | Five shared skills, advice hierarchy, this documentation |
+| `chore/shared-skills` | Five shared skills, advice hierarchy, this documentation, contributor guide |
+| `style/memorable-screens` | Station crew board with readings; Earth link built around the signal path; time-skip order fixed |
 
 ### Defects of version `39ddd85`: fixed on branch `fix/health-rules`
 

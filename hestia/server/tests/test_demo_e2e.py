@@ -73,6 +73,8 @@ def test_demo_script_end_to_end(client):
     client.post("/api/earth/advance", params={"seconds": 1200})
     replied = client.get("/api/earth/messages").json()[0]
     assert replied["status"] == "replied" and "SIMULATED" in replied["reply_payload"]
+    # skipping ahead keeps the order of events: sent, then received, then answered
+    assert replied["created_ts"] < replied["deliver_ts"] < replied["reply_ts"]
 
 
 def test_context_switch_changes_delay_radiation_resupply(client):

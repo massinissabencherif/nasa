@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Panel, SilhouetteBody, StatusBadge, ZoneDetailPanel, ZONE_META, ZONES, worstLevel } from '@hestia/ui';
+import { formatAge, Panel, SilhouetteBody, StatusBadge, StatusDot, ZoneDetailPanel, ZONE_META, ZONES, worstLevel } from '@hestia/ui';
+import { crewVitals, newestReading } from '../lib/crewVitals';
 import type { ZoneLevel } from '@hestia/api-client';
 import type { ZoneKey } from '@hestia/ui';
 import { useCrew, useCrewStatuses, useStation, useThresholds } from '../lib/hooks';
@@ -32,11 +33,12 @@ export function CrewScreen() {
         Four fictional astronauts, simulated data. Each silhouette shows the latest check-in. Open a card, then click a body zone
         to see what was measured, the hazard behind it and what to do.
       </p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-3)' }}>
         {crew.map((member) => {
           const status = statuses[member.id];
           const overall: ZoneLevel = status ? worstLevel(Object.values(status).map((z) => z.level)) : 'unknown';
           const attention = status ? ZONES.filter((z) => status[z].level !== 'green') : [];
+          const vitals = status ? crewVitals(status) : [];
           const isOpen = expanded === member.id;
           return (
             <button
@@ -45,25 +47,52 @@ export function CrewScreen() {
               aria-expanded={isOpen}
               style={{
                 display: 'grid',
-                justifyItems: 'center',
-                gap: 8,
-                padding: 16,
+                gridTemplateColumns: '112px minmax(0, 1fr)',
+                alignItems: 'center',
+                gap: 'var(--space-5)',
+                padding: 'var(--space-4) var(--space-5)',
                 background: 'var(--panel)',
-                border: `1px solid ${isOpen ? 'var(--accent)' : 'var(--border)'}`,
+                border: `1px solid ${isOpen ? 'var(--accent)' : overall === 'red' ? 'var(--red)' : 'var(--border)'}`,
                 borderRadius: 'var(--radius-md)',
                 cursor: 'pointer',
                 color: 'var(--text)',
+                textAlign: 'left',
               }}
             >
-              <SilhouetteBody status={status ?? null} interactive={false} width={84} />
-              <p style={{ fontWeight: 600 }}>{member.name}</p>
-              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>
-                {member.sex === 'M' ? 'Male' : 'Female'} · {member.age} y · {member.height_cm} cm · {member.weight_kg} kg
-              </p>
-              {status && <StatusBadge level={overall} />}
-              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', minHeight: 16 }}>
-                {attention.map((z) => ZONE_META[z].label).join(', ')}
-              </p>
+              <SilhouetteBody status={status ?? null} interactive={false} width={112} />
+              <div style={{ display: 'grid', gap: 'var(--space-3)', minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
+                  <p style={{ fontSize: 'var(--text-lg)', fontWeight: 600 }}>{member.name}</p>
+                  {status && <StatusBadge level={overall} />}
+                </div>
+                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginTop: 'calc(-1 * var(--space-2))' }}>
+                  {member.sex === 'M' ? 'Male' : 'Female'} · {member.age} y · {member.height_cm} cm · {member.weight_kg} kg
+                </p>
+                <div style={{ display: 'grid', gap: 'var(--space-1)' }}>
+                  {vitals.map((vital) => (
+                    <div
+                      key={vital.label}
+                      style={{ display: 'grid', gridTemplateColumns: '12px minmax(0, 1fr) auto', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-sm)' }}
+                    >
+                      {vital.level ? <StatusDot level={vital.level} /> : <span />}
+                      <span style={{ color: 'var(--text-muted)' }}>{vital.label}</span>
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontVariantNumeric: 'tabular-nums',
+                          color: vital.level === 'red' ? 'var(--red)' : vital.level === 'orange' ? 'var(--orange)' : vital.level ? 'var(--text)' : 'var(--text-faint)',
+                        }}
+                      >
+                        {vital.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p style={{ fontSize: 'var(--text-xs)', color: attention.length ? 'var(--text)' : 'var(--text-faint)', minHeight: 16 }}>
+                  {attention.length > 0 && `Needs attention: ${attention.map((z) => ZONE_META[z].label).join(', ')} · `}
+                  {status ? `last reading ${formatAge(newestReading(status))}` : 'loading'}
+                </p>
+              </div>
             </button>
           );
         })}

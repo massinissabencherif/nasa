@@ -22,10 +22,23 @@ work is on hierarchy and on saying things once, not on a new look.
 | A station crew card said "nominal" twice | Local hypothesis | The status is said once; the second line only lists zones that need attention | None found | Screenshot of the station Crew screen |
 | The station opened on the pantry; the phone home screen gave room to streak and badges | Product decision D3, not research | The station opens on Crew; navigation is health first; streak and badges are in a collapsed section | Gamification is one tap further away | Screenshots |
 
+## Second pass: the two screens the jury looks at longest
+
+Same direction (mission control at night, exact, instrument-like). Nothing
+decorative was added: both changes show data the station already had.
+
+| Observed friction | Change | Trade-off | Check |
+|---|---|---|---|
+| Station Crew: four small cards and half the screen empty; to read one value you had to open a card and click a zone | A crew board: two columns, a larger silhouette, and five readings per astronaut (heart rate, blood pressure, temperature, sleep, reaction) with their level, plus the age of the last reading | Five readings are a choice; the others stay one click away | Screenshot with one orange and one red crew member |
+| Earth link: the path of the message was a thin line under the text, and the screen said "725 characters sent" while the report text is limited to 600 | The path is the first thing on the card: base, Earth, the share of the delay already elapsed, quarter marks, the sending and arrival times, and the countdown beside it. The findings are a small table. The character count is now the report text's own | The raw JSON size is no longer shown | Screenshots in the three states: on its way, reply on its way, reply received |
+| After "skip ahead", a reply could be shown as received before the report was sent | The time skip now moves the sending time too (server), with a test | None | `test_demo_script_end_to_end` |
+
+Basis for the crew board: local hypothesis (a lead should see who needs
+attention and why without clicking), consistent with the W3C objective
+"Help Users Find What They Need", which was not read in full.
+
 ## Still average
 
-- The station Crew screen has empty space under the four cards until a card
-  is opened.
 - The crew home silhouette is tall: its legs carry one zone for a third of
   the screen.
 - `PantryScreen.tsx` and the crew `Pantry.tsx` still write most styles

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { EarthMessage, Level } from '@hestia/api-client';
-import { Button, indicatorLabel, Panel, StatusBadge } from '@hestia/ui';
+import { Button, indicatorLabel, Panel, parseServerTime, StatusBadge } from '@hestia/ui';
 import { api } from '../lib/api';
 import { formatDelay, useStation } from '../lib/hooks';
 import { useRefreshOn } from '../lib/useSSE';
 
 function remaining(targetTs: string, now: number): number {
-  return Math.max(0, Math.round((new Date(targetTs).getTime() - now) / 1000));
+  return Math.max(0, Math.round((parseServerTime(targetTs) - now) / 1000));
 }
 
 function clock(totalSeconds: number): string {
@@ -17,35 +17,76 @@ function clock(totalSeconds: number): string {
 
 const ADVANCE_OPTIONS = [60, 300, 1200];
 
-function Track({ msg, now }: { msg: EarthMessage; now: number }) {
-  const start = new Date(msg.created_ts).getTime();
-  const arrive = new Date(msg.deliver_ts).getTime();
-  const back = new Date(msg.reply_ts).getTime();
+const time = (iso: string) => new Date(parseServerTime(iso)).toLocaleTimeString();
+
+/** The link itself: the base on the left, Earth on the right, and the
+ * message on its way out or the reply on its way back. Its position is the
+ * real share of the delay already elapsed, not an animation. */
+function LinkPath({ msg, now, baseLabel }: { msg: EarthMessage; now: number; baseLabel: string }) {
+  const start = parseServerTime(msg.created_ts);
+  const arrive = parseServerTime(msg.deliver_ts);
+  const back = parseServerTime(msg.reply_ts);
   const outbound = Math.min(1, Math.max(0, (now - start) / Math.max(1, arrive - start)));
   const inbound = Math.min(1, Math.max(0, (now - arrive) / Math.max(1, back - arrive)));
+  const returning = inbound > 0;
+  const done = msg.status === 'replied';
   // 0 → 1 going to Earth, then 1 → 0 coming back
-  const position = inbound > 0 ? 1 - inbound : outbound;
+  const position = returning ? 1 - inbound : outbound;
+  const colour = done ? 'var(--green)' : 'var(--accent)';
+  const node = { width: 12, height: 12, borderRadius: '50%', border: '2px solid var(--text-muted)', background: 'var(--bg)' } as const;
+  const caption = done
+    ? `Reply received at ${time(msg.reply_ts)}`
+    : returning
+      ? `Report received on Earth at ${time(msg.deliver_ts)}. Reply on its way back, due at ${time(msg.reply_ts)}`
+      : `Report on its way to Earth, arrives at ${time(msg.deliver_ts)}. Earliest reply at ${time(msg.reply_ts)}`;
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: 10, margin: '12px 0 4px' }}>
-      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Base</span>
-      <div style={{ position: 'relative', height: 2, background: 'var(--border)' }}>
-        <div
-          style={{
-            position: 'absolute',
-            top: -5,
-            left: `calc(${position * 100}% - 6px)`,
-            width: 12,
-            height: 12,
-            borderRadius: '50%',
-            background: msg.status === 'replied' ? 'var(--green)' : 'var(--accent)',
-            transition: 'left 900ms linear',
-          }}
-        />
+    <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: 'var(--space-3)' }}>
+        <span style={node} />
+        <div style={{ position: 'relative', height: 16 }}>
+          <div style={{ position: 'absolute', top: 7, left: 0, right: 0, height: 2, background: 'var(--border)' }} />
+          {/* the part of the path already travelled on the current leg */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 7,
+              height: 2,
+              background: colour,
+              left: returning ? `${position * 100}%` : 0,
+              width: returning ? `${(1 - position) * 100}%` : `${position * 100}%`,
+              transition: 'left 900ms linear, width 900ms linear',
+            }}
+          />
+          {[0.25, 0.5, 0.75].map((tick) => (
+            <span key={tick} style={{ position: 'absolute', top: 4, left: `${tick * 100}%`, width: 1, height: 8, background: 'var(--border)' }} />
+          ))}
+          <div
+            style={{
+              position: 'absolute',
+              top: 1,
+              left: `calc(${position * 100}% - 7px)`,
+              width: 14,
+              height: 14,
+              borderRadius: '50%',
+              background: colour,
+              transition: 'left 900ms linear',
+            }}
+          />
+        </div>
+        <span style={node} />
       </div>
-      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Earth</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+        <span>
+          {baseLabel} · sent <span style={{ fontFamily: 'var(--font-mono)' }}>{time(msg.created_ts)}</span>
+        </span>
+        <span>Earth</span>
+      </div>
+      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text)' }}>{caption}</p>
     </div>
   );
 }
+
+type Finding = { indicator: string; value: number | null; unit?: string; trend_7d?: string };
 
 export function EarthScreen() {
   const { context } = useStation();
@@ -119,45 +160,70 @@ export function EarthScreen() {
         }
         const toEarth = remaining(msg.deliver_ts, now);
         const toReply = remaining(msg.reply_ts, now);
+        const findings: Finding[] = Array.isArray(payload.findings) ? (payload.findings as Finding[]) : [];
+        const summary = String(payload.summary ?? msg.payload);
+        const actions: string[] = (Array.isArray(payload.actions_taken) ? (payload.actions_taken as string[]) : []).map((action) =>
+          action.replace(/^Procedure: /, ''),
+        );
         return (
           <Panel key={msg.id} title={`Report #${msg.id} · ${String(payload.who ?? 'crew')}`}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 220px', gap: 20 }}>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
-                  {Boolean(payload.level) && <StatusBadge level={payload.level as Level} />}
-                  <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-                    {(Array.isArray(payload.findings) ? (payload.findings as Record<string, unknown>[]) : [])
-                      .map((f) => `${indicatorLabel(String(f.indicator))} ${f.value ?? ''} ${f.unit ?? ''}`.trim())
-                      .join(' · ')}
-                  </span>
+            <div style={{ display: 'grid', gap: 'var(--space-5)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', alignItems: 'center', gap: 'var(--space-6)' }}>
+                <LinkPath msg={msg} now={now} baseLabel={context?.label ?? 'Base'} />
+                <div style={{ textAlign: 'right', minWidth: 200 }}>
+                  {msg.status === 'queued' && (
+                    <>
+                      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-display)', color: 'var(--accent)', lineHeight: 1 }}>{clock(toEarth)}</p>
+                      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>until it reaches Earth</p>
+                    </>
+                  )}
+                  {msg.status === 'delivered' && (
+                    <>
+                      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-display)', color: 'var(--accent)', lineHeight: 1 }}>{clock(toReply)}</p>
+                      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>until the reply arrives</p>
+                    </>
+                  )}
+                  {msg.status === 'replied' && <StatusBadge level="green" label="reply received" />}
                 </div>
-                <p style={{ fontSize: 'var(--text-sm)' }}>{String(payload.summary ?? msg.payload)}</p>
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginTop: 6 }}>
-                  {msg.payload.length} characters sent · {new Date(msg.created_ts).toLocaleTimeString()}
-                </p>
-                <Track msg={msg} now={now} />
-                {msg.status === 'replied' && msg.reply_payload && (
-                  <div style={{ marginTop: 10, background: 'var(--panel-raised)', padding: 12, borderRadius: 'var(--radius-sm)' }}>
-                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--orange)', marginBottom: 4 }}>SIMULATED GROUND REPLY</p>
-                    <p style={{ fontSize: 'var(--text-sm)' }}>{msg.reply_payload}</p>
-                  </div>
-                )}
               </div>
-              <div style={{ textAlign: 'right' }}>
-                {msg.status === 'queued' && (
-                  <>
-                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-display)', color: 'var(--accent)', lineHeight: 1.1 }}>{clock(toEarth)}</p>
-                    <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>until it reaches Earth</p>
-                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginTop: 4 }}>reply expected in {clock(toReply)}</p>
-                  </>
-                )}
-                {msg.status === 'delivered' && (
-                  <>
-                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-display)', color: 'var(--accent)', lineHeight: 1.1 }}>{clock(toReply)}</p>
-                    <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>received on Earth, reply on its way</p>
-                  </>
-                )}
-                {msg.status === 'replied' && <StatusBadge level="green" label="reply received" />}
+
+              {msg.status === 'replied' && msg.reply_payload && (
+                <div style={{ background: 'var(--panel-raised)', padding: 'var(--space-3)', borderRadius: 'var(--radius-sm)' }}>
+                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--orange)', marginBottom: 'var(--space-1)' }}>Simulated ground reply</p>
+                  <p style={{ fontSize: 'var(--text-sm)' }}>{msg.reply_payload}</p>
+                </div>
+              )}
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 320px) minmax(0, 1fr)', gap: 'var(--space-6)' }}>
+                <div style={{ display: 'grid', gap: 'var(--space-2)', alignContent: 'start' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                    {Boolean(payload.level) && <StatusBadge level={payload.level as Level} />}
+                    <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>what was sent</span>
+                  </div>
+                  {findings.map((finding) => (
+                    <div
+                      key={finding.indicator}
+                      style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 'var(--space-3)', fontSize: 'var(--text-sm)', alignItems: 'baseline' }}
+                    >
+                      <span>
+                        {indicatorLabel(finding.indicator)}
+                        {finding.trend_7d && <span style={{ color: 'var(--text-faint)' }}> · {finding.trend_7d} over 7 d</span>}
+                      </span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+                        {finding.value ?? 'n/a'} {finding.unit ?? ''}
+                      </span>
+                    </div>
+                  ))}
+                  {actions.length > 0 && (
+                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Crew is applying: {actions.join(', ')}.</p>
+                  )}
+                </div>
+                <div>
+                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginBottom: 'var(--space-1)' }}>
+                    Report text, {summary.length} characters (limit 600)
+                  </p>
+                  <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>{summary}</p>
+                </div>
               </div>
             </div>
           </Panel>
