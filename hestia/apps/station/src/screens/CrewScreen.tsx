@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { formatAge, Panel, ReactionHistory, SilhouetteBody, StatusBadge, StatusDot, ZoneDetailPanel, ZONE_META, ZONES, worstLevel } from '@hestia/ui';
+import { Panel, ReactionHistory, SilhouetteBody, StatusBadge, StatusDot, ZoneDetailPanel, ZONE_META, ZONES, worstLevel } from '@hestia/ui';
 import { api } from '../lib/api';
-import { crewVitals, newestReading } from '../lib/crewVitals';
+import { crewVitals, freshness, FRESHNESS_LABEL } from '../lib/crewVitals';
 import type { ZoneLevel } from '@hestia/api-client';
 import type { ZoneKey } from '@hestia/ui';
 import { useCrew, useCrewStatuses, useStation, useThresholds } from '../lib/hooks';
@@ -37,8 +37,11 @@ export function CrewScreen() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-3)' }}>
         {crew.map((member) => {
           const status = statuses[member.id];
-          const overall: ZoneLevel = status ? worstLevel(Object.values(status).map((z) => z.level)) : 'unknown';
-          const attention = status ? ZONES.filter((z) => status[z].level !== 'green') : [];
+          const fresh = status ? freshness(Object.values(status)) : null;
+          const worst: ZoneLevel = status ? worstLevel(Object.values(status).map((z) => z.level)) : 'unknown';
+          // one zone (the cumulative dose) never goes stale: it must not make an old board look nominal
+          const overall: ZoneLevel = (fresh === 'stale' || fresh === 'no_data') && worst !== 'red' && worst !== 'orange' ? 'unknown' : worst;
+          const attention = status ? ZONES.filter((z) => status[z].level === 'orange' || status[z].level === 'red') : [];
           const vitals = status ? crewVitals(status) : [];
           const isOpen = expanded === member.id;
           return (
@@ -64,7 +67,7 @@ export function CrewScreen() {
               <div style={{ display: 'grid', gap: 'var(--space-3)', minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
                   <p style={{ fontSize: 'var(--text-lg)', fontWeight: 600 }}>{member.name}</p>
-                  {status && <StatusBadge level={overall} />}
+                  {status && <StatusBadge level={overall} label={overall === 'unknown' ? (fresh === 'stale' ? 'outdated' : 'no data') : undefined} />}
                 </div>
                 <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginTop: 'calc(-1 * var(--space-2))' }}>
                   {member.sex === 'M' ? 'Male' : 'Female'} · {member.age} y · {member.height_cm} cm · {member.weight_kg} kg
@@ -75,13 +78,17 @@ export function CrewScreen() {
                       key={vital.label}
                       style={{ display: 'grid', gridTemplateColumns: '12px minmax(0, 1fr) auto', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-sm)' }}
                     >
-                      {vital.level ? <StatusDot level={vital.level} /> : <span />}
+                      {vital.level ? (
+                        <StatusDot level={vital.level} />
+                      ) : (
+                        <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '50%', border: '1.5px solid var(--decor)' }} />
+                      )}
                       <span style={{ color: 'var(--text-muted)' }}>{vital.label}</span>
                       <span
                         style={{
                           fontFamily: 'var(--font-mono)',
                           fontVariantNumeric: 'tabular-nums',
-                          color: vital.level === 'red' ? 'var(--red)' : vital.level === 'orange' ? 'var(--orange)' : vital.level ? 'var(--text)' : 'var(--text-faint)',
+                          color: vital.level === 'red' ? 'var(--red-ink)' : vital.level === 'orange' ? 'var(--orange-ink)' : vital.level ? 'var(--text)' : 'var(--text-faint)',
                         }}
                       >
                         {vital.value}
@@ -89,9 +96,13 @@ export function CrewScreen() {
                     </div>
                   ))}
                 </div>
-                <p style={{ fontSize: 'var(--text-xs)', color: attention.length ? 'var(--text)' : 'var(--text-faint)', minHeight: 16 }}>
+                <p style={{ fontSize: 'var(--text-xs)', color: attention.length ? 'var(--text)' : 'var(--text-muted)', minHeight: 16 }}>
                   {attention.length > 0 && `Needs attention: ${attention.map((z) => ZONE_META[z].label).join(', ')} · `}
-                  {status ? `last reading ${formatAge(newestReading(status))}` : 'loading'}
+                  {fresh ? (
+                    <span style={{ color: fresh === 'stale' || fresh === 'no_data' ? 'var(--orange-ink)' : undefined }}>{FRESHNESS_LABEL[fresh]}</span>
+                  ) : (
+                    'loading'
+                  )}
                 </p>
               </div>
             </button>

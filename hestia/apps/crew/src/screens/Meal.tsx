@@ -40,17 +40,21 @@ export function Meal() {
       <h1 style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>Meal of the day</h1>
 
       <Panel>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-          <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>Logged today</span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)' }}>
-            {Math.round(proposal.kcal_eaten_today)} / {Math.round(proposal.daily_need_kcal)} kcal
-          </span>
+        <div style={{ display: 'grid', gap: 'var(--space-1)', marginBottom: 'var(--space-2)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>Meals you logged today</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)' }}>{Math.round(proposal.kcal_eaten_today)} kcal</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>Estimated daily need</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)' }}>{Math.round(proposal.daily_need_kcal)} kcal</span>
+          </div>
         </div>
         <div style={{ height: 8, borderRadius: 4, background: 'var(--panel-raised)', overflow: 'hidden' }}>
           <div style={{ width: `${progress}%`, height: '100%', background: 'var(--accent)', transition: 'width 400ms ease' }} />
         </div>
         <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginTop: 8 }}>
-          Your need: Mifflin-St Jeor × activity factor, a ground formula used as an estimate.
+          The need is an estimate (Mifflin-St Jeor × activity factor, a ground formula). Only meals you log here count as eaten.
         </p>
       </Panel>
 

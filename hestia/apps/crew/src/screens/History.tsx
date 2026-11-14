@@ -1,3 +1,4 @@
+import { newestReading, originLabel } from '../lib/latestReading';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Thresholds } from '@hestia/api-client';
@@ -31,12 +32,13 @@ export function History() {
   const data = useMeasurements(crewId, selected, 30);
   const diastolic = useMeasurements(crewId, 'diastolic_bp', 30);
   const indicator = INDICATORS.find((i) => i.key === selected)!;
+  const newest = newestReading(data);
 
   return (
     <div style={{ padding: 16, display: 'grid', gap: 14 }}>
       <div>
         <h1 style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>History</h1>
-        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>Bands show the indicative green, orange and red ranges. Past values are SIMULATED.</p>
+        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>Bands show the indicative green, orange and red ranges. Each series says where its newest value comes from.</p>
       </div>
 
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
@@ -44,9 +46,11 @@ export function History() {
           <button
             key={ind.key}
             onClick={() => setSelected(ind.key)}
+            aria-pressed={selected === ind.key}
             style={{
               flexShrink: 0,
-              padding: '8px 14px',
+              minHeight: 44,
+              padding: 'var(--space-2) var(--space-4)',
               borderRadius: 999,
               border: `1px solid ${selected === ind.key ? 'var(--accent)' : 'var(--border)'}`,
               background: selected === ind.key ? 'var(--accent-dim)' : 'var(--panel)',
@@ -65,6 +69,11 @@ export function History() {
       <Panel title={`${indicator.label} · last 30 days`}>
         {selected === 'reaction_ms' && <p className="assessment-muted">Previous five-trial protocol. <Link to="/assessments">Open the new reaction sessions</Link>; the two protocols are not combined.</p>}
         <IndicatorChart data={data} threshold={thresholds?.[selected]} unit={indicator.unit} />
+        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', marginTop: 'var(--space-2)' }}>
+          {newest
+            ? <>Newest: <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text)' }}>{newest.value} {indicator.unit}</span> · {new Date(newest.ts.endsWith('Z') ? newest.ts : `${newest.ts}Z`).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} · {originLabel(newest.source)}</>
+            : 'No reading in the last 30 days.'}
+        </p>
         {selected === 'systolic_bp' && (
           <div style={{ marginTop: 4 }}>
             <div style={{ display: 'flex', gap: 14, fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: -8 }}>
