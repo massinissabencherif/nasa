@@ -1,0 +1,14 @@
+{
+  "name": "hestia",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev:station": "pnpm --filter station dev",
+    "dev:crew": "pnpm --filter crew dev",
+    "build:station": "pnpm --filter station build",
+    "build:crew": "pnpm --filter crew build"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

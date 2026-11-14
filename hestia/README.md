@@ -1,0 +1,210 @@
+# HESTIA
+
+**Habitat Embedded System for Tracking Individual Astronaut health.**
+A Mars base has no doctor and no internet. HESTIA lets each astronaut
+self-assess their health on a clickable body silhouette, reads the food shelf
+with a camera, forecasts what a decision does to bodies and stocks, and decides
+when to alert the crew or Earth despite the communication delay. Everything,
+including the AI, runs on one laptop with the Wi-Fi off.
+
+Built for the NASA Space Apps Challenge 2026 (ESGI Paris local edition, 14–15
+Nov 2026), challenge *Create Health Monitoring Software for Astronauts on Space
+Missions*.
+
+> **Honesty notes — read these first**
+> - **Not a medical device.** Thresholds are indicative. No diagnosis, no drug
+>   name, no dose, anywhere.
+> - **All crew data is simulated.** The four astronauts are invented; their 90
+>   days of history come from a seeded random generator.
+> - **The forecast is a simulator, not a trained model**: day-by-day arithmetic
+>   on NASA reference values plus assumptions that are flagged in the UI.
+> - **Vision accuracy is measured, not claimed**: 11/12 slots exact on the test
+>   photo, with a known weak spot (stacked cans) that the app asks a human to
+>   confirm. See [docs/vision-benchmark.md](docs/vision-benchmark.md).
+> - **Demo scale**: one box on the demo shelf stands for one storage lot of 212
+>   rations, so a 29-unit shelf represents about 412 days for 4 crew.
+> - The shelf test photos are AI-generated and captioned as such in the app.
+> - Code written with AI assistance (Claude Code), disclosed on the project page.
+
+## What it does
+
+| Module | What you see |
+|---|---|
+| **M1 Camera pantry** | Photo of a 12-slot shelf with per-slot counts, an inline "check count" step when a reading is uncertain, days of food autonomy that drop live when boxes are removed, a ration plan per astronaut, a consumption feed |
+| **M2 Crew mobile app** | Profile picker, daily check-in with a how/why/risk sheet per measurement, meal suggestion from the real stock, reminders adapted to the mission context, streak and badges, history charts with green/orange/red bands |
+| **M3 Clickable silhouette** | 8 body zones coloured from live data, each with its function, indicators, HRP hazard, indicative thresholds, why the exam matters, advised action. Icons and words, never colour alone |
+| **M4 Alerts and Earth link** | Orange: guardrailed self-care advice. Red: crew alert plus a compact report queued to Earth with a live countdown and a simulated reply |
+| **M5 Forecast simulator** | Sliders (horizon, ration, exercise, resupply delay, solar storm) driving stock, weight, bone mass and radiation curves, with an Assumptions & sources drawer |
+| **M6 Multi-environment** | Mars base, Earth–Mars transit, Moon base, ISS: changes delay, radiation, resupply, reminders and risk notes |
+
+## Architecture
+
+```
+[Webcam] ──► STATION (MacBook = the base's computer)
+               ├─ FastAPI + SQLite (SQLModel)            server/app
+               ├─ Vision: OpenCV capture + local VLM      server/vision
+               ├─ Engines: nutrition, status, alerts, advice, forecast, gamification
+               ├─ Ollama on localhost:11434 (qwen2.5vl:7b, one model in RAM)
+               ├─ Serves the built crew app at /crew/
+               └─ Desktop UI: Tauri 2 + React             apps/station
+                      ▲
+                      │  base Wi-Fi, plain HTTP, no internet
+                      ▼
+             CREW phones: React (+ Capacitor shell)       apps/crew
+```
+
+Shared code: `packages/ui` (silhouette, tokens, components) and
+`packages/api-client` (typed fetch client). Live updates use Server-Sent
+Events on the station and 5-second polling on phones.
+
+## Run it
+
+Prerequisites: Node 22+, pnpm 10+, Python 3.12, [uv](https://docs.astral.sh/uv/),
+Rust (for the Tauri window), [Ollama](https://ollama.com) with `qwen2.5vl:7b`
+pulled. Internet is needed once, for `make install`.
+
+```bash
+make install     # JS + Python dependencies (once, online)
+make demo        # builds the crew app, starts the server and the station window
+```
+
+Then:
+
+- Station: the Tauri window (or `make station-web` → http://localhost:1420).
+- Crew app on a phone: open **Mission settings** on the station and scan the QR
+  code, or type `http://<station-ip>:8000/crew/`. On the laptop itself:
+  http://localhost:8000/crew/ in a phone-sized browser window.
+- `make test` runs the 53 backend tests, including an end-to-end smoke test of
+  the demo script. `make reset` reseeds the baseline. `make check-offline`
+  greps the source for non-local URLs.
+
+Individual commands: `cd server && uv run hestia-server` (API on
+`0.0.0.0:8000`, prints the LAN IP), `pnpm dev:station`, `pnpm dev:crew`.
+Set `HESTIA_RELOAD=1` for auto-reload while developing.
+
+### Running with Wi-Fi off / on the base network
+
+Nothing in the app calls a non-local host: fonts are bundled, the QR code is
+generated by the server, the AI is Ollama on localhost. To use phones you need
+a local network without internet. macOS cannot reliably host an internet-less
+hotspot, so use one of these (see [docs/risks.md](docs/risks.md)):
+
+1. **Phone hotspot with mobile data off** — the laptop and the other phones
+   join it. Simplest, and what we plan to use on stage.
+2. **A travel router** with no uplink.
+
+macOS asks once to allow incoming connections for Python (firewall prompt) and
+once for camera access for the terminal: both need a manual click.
+
+### Live inventory on the phone
+
+The crew app has a **Pantry** tab: the latest shelf picture with the count of
+each slot, days of autonomy, recent movements, all refreshed every 2.5 s
+whatever made the change (station webcam, another phone, a logged meal). From
+that tab you can take a photo of the shelf, watch the station read it slot by
+slot, and correct any count by tapping it.
+
+- In a phone browser on the base network, "Take a photo" opens the phone's
+  own camera screen (a web page served over plain HTTP may not show a live
+  viewfinder).
+- In the installed app (or on `localhost`), "Open the live camera" shows a
+  viewfinder inside the app, with "Capture and count" and a **Live mode** that
+  reads frame after frame. One read takes 20–50 s, so "live" means a new
+  inventory roughly every half minute to a minute, not video-rate.
+
+### Inventory of a real shelf with a phone as the camera
+
+Any camera works, not only the laptop webcam:
+
+1. **Reference photo.** On the phone, open the crew app → **Pantry** tab → Photo options, tick "Reference photo only" and photograph the shelf from where
+   the camera will stay. (On the station: Pantry → Calibrate → "Use a photo
+   file as reference…".)
+2. **Calibrate** on the station (Pantry → Calibrate the slot grid): set the
+   outer frame of the shelf and split it into 3 × 4 slots, fine-tune a slot if
+   needed, say what each slot holds and its capacity, and add your own
+   products (name + kcal per unit).
+3. **Scan.** Take a new photo from the same page (reference box unticked):
+   the station reads it, updates the counts and the autonomy, and asks you to
+   confirm uncertain slots. A photo file can also be scanned from the Pantry
+   screen, and a phone used as a webcam (e.g. iPhone Continuity Camera) can be
+   picked with the "cam 0/1/2" selector next to "Live camera".
+
+Photos go over plain HTTP on the base network through a file input, so no
+camera permission or HTTPS is needed in the phone browser. Measured on a
+simulated hand-held photo (the test shelf filling 36 % of the frame):
+accurate mode 10/12 slots in 47 s, fast mode 7/12 in 28 s, so accurate mode is
+the default for photos. A demo reset removes added products and slot changes;
+the grid in `server/data/shelf_grid.json` is kept.
+
+### On an iPhone
+
+Three ways, from the quickest to the most "native":
+
+1. **Safari, HTTPS address (recommended).** The station also serves the crew
+   app at `https://<station-ip>:8443/crew/` with a certificate it generates
+   itself (`server/certs/`, made locally with openssl). Scan the QR code under
+   Mission settings. The first time, Safari says the connection is not
+   private, because no authority vouches for a home-made certificate: tap
+   **Show Details → visit this website**. A secure page is what lets Safari
+   show the camera inside the app (Pantry tab → "Open the live camera" and
+   Live mode). Then **Share → Add to Home Screen** for a full-screen HESTIA
+   icon.
+2. **Safari, plain address** `http://<station-ip>:8000/crew/`: no warning, and
+   everything works except the in-app viewfinder; "Take a photo" opens the
+   iPhone camera instead.
+3. **Native app (Capacitor).** `apps/crew/ios` is a ready Xcode project with
+   the local-network exception, `NSLocalNetworkUsageDescription` and
+   `NSCameraUsageDescription` set. Building it needs the full Xcode from the
+   App Store (only the command-line tools are installed on the development
+   machine) and an Apple ID for signing: `make ios`, pick your iPhone as the
+   target, Run. Enter the station address under Settings in the app.
+
+The iPhone can also be the **station's** camera: with Continuity Camera it
+appears to macOS as a webcam; choose "cam 1" or "cam 2" next to "Live camera"
+on the Pantry screen.
+
+Android: `apps/crew/android` is the equivalent Capacitor project
+(`make android`, needs the Android SDK).
+
+## Demo in 3 minutes
+
+French script: [docs/demo-script.md](docs/demo-script.md). Every step also has
+a button under **Mission settings → Demo controls**, which goes through the
+same code as the real action, in case the phone or the camera fails on stage.
+
+## Repo layout
+
+```
+hestia/
+├─ Makefile              one-command entry points
+├─ apps/station/         Tauri 2 + React + Vite + TypeScript
+├─ apps/crew/            React + Vite, Capacitor Android project
+├─ packages/ui/          silhouette, design tokens, shared components
+├─ packages/api-client/  typed client + shared types
+├─ server/app/           FastAPI routes, SQLModel models, engines, seed
+├─ server/vision/        capture, grid, VLM pipeline, benchmark, fixtures
+├─ server/data/          thresholds, NASA reference values, food catalogue, shelf grid
+├─ server/tests/         pytest suite
+└─ docs/                 deliverables (see below)
+```
+
+## Deliverables in `docs/`
+
+- [nasa-project-page.md](docs/nasa-project-page.md) — project page draft with the "NASA Data" and "Use of AI" sections
+- [demo-script.md](docs/demo-script.md) — 3-minute demo, in French
+- [video-script.md](docs/video-script.md) and [video-subtitles.srt](docs/video-subtitles.srt) — 30-second video
+- [slides-outline.md](docs/slides-outline.md) — 7 slides
+- [vision-benchmark.md](docs/vision-benchmark.md) — measured accuracy and latency
+- [risks.md](docs/risks.md), [licenses.md](docs/licenses.md), [nasa-resources.md](docs/nasa-resources.md)
+- [STATUS.md](docs/STATUS.md) — what works, what does not, what was built when
+
+## Tech note
+
+The original brief asked for Tailwind; the UI uses a small set of CSS design
+tokens (`packages/ui/src/styles/tokens.css`) and inline styles instead, which
+kept the two apps on one shared component package with no build plugin. React
+19, Recharts, hand-made SVG silhouette, IBM Plex fonts bundled locally.
+
+## Licence
+
+MIT, see [LICENSE](LICENSE). Third-party licences: [docs/licenses.md](docs/licenses.md).

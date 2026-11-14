@@ -1,0 +1,31 @@
+[project]
+name = "hestia-server"
+version = "0.1.0"
+description = "HESTIA backend: FastAPI + SQLite, local vision/LLM engines"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "sqlmodel>=0.0.22",
+    "opencv-python>=4.10",
+    "httpx>=0.27",
+    "python-multipart>=0.0.12",
+    "segno>=1.6.6",
+]
+
+[project.scripts]
+hestia-server = "app.main:main"
+hestia-reset-db = "app.seed:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app", "vision"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+]

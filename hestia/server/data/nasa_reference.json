@@ -1,0 +1,59 @@
+{
+  "contexts": {
+    "mars_base": {
+      "label": "Mars base",
+      "delay_s_default": 1200,
+      "delay_s_min": 240,
+      "delay_s_max": 1440,
+      "radiation_msv_day": 0.67,
+      "resupply_days": 790,
+      "next_resupply_in_days": 380,
+      "source": "One-way delay 4-24 min (default 20 min for demo); radiation from Curiosity RAD instrument; resupply window ~26 months (assumption)."
+    },
+    "mars_transit": {
+      "label": "Earth-Mars transit",
+      "delay_s_default": 600,
+      "radiation_msv_day": 1.8,
+      "resupply_days": null,
+      "next_resupply_in_days": null,
+      "source": "Delay grows over the transit; fixed at a representative mid-transit value for the demo (assumption). No resupply in transit."
+    },
+    "moon_base": {
+      "label": "Moon base",
+      "delay_s_default": 1,
+      "radiation_msv_day": 1.369,
+      "resupply_days": 180,
+      "next_resupply_in_days": 120,
+      "source": "~1.3 s one-way light delay; resupply ~6 months (assumption)."
+    },
+    "iss": {
+      "label": "ISS",
+      "delay_s_default": 0,
+      "radiation_msv_day": 0.523,
+      "resupply_days": 75,
+      "next_resupply_in_days": 45,
+      "source": "~0 delay; resupply 2-3 months (assumption, midpoint used)."
+    }
+  },
+  "reference_values": {
+    "o2_consumption_g_per_min_per_person": 0.82,
+    "co2_production_g_per_min_per_person": 1.04,
+    "iss_water_recycling_pct": 98,
+    "bone_loss_pct_per_month_in_flight": [1.0, 1.5],
+    "bone_loss_exercise_attenuation_max_pct": 50,
+    "radiation_career_limit_msv": 600,
+    "kcal_per_kg_bodyweight_change": 7700,
+    "nasa_daily_energy_reference_kj": 12000,
+    "nasa_daily_energy_reference_kcal": 2870,
+    "bone_loss_full_attenuation_exercise_h_per_day": 2.0,
+    "solar_storm_dose_msv_default": 50,
+    "solar_storm_dose_msv_range": [10, 500]
+  },
+  "assumptions": {
+    "next_resupply_in_days": "Demo assumption, not a NASA value: days until the next scheduled cargo for each context (Mars 380, Moon 120, ISS 45, transit none). Chosen so the seeded ~412-day stock covers the Mars window with a small margin.",
+    "solar_storm_dose_msv": "Assumption: a solar particle event adds a one-off dose, configurable 10-500 mSv (default 50 mSv, the order of magnitude of a sheltered crew in a large event).",
+    "bone_loss_attenuation": "Assumption: resistive exercise attenuates in-flight bone loss linearly, up to 50% at >= 2 h/day.",
+    "kcal_per_kg": "Approximation: 7700 kcal of cumulative energy imbalance per kg of body-mass change."
+  },
+  "notes": "Every value here is a NASA-informed reference or an explicitly flagged assumption, not a measured constant for this specific (fictional) crew. See PROMPT_FABLE.md §9 for sources; official NASA challenge resources for this cycle are expected 2026-11-13 and should be cross-checked then (docs/nasa-resources.md)."
+}

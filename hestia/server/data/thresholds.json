@@ -1,0 +1,100 @@
+{
+  "systolic_bp": {
+    "unit": "mmHg",
+    "rules": [
+      { "level": "red", "when": { "gte": 140 } },
+      { "level": "red", "when": { "lt": 80 } },
+      { "level": "orange", "when": { "gte": 120, "lte": 139 } },
+      { "level": "orange", "when": { "gte": 80, "lt": 90 } },
+      { "level": "green", "when": { "gte": 90, "lt": 120 } }
+    ],
+    "default": "orange"
+  },
+  "diastolic_bp": {
+    "unit": "mmHg",
+    "assumption": "not given explicit bands in the challenge brief; derived from standard clinical ranges",
+    "rules": [
+      { "level": "red", "when": { "gte": 90 } },
+      { "level": "red", "when": { "lt": 50 } },
+      { "level": "orange", "when": { "gte": 80, "lt": 90 } },
+      { "level": "orange", "when": { "gte": 50, "lt": 60 } },
+      { "level": "green", "when": { "gte": 60, "lt": 80 } }
+    ],
+    "default": "orange"
+  },
+  "heart_rate": {
+    "unit": "bpm (rest)",
+    "rules": [
+      { "level": "red", "when": { "gt": 110 } },
+      { "level": "red", "when": { "lt": 45 } },
+      { "level": "orange", "when": { "gte": 91, "lte": 110 } },
+      { "level": "orange", "when": { "gte": 45, "lte": 49 } },
+      { "level": "green", "when": { "gte": 50, "lte": 90 } }
+    ],
+    "default": "orange"
+  },
+  "glucose": {
+    "unit": "mg/dL",
+    "rules": [
+      { "level": "red", "when": { "gte": 126 } },
+      { "level": "red", "when": { "lt": 55 } },
+      { "level": "orange", "when": { "gte": 100, "lte": 125 } },
+      { "level": "orange", "when": { "gte": 55, "lte": 69 } },
+      { "level": "green", "when": { "gte": 70, "lte": 99 } }
+    ],
+    "default": "orange"
+  },
+  "temperature": {
+    "unit": "°C",
+    "rules": [
+      { "level": "red", "when": { "gt": 38.0 } },
+      { "level": "red", "when": { "lt": 35.5 } },
+      { "level": "orange", "when": { "gte": 37.3, "lte": 38.0 } },
+      { "level": "green", "when": { "gte": 36.1, "lte": 37.2 } }
+    ],
+    "default": "orange"
+  },
+  "sleep_h": {
+    "unit": "h",
+    "rules": [
+      { "level": "red", "when": { "lt": 5 } },
+      { "level": "orange", "when": { "gte": 5, "lt": 7 } },
+      { "level": "green", "when": { "gte": 7 } }
+    ],
+    "default": "orange"
+  },
+  "mood": {
+    "unit": "1-5",
+    "rules": [
+      { "level": "red", "when": { "lte": 2 } },
+      { "level": "orange", "when": { "eq": 3 } },
+      { "level": "green", "when": { "gte": 4 } }
+    ],
+    "default": "orange"
+  },
+  "weight_change_pct": {
+    "unit": "% vs baseline (negative = loss)",
+    "rules": [
+      { "level": "red", "when": { "lte": -5 } },
+      { "level": "orange", "when": { "lte": -2 } },
+      { "level": "green", "when": { "gt": -2 } }
+    ],
+    "default": "orange"
+  },
+  "radiation_pct_of_career_limit": {
+    "unit": "% of 600 mSv career limit",
+    "assumption": "orange warning band at 70% is not from the brief; chosen as a conservative early-warning margin",
+    "rules": [
+      { "level": "red", "when": { "gt": 100 } },
+      { "level": "orange", "when": { "gte": 70, "lte": 100 } },
+      { "level": "green", "when": { "lt": 70 } }
+    ],
+    "default": "orange"
+  },
+  "exercise_streak": {
+    "unit": "consecutive days below 30 min/day",
+    "daily_minimum_min": 30,
+    "orange_days": 3,
+    "red_days": 7
+  }
+}
