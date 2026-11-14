@@ -91,6 +91,7 @@ file. Never experiment on `server/hestia.db` during the event.
 | Decisions and open questions | `hestia/docs/decisions.md` |
 | Current state and tasks | `hestia/docs/STATUS.md` |
 | How the code is organised, technical choices | `hestia/docs/architecture.md` |
+| First steps for a new contributor, hardware checklist | `hestia/docs/development.md` |
 | Sources, audits, reviews | `hestia/docs/sources/` |
 | How the agents share skills and tools | `hestia/docs/ai-workflow.md` |
 | The five-minute demo | `hestia/docs/demo-script.md` |

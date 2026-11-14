@@ -1,5 +1,8 @@
 # HESTIA documentation — index
 
+New here? Start with [development.md](development.md): from a fresh clone
+to a first verified change.
+
 Read in this order when you arrive:
 
 1. [`AGENTS.md`](../../AGENTS.md) — rules shared by everyone, people and agents.
@@ -14,7 +17,8 @@ Read in this order when you arrive:
 | [product.md](product.md) | What HESTIA promises, what is in scope, how each need of the challenge is covered |
 | [architecture.md](architecture.md) | How the code is organised, technical choices, known debts |
 | [ai-workflow.md](ai-workflow.md) | How Claude Code and Codex share rules, skills and tools; what was tested |
-| [../README.md](../README.md) | How to install and run everything |
+| [development.md](development.md) | Getting started as a contributor: install, run, change, check, and the hardware checklist |
+| [../README.md](../README.md) | What the product does and every way to run it |
 | [risks.md](risks.md) | What can fail during the demo and the fallback for each case |
 | [vision-benchmark.md](vision-benchmark.md) | Measured accuracy and latency of the shelf reading |
 | [licenses.md](licenses.md) | Licences of dependencies and assets |

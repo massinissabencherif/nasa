@@ -5,5 +5,6 @@ Offline health self-assessment for astronauts — NASA Space Apps Challenge
 Missions*.
 
 - The application, how to run it and what it does: [hestia/README.md](hestia/README.md)
+- New contributor? Start here: [hestia/docs/development.md](hestia/docs/development.md)
 - Documentation index: [hestia/docs/README.md](hestia/docs/README.md)
 - Rules for AI agents working in this repository: [AGENTS.md](AGENTS.md)

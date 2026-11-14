@@ -47,7 +47,8 @@ Still open:
 - The seed and the meaning of meal events changed: run `make reset` once
   after pulling these branches.
 - Nothing was run on a physical phone, with the vision model, on a real
-  shelf or in the Tauri window on 14 Nov by the agent.
+  shelf or in the Tauri window on 14 Nov by the agent. The checklist to
+  tick is in [development.md](development.md), section 7.
 - The reaction test was driven by a script, not by a finger: its timing on
   a real phone is unknown.
 - The demo rules D6 to D8 and the critical bands of D7 wait for
