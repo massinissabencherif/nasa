@@ -25,6 +25,7 @@ export function Panel({
         display: 'flex',
         flexDirection: 'column',
         minWidth: 0,
+        boxShadow: 'var(--shadow-panel)',
         ...(elevated ? { background: 'var(--panel-raised)', borderColor: 'var(--text-faint)', boxShadow: 'var(--shadow-detail)' } : {}),
         ...style,
       }}
@@ -39,7 +40,7 @@ export function Panel({
             borderBottom: '1px solid var(--border-soft)',
           }}
         >
-          <h2 style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-muted)' }}>
+          <h2 style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--text)' }}>
             {title}
           </h2>
           {action}

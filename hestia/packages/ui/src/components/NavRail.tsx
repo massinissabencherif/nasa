@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import { HestiaMark } from '../icons';
 
 export type NavItem = {
   key: string;
@@ -26,11 +27,12 @@ export function NavRail({ items }: { items: NavItem[] }) {
       <div
         style={{
           display: 'flex',
-          alignItems: 'baseline',
-          gap: 6,
+          alignItems: 'center',
+          gap: 'var(--space-2)',
           padding: '2px 10px 22px',
         }}
       >
+        <HestiaMark size={22} />
         <span style={{ fontWeight: 700, fontSize: 'var(--text-lg)', letterSpacing: '-0.01em' }}>
           HESTIA
         </span>

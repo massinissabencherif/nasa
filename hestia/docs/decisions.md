@@ -95,6 +95,21 @@ says nothing about the code.
   motion when the person asked for none. Small red and green text outside
   the shared components now uses the readable ink colours.
 
+- **D20 (implemented, checked in a browser, 14 Nov, not pushed):** after
+  David looked at the running app and said the home screen did not explain
+  what to do and the product lacked character. *Home* is now built around
+  "Today's routine": one sentence on what the daily check is for, the main
+  action with its duration, then exercise, meals and the optional reaction
+  test with their state, and a legend of the colours under the body.
+  *Identity:* a HESTIA mark (a habitat dome with a vital-signs trace) in both
+  apps, and an icon per body zone in the same family, shown in the zone
+  panel; instrument icons carry the level on the station crew board.
+  *Calm when fine:* a nominal zone is filled lightly and its word is in a
+  quiet tone, so orange and red are what the eye finds first; the meaning of
+  the colours is unchanged. Panels get a hairline of light on their top edge
+  and a larger radius. The mark and the icon drawings are proposals to
+  confirm with David and Massi, as D16 already said for the monogram.
+
 ## Proposed, not decided
 
 | # | Idea | State |

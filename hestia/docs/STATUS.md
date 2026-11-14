@@ -44,6 +44,12 @@ that kept the answers and an error message, then a successful save. Station
 board at 1280×800 with one stale, one yesterday, one red and one current
 astronaut.
 
+**Character pass, same day (D20), branch `style/character`:** Home built
+around "Today's routine" with a colour legend; HESTIA mark; an icon per body
+zone; instrument icons on the station crew board; nominal zones quieter.
+Checked: 20 frontend tests, both builds, screenshots of Home, a zone panel,
+the station crew board and the Earth link. Not checked on a phone.
+
 **Depth and ink, same day:** the opened detail is the only lifted surface
 (`Panel elevated`); the station scrolls it into view (checked: its title is
 visible after opening a card at 1280×800); error and status text outside the

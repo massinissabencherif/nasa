@@ -282,3 +282,79 @@ export function measureIcon(key: string): ComponentType<IconProps> | undefined {
   };
   return icons[key];
 }
+
+/* Body-zone icons, same family: 20 x 20 grid, 1.6 stroke, round ends. They
+   sit next to the zone name, never instead of it. */
+
+export function IconBrain(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M10 4.4a2.9 2.9 0 0 0-5.3 1.3 2.9 2.9 0 0 0-1.1 4.4 2.9 2.9 0 0 0 1.7 4.3 2.7 2.7 0 0 0 4.7 1.2z" />
+      <path d="M10 4.4a2.9 2.9 0 0 1 5.3 1.3 2.9 2.9 0 0 1 1.1 4.4 2.9 2.9 0 0 1-1.7 4.3 2.7 2.7 0 0 1-4.7 1.2" />
+      <path d="M10 4.4v11.2" />
+    </svg>
+  );
+}
+
+export function IconEye(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M2.6 10s2.8-4.6 7.4-4.6 7.4 4.6 7.4 4.6-2.8 4.6-7.4 4.6S2.6 10 2.6 10z" />
+      <circle cx="10" cy="10" r="2.2" />
+    </svg>
+  );
+}
+
+export function IconBone(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M7.2 9.4l3.4 3.4" />
+      <path d="M12.9 7.1l-5.8 5.8a1.9 1.9 0 1 1-2.2 3 1.9 1.9 0 1 1-1.8-3.2 1.9 1.9 0 0 1 1.2-.6l5.8-5.8a1.9 1.9 0 1 1 3-2.2 1.9 1.9 0 1 1 1.8 3.2 1.9 1.9 0 0 1-2 -.2z" />
+    </svg>
+  );
+}
+
+export function IconImmunity(props: IconProps) {
+  // shield with a check
+  return (
+    <svg {...base(props)}>
+      <path d="M10 3l5.6 2v4.6c0 3.4-2.4 5.9-5.6 7.4-3.2-1.5-5.6-4-5.6-7.4V5z" />
+      <path d="M7.6 10l1.8 1.8 3.200-3.400" />
+    </svg>
+  );
+}
+
+export function IconRadiation(props: IconProps) {
+  // a source and three waves
+  return (
+    <svg {...base(props)}>
+      <circle cx="10" cy="10" r="1.8" />
+      <path d="M7 4.8A6 6 0 0 1 13 4.8M16 10a6 6 0 0 1-3 5.2M7 15.2A6 6 0 0 1 4 10" />
+    </svg>
+  );
+}
+
+/** The HESTIA mark: a habitat dome with a vital-signs trace inside. */
+export function HestiaMark({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M3.5 19.5V12a8.5 8.5 0 0 1 17 0v7.5z" stroke="var(--accent)" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M6.5 14.5h3l1.5-3.5 2 6 1.5-2.5h3" stroke="var(--text)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** The icon of a body zone, by its key. */
+export function zoneIcon(zone: string): ComponentType<IconProps> | undefined {
+  const icons: Record<string, ComponentType<IconProps>> = {
+    brain_morale: IconBrain,
+    eyes_sans: IconEye,
+    heart: IconPulse,
+    bones: IconBone,
+    muscles: IconExercise,
+    immunity: IconImmunity,
+    skin: IconRadiation,
+    digestive_nutrition: IconMeal,
+  };
+  return icons[zone];
+}

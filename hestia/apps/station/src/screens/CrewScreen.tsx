@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Panel, ReactionHistory, SilhouetteBody, StatusBadge, StatusDot, ZoneDetailPanel, ZONE_META, ZONES, worstLevel } from '@hestia/ui';
+import { Panel, ReactionHistory, SilhouetteBody, StatusBadge, ZoneDetailPanel, ZONE_META, ZONES, worstLevel, measureIcon } from '@hestia/ui';
 import { api } from '../lib/api';
 import { crewVitals, freshness, FRESHNESS_LABEL } from '../lib/crewVitals';
 import type { ZoneLevel } from '@hestia/api-client';
@@ -81,16 +81,22 @@ export function CrewScreen() {
                   {member.sex === 'M' ? 'Male' : 'Female'} · {member.age} y · {member.height_cm} cm · {member.weight_kg} kg
                 </p>
                 <div style={{ display: 'grid', gap: 'var(--space-1)' }}>
-                  {vitals.map((vital) => (
+                  {vitals.map((vital) => {
+                    const VitalIcon = measureIcon(vital.key);
+                    return (
                     <div
                       key={vital.label}
-                      style={{ display: 'grid', gridTemplateColumns: '12px minmax(0, 1fr) auto', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-sm)' }}
+                      style={{ display: 'grid', gridTemplateColumns: '18px minmax(0, 1fr) auto', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-sm)' }}
                     >
-                      {vital.level ? (
-                        <StatusDot level={vital.level} />
-                      ) : (
-                        <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '50%', border: '1.5px solid var(--decor)' }} />
-                      )}
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          display: 'inline-flex',
+                          color: vital.level === 'red' ? 'var(--red-ink)' : vital.level === 'orange' ? 'var(--orange-ink)' : vital.level ? 'var(--green-ink)' : 'var(--decor)',
+                        }}
+                      >
+                        {VitalIcon && <VitalIcon size={16} />}
+                      </span>
                       <span style={{ color: 'var(--text-muted)' }}>{vital.label}</span>
                       <span
                         style={{
@@ -102,7 +108,8 @@ export function CrewScreen() {
                         {vital.value}
                       </span>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <p style={{ fontSize: 'var(--text-xs)', color: attention.length ? 'var(--text)' : 'var(--text-muted)', minHeight: 16 }}>
                   {attention.length > 0 && `Needs attention: ${attention.map((z) => ZONE_META[z].label).join(', ')} · `}

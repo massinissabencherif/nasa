@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AdviceText, Button, formatAge, IconCaution, IconCheck, IconCheckin, IconCritical, indicatorLabel, Panel, SilhouetteBody, StatusBadge, unknownCount, worstLevel, ZoneDetailPanel } from '@hestia/ui';
+import { AdviceText, Button, formatAge, IconCaution, IconCheck, IconCheckin, IconClock, IconCritical, IconExercise, IconMeal, indicatorLabel, Panel, SilhouetteBody, StatusBadge, unknownCount, worstLevel, ZoneDetailPanel } from '@hestia/ui';
 import type { ZoneKey } from '@hestia/ui';
 import { useApi } from '../lib/ApiProvider';
 import {
@@ -35,6 +35,47 @@ export function Home() {
   const overall = status ? worstLevel(Object.values(status).map((z) => z.level)) : null;
   const missing = status ? unknownCount(Object.values(status).map((z) => z.level)) : 0;
   const checkinDone = reminders.find((r) => r.key === 'measurements')?.done ?? false;
+  const byKey = Object.fromEntries(reminders.map((r) => [r.key, r]));
+  const routine: { key: string; label: string; detail: string; icon: typeof IconCheckin; to: string; done: boolean; optional?: boolean }[] = [
+    {
+      key: 'checkin',
+      label: 'Daily check-in',
+      detail: checkinDone ? 'Recorded today. Tap to update it.' : 'How you feel and what you measured',
+      icon: IconCheckin,
+      to: '/checkin',
+      done: checkinDone,
+    },
+    {
+      key: 'exercise',
+      label: byKey.exercise?.label ?? 'Resistive exercise, 30 min or more',
+      detail: byKey.exercise?.detail ?? 'Logged in your check-in',
+      icon: IconExercise,
+      to: '/checkin',
+      done: byKey.exercise?.done ?? false,
+    },
+    {
+      key: 'meal',
+      label: byKey.meal?.label ?? 'Log your meals',
+      detail: byKey.meal?.detail ?? 'From the real stock',
+      icon: IconMeal,
+      to: '/meal',
+      done: byKey.meal?.done ?? false,
+    },
+    {
+      key: 'reaction',
+      label: 'Reaction time test',
+      detail: 'Measured by this phone, 1 to 2 minutes',
+      icon: IconClock,
+      to: '/assessments',
+      done: false,
+      optional: true,
+    },
+  ];
+  const required = routine.filter((row) => !row.optional);
+  const routineCount = required.length;
+  const routineDone = required.filter((row) => row.done).length;
+  // reminders that are advice, not tasks to tick
+  const notes = reminders.filter((r) => r.key === 'hydration' || r.key === 'context');
   // the newest reading behind any zone, so the person sees how fresh the body view is
   const newestTs = status
     ? Object.values(status)
@@ -51,6 +92,7 @@ export function Home() {
           <h1 style={{ fontSize: 'var(--text-xl)', fontWeight: 700 }}>{crew?.name ?? '…'}</h1>
           <p style={{ color: 'var(--text-faint)', fontSize: 'var(--text-sm)' }}>
             {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' })}
+            {context ? ` · ${context.label}, Earth replies in ${Math.max(1, Math.round((context.delay_s * 2) / 60))} min` : ''}
           </p>
         </div>
         <Button
@@ -98,14 +140,72 @@ export function Home() {
         </div>
       ))}
 
-      <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
-        <Button variant={checkinDone ? 'secondary' : 'primary'} size="lg" icon={<IconCheckin size={20} />} onClick={() => navigate('/checkin')}>
-          {checkinDone ? "Update today's check-in" : 'Start my check-in'}
-        </Button>
-        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-          {checkinDone ? "Today's check-in is recorded." : 'Nothing recorded today.'}
-        </p>
-      </div>
+      <Panel title="Today's routine" action={<span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>{routineDone} of {routineCount} done</span>}>
+        <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
+            Once a day, record how you feel and what you measured. HESTIA turns it into your body status below and tells you what to
+            do. Far from Earth, you are the first to notice a change.
+          </p>
+          {!checkinDone && (
+            <Button variant="primary" size="lg" icon={<IconCheckin size={20} />} onClick={() => navigate('/checkin')}>
+              Start my check-in · about 2 min
+            </Button>
+          )}
+          <div style={{ display: 'grid' }}>
+            {/* while the check-in is still to do, the big button above is its row */}
+            {routine.filter((row) => row.key !== 'checkin' || checkinDone).map((row, index) => {
+              const RowIcon = row.icon;
+              return (
+                <button
+                  key={row.key}
+                  onClick={() => navigate(row.to)}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '24px minmax(0, 1fr) auto',
+                    alignItems: 'center',
+                    gap: 'var(--space-3)',
+                    padding: 'var(--space-3) 0',
+                    minHeight: 56,
+                    background: 'none',
+                    border: 'none',
+                    borderTop: index === 0 ? 'none' : '1px solid var(--border-soft)',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    color: 'var(--text)',
+                  }}
+                >
+                  <span aria-hidden="true" style={{ display: 'inline-flex', color: row.done ? 'var(--text-faint)' : 'var(--accent)' }}>
+                    <RowIcon size={22} />
+                  </span>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 500 }}>{row.label}</span>
+                    <span style={{ display: 'block', fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>{row.detail}</span>
+                  </span>
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 'var(--space-1)',
+                      fontSize: 'var(--text-xs)',
+                      color: row.done ? 'var(--green-ink)' : 'var(--text-faint)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {row.done && <IconCheck size={14} />}
+                    {row.done ? 'done' : row.optional ? 'optional' : 'to do'}
+                    <span aria-hidden="true" style={{ color: 'var(--decor)', marginLeft: 'var(--space-1)' }}>›</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {notes.map((note) => (
+            <p key={note.key} style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>
+              {note.label}: {note.detail}
+            </p>
+          ))}
+        </div>
+      </Panel>
 
       <Panel title="Your body" action={newestTs ? <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>last reading {formatAge(newestTs)}</span> : undefined}>
         {status ? (
@@ -125,7 +225,27 @@ export function Home() {
             <div style={{ display: 'flex', justifyContent: 'center' }}>
               <SilhouetteBody status={status} width={340} showLabels selectedZone={selectedZone} onSelectZone={setSelectedZone} />
             </div>
-            <p style={{ textAlign: 'center', fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>Tap a body zone or its label</p>
+            <p style={{ textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
+              Tap a zone to see what was measured, why it matters and what to do.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 'var(--space-2) var(--space-4)', fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>
+              {(
+                [
+                  ['var(--green)', 'nominal'],
+                  ['var(--orange)', 'advice for you'],
+                  ['var(--red)', 'alert for the crew'],
+                ] as const
+              ).map(([colour, word]) => (
+                <span key={word} style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+                  <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '50%', background: colour }} />
+                  {word}
+                </span>
+              ))}
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+                <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '50%', border: '1.5px dashed var(--text-faint)' }} />
+                no recent data
+              </span>
+            </div>
           </div>
         ) : (
           <p style={{ color: 'var(--text-faint)', fontSize: 'var(--text-sm)' }}>Loading your status…</p>
@@ -140,40 +260,6 @@ export function Home() {
       )}
 
       {crewId != null && <ReactionAssessmentCard key={crewId} crewId={crewId} onOpen={() => navigate('/assessments')} />}
-
-      {reminders.length > 0 && (
-        <Panel title="Today">
-          <div style={{ display: 'grid', gap: 10 }}>
-            {reminders.map((r) => (
-              <div key={r.key} style={{ display: 'grid', gridTemplateColumns: '20px 1fr', gap: 10, alignItems: 'start' }}>
-                <span
-                  aria-hidden
-                  style={{
-                    width: 20,
-                    height: 20,
-                    borderRadius: '50%',
-                    border: `1.5px solid ${r.done ? 'var(--green)' : 'var(--border)'}`,
-                    color: 'var(--green)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginTop: 1,
-                  }}
-                >
-                  {r.done && <IconCheck size={12} />}
-                </span>
-                <div>
-                  <p style={{ fontSize: 'var(--text-sm)', color: r.done ? 'var(--text-muted)' : 'var(--text)' }}>
-                    {r.label}
-                    {r.done ? ' (done)' : ''}
-                  </p>
-                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>{r.detail}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Panel>
-      )}
 
       {gamification && (
         <details>

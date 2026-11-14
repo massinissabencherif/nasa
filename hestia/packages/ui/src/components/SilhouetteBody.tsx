@@ -8,10 +8,12 @@ const LEVEL_COLOR: Record<ZoneLevel, string> = {
   red: 'var(--red)',
   unknown: 'var(--text-faint)',
 };
-const LEVEL_FILL_OPACITY: Record<ZoneLevel, number> = { green: 0.3, orange: 0.8, red: 0.88, unknown: 0.12 };
+// nominal zones stay quiet so that an orange or red zone is what the eye finds first
+const LEVEL_FILL_OPACITY: Record<ZoneLevel, number> = { green: 0.14, orange: 0.8, red: 0.88, unknown: 0.12 };
 const LEVEL_WORD: Record<ZoneLevel, string> = { green: 'nominal', orange: 'caution', red: 'critical', unknown: 'no data' };
 const LEVEL_INK: Record<ZoneLevel, string> = {
-  green: 'var(--green-ink)',
+  // nominal is said in words and with a tick, in a quiet tone: colour is kept for what needs attention
+  green: 'var(--text-faint)',
   orange: 'var(--orange-ink)',
   red: 'var(--red-ink)',
   unknown: 'var(--text-faint)',

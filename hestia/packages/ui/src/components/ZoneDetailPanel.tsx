@@ -1,5 +1,5 @@
 import type { CrewStatus, Thresholds } from '@hestia/api-client';
-import { IconCheck, IconCaution, IconCritical } from '../icons';
+import { IconCheck, IconCaution, IconCritical, zoneIcon } from '../icons';
 import { CONTEXT_ZONE_NOTES, INDICATOR_LABELS, ZONE_META, type ZoneKey } from '../zones';
 import { formatThresholdBands } from '../thresholdText';
 import { formatAge } from '../time';
@@ -23,11 +23,17 @@ export function ZoneDetailPanel({
   const meta = ZONE_META[zone];
   const zoneStatus = status[zone];
   const contextNote = contextType ? CONTEXT_ZONE_NOTES[contextType]?.[zone] : undefined;
+  const ZoneIcon = zoneIcon(zone);
 
   return (
     <div style={{ display: 'grid', gap: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {ZoneIcon && (
+            <span aria-hidden="true" style={{ display: 'inline-flex', color: 'var(--accent)' }}>
+              <ZoneIcon size={22} />
+            </span>
+          )}
           <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>{meta.label}</h2>
           <StatusBadge level={zoneStatus.level} />
         </div>

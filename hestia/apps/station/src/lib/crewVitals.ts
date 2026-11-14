@@ -1,7 +1,8 @@
 import type { CrewStatus, Level } from '@hestia/api-client';
 
 /** One line of the crew board: a reading, as the station already knows it. */
-export type Vital = { label: string; value: string; level: Level | null };
+/** `key` is the measure key, so the screen can pick the matching instrument icon. */
+export type Vital = { key: string; label: string; value: string; level: Level | null };
 
 const number = (text: string | undefined): string | null => {
   const match = text?.match(/-?\d+(?:\.\d+)?/);
@@ -28,15 +29,16 @@ export function crewVitals(status: CrewStatus): Vital[] {
   const sleep = number(brain?.display.sleep_h);
   const reaction = number(brain?.display.reaction_change_pct);
   return [
-    { label: 'Heart rate', value: pulse ? `${Math.round(Number(pulse))} bpm` : 'no data', level: current(heart, heart?.indicators.heart_rate) },
+    { key: 'heart_rate', label: 'Heart rate', value: pulse ? `${Math.round(Number(pulse))} bpm` : 'no data', level: current(heart, heart?.indicators.heart_rate) },
     {
+      key: 'systolic_bp',
       label: 'Blood pressure',
       value: systolic && diastolic ? `${Math.round(Number(systolic))}/${Math.round(Number(diastolic))} mmHg` : 'no data',
       level: current(heart, worst(heart?.indicators.systolic_bp, heart?.indicators.diastolic_bp)),
     },
-    { label: 'Temperature', value: temperature ? `${temperature} °C` : 'no data', level: current(immunity, immunity?.indicators.temperature) },
-    { label: 'Sleep', value: sleep ? `${sleep} h` : 'no data', level: current(brain, brain?.indicators.sleep_h) },
-    { label: 'Legacy reaction', value: reaction ? `${Math.round(Number(reaction))} ms` : 'no test', level: current(brain, brain?.indicators.reaction_change_pct) },
+    { key: 'temperature', label: 'Temperature', value: temperature ? `${temperature} °C` : 'no data', level: current(immunity, immunity?.indicators.temperature) },
+    { key: 'sleep_h', label: 'Sleep', value: sleep ? `${sleep} h` : 'no data', level: current(brain, brain?.indicators.sleep_h) },
+    { key: 'reaction_ms', label: 'Legacy reaction', value: reaction ? `${Math.round(Number(reaction))} ms` : 'no test', level: current(brain, brain?.indicators.reaction_change_pct) },
   ];
 }
 

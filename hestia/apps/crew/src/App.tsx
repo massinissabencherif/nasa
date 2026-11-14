@@ -1,5 +1,5 @@
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { IconCheckin, IconConnection, IconHistory, IconHome, IconMeal, IconPantry, IconSettings, TabBar } from '@hestia/ui';
+import { IconCheckin, IconConnection, IconHistory, IconHome, IconMeal, IconPantry, IconSettings, TabBar, HestiaMark } from '@hestia/ui';
 import { ApiProvider } from './lib/ApiProvider';
 import { useConnection, useCrewMember, useMissionContext, useSelectedCrewId } from './lib/hooks';
 import { ProfilePicker } from './screens/ProfilePicker';
@@ -59,7 +59,10 @@ function Shell() {
         }}
       >
         <div style={{ minWidth: 0 }}>
-          <p style={{ fontWeight: 700, letterSpacing: '-0.01em' }}>HESTIA</p>
+          <p style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontWeight: 700, letterSpacing: '-0.01em' }}>
+            <HestiaMark size={20} />
+            HESTIA
+          </p>
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {context?.label ?? 'Crew app'}
             {crew && showTabs ? ` · ${crew.name}` : ''}
