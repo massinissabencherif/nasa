@@ -129,7 +129,7 @@ export function EarthScreen() {
               {context && context.time_scale !== 1 ? ` (demo clock ×${context.time_scale} for new messages)` : ''}
             </p>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginTop: 4 }}>
-              Red alerts are sent as a compact report. Until the answer comes back, the crew handles it with the onboard procedure.
+              A compact report is queued when a value is critical or when two indicators are red together. Until the answer comes back, the crew handles it with the onboard procedure.
             </p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

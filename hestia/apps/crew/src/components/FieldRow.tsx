@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { IconInfo } from '@hestia/ui';
+import { IconInfo, measureIcon } from '@hestia/ui';
 import { EXPLANATIONS } from '../lib/explanations';
 
 export function ExplainSheet({ field }: { field: string }) {
@@ -39,10 +39,16 @@ export function FieldRow({
   const [open, setOpen] = useState(false);
   const info = EXPLANATIONS[field];
   const inputId = `field-${field}`;
+  const MeasureIcon = measureIcon(field);
 
   return (
     <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--panel)', overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 8px 10px 14px' }}>
+        {MeasureIcon && (
+          <span aria-hidden="true" style={{ color: 'var(--text-muted)', display: 'inline-flex', flexShrink: 0 }}>
+            <MeasureIcon size={20} />
+          </span>
+        )}
         <label htmlFor={inputId} style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 500 }}>{info.label}</span>
           {last != null && <span style={{ display: 'block', fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>last: {last} {info.unit}</span>}

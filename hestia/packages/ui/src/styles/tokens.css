@@ -5,8 +5,12 @@
   --border: #2a3542;
   --border-soft: #202a35;
   --text: #eaf0f5;
-  --text-muted: #8993a1;
-  --text-faint: #5c6673;
+  /* Text roles. Every one reaches 4.5:1 on --panel and --panel-raised
+     (computed 14 Nov 2026), so small units, dates and labels stay readable.
+     --decor is for lines, placeholders and other non-text marks only. */
+  --text-muted: #9ba6b3;
+  --text-faint: #8090a0;
+  --decor: #5c6673;
 
   --accent: #4fc3e8;
   --accent-dim: rgba(79, 195, 232, 0.14);
@@ -19,12 +23,17 @@
   --orange-dim: rgba(250, 178, 25, 0.16);
   --red: #d03b3b;
   --red-dim: rgba(208, 59, 59, 0.16);
+  /* Ink for small status text on the tinted surfaces above. The fill
+     colours keep their meaning; only the text colour is lighter. */
+  --green-ink: #2fc12f;
+  --red-ink: #f27a7a;
+  --orange-ink: #fab219;
 
   --chart-series-1: #3987e5;
   --chart-series-2: #d55181;
   --chart-grid: rgba(234, 240, 245, 0.08);
 
-  --font-sans: 'Plex Sans', -apple-system, 'Segoe UI', system-ui, sans-serif;
+  --font-sans: 'Space Grotesk', 'Plex Sans', -apple-system, 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
   --space-1: 4px;
@@ -83,6 +92,54 @@ button {
 
 a {
   color: inherit;
+}
+
+/* Buttons: one definition of hover, pressed and loading for every variant. */
+.hz-btn {
+  transition: border-color 120ms ease, background-color 120ms ease, filter 120ms ease;
+}
+.hz-btn:hover:not(:disabled):not([aria-busy='true']) {
+  border-color: var(--text-muted);
+  filter: brightness(1.12);
+}
+.hz-btn:active:not(:disabled):not([aria-busy='true']) {
+  filter: brightness(0.94);
+  transform: translateY(1px);
+}
+.hz-btn[aria-busy='true'] {
+  cursor: progress;
+}
+.hz-spinner {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: hz-spin 800ms linear infinite;
+}
+@keyframes hz-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (pointer: coarse) {
+  /* comfortable touch size on phones (WCAG 2.2 AA asks for 24 px) */
+  .hz-btn {
+    min-height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hz-btn {
+    transition: none;
+  }
+  .hz-btn:active:not(:disabled) {
+    transform: none;
+  }
+  .hz-spinner {
+    animation: none;
+    border-right-color: currentColor;
+    opacity: 0.6;
+  }
 }
 
 ::selection {

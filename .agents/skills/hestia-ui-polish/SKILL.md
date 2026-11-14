@@ -46,8 +46,8 @@ things worth remembering.
    - icons: the family in `packages/ui/src/icons.tsx`, one stroke, no emoji;
    - copy: exact and plain, no exclamation mark, no superlative, one role
      per text;
-   - type: Plex Sans for text, Plex Mono for figures, weights 400–600,
-     tabular figures;
+   - type: Space Grotesk for text (David's choice, decision D16), Plex Mono
+     for figures, weights 400–600, tabular figures;
    - layout: order kept, hierarchy by size (what matters most is the
      largest), no dead space;
    - details: nested radii, quiet secondary text, an important action

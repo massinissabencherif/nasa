@@ -31,7 +31,7 @@ export function Panel({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '11px 16px',
+            padding: 'var(--space-3) var(--space-4)',
             borderBottom: '1px solid var(--border-soft)',
           }}
         >

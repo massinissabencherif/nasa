@@ -57,8 +57,9 @@ export function AlertsScreen() {
   return (
     <div style={{ display: 'grid', gap: 12 }}>
       <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-        Green: nothing. Orange: self-care advice for the astronaut. Red: crew alert on station and mobile, plus a compact report queued
-        for Earth. Only a change of level raises a new alert. Advice is indicative, never a diagnosis.
+        Green: nothing. Orange: self-care advice for the astronaut. Red: alert for the crew on the station and on the phone. A compact
+        report is queued for Earth only when a value is critical or two indicators are red together. Only a change of level raises a
+        new alert. Advice is indicative, never a diagnosis.
       </p>
       {alerts != null && active.length === 0 && (
         <Panel>

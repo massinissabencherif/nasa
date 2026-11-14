@@ -10,6 +10,12 @@ const LEVEL_COLOR: Record<ZoneLevel, string> = {
 };
 const LEVEL_FILL_OPACITY: Record<ZoneLevel, number> = { green: 0.3, orange: 0.8, red: 0.88, unknown: 0.12 };
 const LEVEL_WORD: Record<ZoneLevel, string> = { green: 'nominal', orange: 'caution', red: 'critical', unknown: 'no data' };
+const LEVEL_INK: Record<ZoneLevel, string> = {
+  green: 'var(--green-ink)',
+  orange: 'var(--orange-ink)',
+  red: 'var(--red-ink)',
+  unknown: 'var(--text-faint)',
+};
 const LEVEL_MARK: Record<ZoneLevel, string> = { green: '✓', orange: '!', red: '✕', unknown: '–' };
 
 // Hand-drawn front view, 200 x 440 units. Each zone is one or two closed paths.
@@ -185,7 +191,7 @@ export function SilhouetteBody({
           const lineEnd = side === 'right' ? 170 : 30;
           return (
             <g key={`label-${zone}`} {...handlers(zone)}>
-              <line x1={anchorX} y1={y} x2={lineEnd} y2={y} stroke="var(--text-faint)" strokeWidth={0.8} strokeDasharray="2 3" pointerEvents="none" />
+              <line x1={anchorX} y1={y} x2={lineEnd} y2={y} stroke="var(--decor)" strokeWidth={0.8} strokeDasharray="2 3" pointerEvents="none" />
               <circle cx={anchorX} cy={y} r={2} fill="var(--text-muted)" pointerEvents="none" />
               <text
                 x={textX}
@@ -203,7 +209,7 @@ export function SilhouetteBody({
                 y={y + 13}
                 textAnchor={side === 'right' ? 'start' : 'end'}
                 fontSize={11}
-                fill={LEVEL_COLOR[level]}
+                fill={LEVEL_INK[level]}
                 fontFamily="var(--font-sans)"
               >
                 {LEVEL_MARK[level]} {LEVEL_WORD[level]}

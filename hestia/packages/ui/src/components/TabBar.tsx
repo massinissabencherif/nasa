@@ -11,6 +11,7 @@ export type TabItem = {
 export function TabBar({ items }: { items: TabItem[] }) {
   return (
     <nav
+      aria-label="Main"
       style={{
         display: 'flex',
         borderTop: '1px solid var(--border)',
@@ -25,16 +26,18 @@ export function TabBar({ items }: { items: TabItem[] }) {
           <button
             key={item.key}
             onClick={item.onClick}
+            aria-current={item.active ? 'page' : undefined}
             style={{
               flex: 1,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               gap: 4,
-              padding: '10px 4px 8px',
+              padding: 'var(--space-3) var(--space-1) var(--space-2)',
+              minHeight: 56,
               border: 'none',
               background: 'none',
-              color: item.active ? 'var(--accent)' : 'var(--text-faint)',
+              color: item.active ? 'var(--accent)' : 'var(--text-muted)',
               fontSize: 'var(--text-xs)',
               fontWeight: item.active ? 600 : 500,
               cursor: 'pointer',

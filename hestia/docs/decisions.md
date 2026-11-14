@@ -58,6 +58,19 @@ says nothing about the code.
   This pass does not authorise a commit, push, merge, installation or
   external communication. The next implementation lot still follows
   AGENTS.md. The existing reaction work remains uncommitted.
+- **D18 (implemented and verified in a browser, 14 Nov, not committed):**
+  UI lot 1, "foundations", done by Fable on David's "à toi". It applies D16
+  and changes no health rule, colour meaning or reaction behaviour. Space
+  Grotesk is bundled locally (weights 400–700, latin subset, OFL licence
+  text beside the files); Plex Mono stays for readings and Plex Sans is the
+  fallback. Text colours were raised to at least 4.5:1 on the panel
+  surfaces: `--text-faint` is now `#8090a0`, `--text-muted` `#9ba6b3`, the
+  old tone is kept as `--decor` for non-text marks, and green/red/orange get
+  an ink colour for small status text. Buttons share hover, pressed,
+  loading and a 44 px touch height on touch devices; navigation announces
+  the current page; seven instrument icons were added for the check-in
+  fields. Two wrong texts were corrected (meal attribution removed by D8;
+  escalation described as in D7).
 
 ## Proposed, not decided
 

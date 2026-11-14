@@ -46,7 +46,8 @@ redistribution beyond the hackathon.
 
 | Asset | Origin | Licence |
 |---|---|---|
-| IBM Plex Sans and Plex Mono (`packages/ui/src/fonts`) | IBM | SIL Open Font Licence 1.1 |
+| Space Grotesk, weights 400–700, latin subset (`packages/ui/src/fonts`), the interface font | Space Grotesk Project Authors, files from the `@fontsource/space-grotesk` 5.2.8 package | SIL Open Font Licence 1.1; the licence text is `packages/ui/src/fonts/OFL-space-grotesk.txt` |
+| IBM Plex Sans and Plex Mono (`packages/ui/src/fonts`): Plex Mono for measures and durations, Plex Sans as the fallback of the interface font | IBM | SIL Open Font Licence 1.1 |
 | Icons (`packages/ui/src/icons.tsx`) and body silhouette | drawn for this project | MIT (project licence) |
 | Shelf test photos (`server/vision/fixtures`) | AI-generated for this project | captioned as AI-generated in the app |
 | Tauri default app icons (`apps/station/src-tauri/icons`) | Tauri template | MIT or Apache-2.0; to replace before any public release |

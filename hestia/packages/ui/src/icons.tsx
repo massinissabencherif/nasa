@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { ComponentType, SVGProps } from 'react';
 
 type IconProps = SVGProps<SVGSVGElement> & { size?: number };
 
@@ -191,4 +191,94 @@ export function IconCalibrate(props: IconProps) {
       <circle cx="10" cy="10" r="2.2" />
     </svg>
   );
+}
+
+/* Instrument icons for the measures of the check-in. They sit next to the
+   label and the unit, they never replace them. Same 20 x 20 grid and 1.6
+   stroke as the rest of the family; checked at 16, 20 and 24 px. */
+
+export function IconPressure(props: IconProps) {
+  // arm cuff, tube and gauge
+  return (
+    <svg {...base(props)}>
+      <rect x="2.4" y="5.4" width="8" height="9.2" rx="1.8" />
+      <path d="M6.4 5.4v9.2" />
+      <path d="M10.4 10h2" />
+      <circle cx="15.2" cy="10" r="2.8" />
+      <path d="M15.2 10l1-1.1" />
+    </svg>
+  );
+}
+
+export function IconPulse(props: IconProps) {
+  // heart with a pulse trace
+  return (
+    <svg {...base(props)}>
+      <path d="M10 16.4S3.6 12.9 3.6 8.2a3.3 3.3 0 0 1 6.4-1.1 3.3 3.3 0 0 1 6.4 1.1c0 4.7-6.4 8.2-6.4 8.2z" />
+      <path d="M6.6 9.6h2l1-2 1.3 3.6 1-1.6h1.4" />
+    </svg>
+  );
+}
+
+export function IconGlucose(props: IconProps) {
+  // meter with its screen and button
+  return (
+    <svg {...base(props)}>
+      <rect x="5.4" y="2.8" width="9.2" height="14.4" rx="2.2" />
+      <rect x="7.6" y="5.2" width="4.8" height="3.4" rx="0.7" />
+      <circle cx="10" cy="12.8" r="1.4" />
+    </svg>
+  );
+}
+
+export function IconThermometer(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M8.4 11.2V4.6a1.6 1.6 0 0 1 3.2 0v6.6a3.2 3.2 0 1 1-3.2 0z" />
+      <path d="M10 8v5.4" />
+    </svg>
+  );
+}
+
+export function IconScale(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <rect x="3" y="3.6" width="14" height="12.8" rx="3" />
+      <path d="M6.9 8.8a3.8 3.8 0 0 1 6.2 0" />
+      <path d="M10 8.9l1.2-1.5" />
+    </svg>
+  );
+}
+
+export function IconSleep(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M16.2 12.4A6.4 6.4 0 0 1 7.6 3.8a6.4 6.4 0 1 0 8.6 8.6z" />
+    </svg>
+  );
+}
+
+export function IconExercise(props: IconProps) {
+  // dumbbell
+  return (
+    <svg {...base(props)}>
+      <path d="M3.2 7.8v4.4M5.8 6v8M14.2 6v8M16.8 7.8v4.4M5.8 10h8.4" />
+    </svg>
+  );
+}
+
+/** The icon of a check-in measure, by its key; undefined when it has none. */
+export function measureIcon(key: string): ComponentType<IconProps> | undefined {
+  const icons: Record<string, ComponentType<IconProps>> = {
+    systolic_bp: IconPressure,
+    diastolic_bp: IconPressure,
+    heart_rate: IconPulse,
+    glucose: IconGlucose,
+    temperature: IconThermometer,
+    weight: IconScale,
+    sleep_h: IconSleep,
+    exercise_min: IconExercise,
+    reaction_ms: IconClock,
+  };
+  return icons[key];
 }

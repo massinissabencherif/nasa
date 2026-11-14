@@ -116,7 +116,7 @@ export function Meal() {
         </>
       )}
       <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>
-        A logged meal lowers the expected stock at once; the next camera scan confirms it and attributes the missing unit to you.
+        A logged meal lowers the expected stock by the portions you ate, at once. A camera scan counts boxes on the shelf and does not change who ate what.
       </p>
     </div>
   );

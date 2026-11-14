@@ -11,6 +11,7 @@ export type NavItem = {
 export function NavRail({ items }: { items: NavItem[] }) {
   return (
     <nav
+      aria-label="Main"
       style={{
         width: 190,
         flexShrink: 0,
@@ -40,6 +41,7 @@ export function NavRail({ items }: { items: NavItem[] }) {
           <button
             key={item.key}
             onClick={item.onClick}
+            aria-current={item.active ? 'page' : undefined}
             style={{
               display: 'flex',
               alignItems: 'center',

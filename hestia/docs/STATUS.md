@@ -18,10 +18,28 @@ visible zones. David rejected the softened graphite/cyan variant and the
 layout that reduced the body. He wants Fable to add restrained character,
 measurement icons and visual depth. Individual layouts remain proposals.
 
-**Not implemented:** the new font, proposed layouts, step-by-step check-in,
-icon additions and design-system fixes. The running application still uses
-Plex Sans. `hestia-ui-polish` still names that font; D16 takes precedence
-until the skill is synchronised in the authorised implementation lot.
+**Lot 1, foundations, done later on 14 Nov by Fable (D18), not committed.**
+Space Grotesk bundled locally and loaded (checked in Chrome: weights 400–700
+loaded, `aria-current` on the active page, `nav` labelled). Contrast-safe text
+roles and status inks, shared button states, seven measure icons next to the
+check-in fields, two wrong texts corrected, `hestia-ui-polish` synchronised.
+Files: `packages/ui/src/{styles/tokens.css,styles/fonts.css,fonts/*,icons.tsx,
+components/{Button,TabBar,NavRail,Panel,StatusBadge,SilhouetteBody}.tsx}`,
+`apps/crew/src/components/FieldRow.tsx`, `apps/crew/src/screens/Meal.tsx`,
+`apps/station/src/screens/{AlertsScreen,EarthScreen}.tsx`,
+`docs/licenses.md`, `.agents/skills/hestia-ui-polish/SKILL.md`.
+Checks run: both apps type-check and build, `make check-offline` passes, 69
+backend tests pass, icons rendered at 16/20/24/48 px.
+
+**Still not implemented:** the proposed layouts, the step-by-step check-in,
+visual depth between surfaces, the remaining lots 2 to 4 of the brief.
+Small texts written with `var(--red)` or `var(--green)` outside the shared
+components (for example the red values on the station crew board and the
+reaction card) still need the ink colours: they belong to the screens of
+lots 2 and 3, which also contain Astra's uncommitted changes.
+The blood-pressure cuff is the weakest icon at 16 px and the glucose meter
+reads as a generic device: to review with David. Nobody has looked at the
+new font on a physical phone.
 The existing reaction protocol remains 3 practice + 15 measured trials.
 
 **Evidence and limits:** real-font mockups rendered in Chrome at 390×844,
