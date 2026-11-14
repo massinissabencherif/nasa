@@ -6,9 +6,9 @@ works, how it was checked, and what is still open. Decisions are in
 
 ## 14 Nov — consolidation
 
-Five local branches, stacked, **not merged and not pushed**. The commits are
-unsigned because the signing key could not be unlocked from the agent's
-shell; they can be re-signed before pushing.
+Five branches, stacked. `style/memorable-screens` is the top of the stack
+and contains all of them; it was pushed on 14 Nov and is **not merged into
+`main`**. The commits are signed by David.
 
 | Branch | Content |
 |---|---|
