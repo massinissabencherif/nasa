@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from statistics import median
 
 from sqlmodel import Session, select
 
@@ -15,7 +16,7 @@ from .thresholds import (
 )
 
 ZONE_INDICATORS: dict[str, list[str]] = {
-    "brain_morale": ["mood", "sleep_h", "symptom"],
+    "brain_morale": ["mood", "sleep_h", "reaction_change_pct", "symptom"],
     "eyes_sans": ["symptom"],
     "heart": ["systolic_bp", "diastolic_bp", "heart_rate"],
     "bones": ["exercise_streak"],
@@ -42,6 +43,7 @@ RAW_TYPE: dict[str, str] = {
     "weight_change_pct": "weight",
     "exercise_streak": "exercise_min",
     "radiation_pct_of_career_limit": "radiation_dose_msv",
+    "reaction_change_pct": "reaction_ms",
 }
 # A running total, not a reading taken at check-in: it never goes stale.
 FRESHNESS_EXEMPT = {"radiation_pct_of_career_limit"}
@@ -138,6 +140,19 @@ def daily_exercise_minutes(session: Session, crew_member_id: int, days: int = EX
     return list(by_day.values())
 
 
+def reaction_baseline(session: Session, crew_member_id: int) -> tuple[float | None, float | None, int]:
+    """(latest result, personal baseline, number of earlier tests). The
+    baseline is the median of the tests before the latest one; it is None
+    until enough of them exist (demo_rules.json, "reaction_test")."""
+    rules = load_demo_rules()["reaction_test"]
+    values = _recent_values(session, crew_member_id, "reaction_ms", limit=rules["baseline_window_tests"] + 1)
+    if not values:
+        return None, None, 0
+    latest, earlier = values[0], values[1:]
+    baseline = median(earlier) if len(earlier) >= rules["baseline_min_tests"] else None
+    return latest, baseline, len(earlier)
+
+
 def last_checkin_ts(session: Session, crew_member_id: int) -> datetime | None:
     row = session.exec(
         select(Measurement)
@@ -165,6 +180,11 @@ def indicator_value(session: Session, crew_member_id: int, indicator: str) -> fl
     if indicator == "radiation_pct_of_career_limit":
         dose = _latest(session, crew_member_id, "radiation_dose_msv")
         return None if dose is None else dose / career_limit_msv() * 100
+    if indicator == "reaction_change_pct":
+        latest, baseline, _count = reaction_baseline(session, crew_member_id)
+        if latest is None or not baseline:
+            return None  # no test yet, or the personal baseline is still being built
+        return (latest - baseline) / baseline * 100
     return _latest(session, crew_member_id, indicator)
 
 
@@ -222,6 +242,14 @@ def indicator_display(
             return "no data"
         limit = career_limit_msv()
         return f"{dose:.0f} mSv ({dose / limit * 100:.0f} % of {limit:g} mSv)"
+    if indicator == "reaction_change_pct":
+        latest, baseline, count = reaction_baseline(session, crew_member_id)
+        if latest is None:
+            return "no test yet"
+        if baseline is None:
+            needed = load_demo_rules()["reaction_test"]["baseline_min_tests"]
+            return f"{latest:.0f} ms, building your baseline ({count} of {needed} tests)"
+        return f"{latest:.0f} ms, {(latest - baseline) / baseline * 100:+.0f} % vs your baseline ({baseline:.0f} ms)"
     row = _latest_row(session, crew_member_id, indicator)
     if row is None:
         return "no data"

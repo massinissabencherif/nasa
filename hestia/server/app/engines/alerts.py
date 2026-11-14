@@ -57,6 +57,7 @@ INDICATOR_TEXT: dict[str, tuple[str, str]] = {
     "symptom": ("reported symptom", ""),
     "exercise_streak": ("exercise", "min/day"),
     "radiation_pct_of_career_limit": ("cumulative dose", "mSv"),
+    "reaction_change_pct": ("reaction time", "ms"),
 }
 
 EARTH_SUMMARY_MAX_CHARS = 600

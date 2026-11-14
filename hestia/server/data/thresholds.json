@@ -92,6 +92,15 @@
     ],
     "default": "orange"
   },
+  "reaction_change_pct": {
+    "unit": "% slower than personal baseline",
+    "assumption": "demo rule: there is no validated cut-off for this shortened test; it only flags a clear slowdown against the astronaut's own baseline. A screening test never raises a red alert on its own",
+    "rules": [
+      { "level": "orange", "when": { "gte": 15 } },
+      { "level": "green", "when": { "lt": 15 } }
+    ],
+    "default": "orange"
+  },
   "exercise_streak": {
     "unit": "consecutive days below 30 min/day",
     "daily_minimum_min": 30,

@@ -4,12 +4,51 @@
     "rule": "A report is queued for Earth when at least one indicator is in its critical band, or when two or more indicators are red at the same time. A single red reading outside a critical band stays with the crew.",
     "min_red_indicators": 2,
     "critical": {
-      "systolic_bp": [{ "gte": 180 }, { "lt": 80 }],
-      "diastolic_bp": [{ "gte": 120 }, { "lt": 50 }],
-      "heart_rate": [{ "gt": 130 }, { "lt": 40 }],
-      "temperature": [{ "gte": 39.5 }, { "lt": 35.0 }],
-      "glucose": [{ "gte": 250 }, { "lt": 55 }],
-      "radiation_pct_of_career_limit": [{ "gt": 100 }]
+      "systolic_bp": [
+        {
+          "gte": 180
+        },
+        {
+          "lt": 80
+        }
+      ],
+      "diastolic_bp": [
+        {
+          "gte": 120
+        },
+        {
+          "lt": 50
+        }
+      ],
+      "heart_rate": [
+        {
+          "gt": 130
+        },
+        {
+          "lt": 40
+        }
+      ],
+      "temperature": [
+        {
+          "gte": 39.5
+        },
+        {
+          "lt": 35.0
+        }
+      ],
+      "glucose": [
+        {
+          "gte": 250
+        },
+        {
+          "lt": 55
+        }
+      ],
+      "radiation_pct_of_career_limit": [
+        {
+          "gt": 100
+        }
+      ]
     }
   },
   "exercise": {
@@ -21,5 +60,10 @@
   },
   "meals": {
     "rule": "A logged meal removes real portions from the stock. A box on the demo shelf stands for a whole storage lot (food_item.units_per_lot portions); only a shelf scan adds or removes lots."
+  },
+  "reaction_test": {
+    "rule": "A short reaction-time self-test, inspired by NASA's Reaction Self-Test (a 3-minute psychomotor vigilance test used on the ISS). This shortened version is a screening aid and is not validated. The result is compared with the astronaut's own baseline, never with a population value, because touch screens add a device-dependent delay.",
+    "baseline_min_tests": 3,
+    "baseline_window_tests": 14
   }
 }

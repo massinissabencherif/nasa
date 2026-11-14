@@ -21,6 +21,7 @@ CHECKIN_FIELDS: dict[str, str] = {
     "sleep_h": "h",
     "mood": "1-5",
     "exercise_min": "min",
+    "reaction_ms": "ms",  # median of the in-app reaction self-test
 }
 
 

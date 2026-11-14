@@ -29,6 +29,7 @@ PROCEDURES: dict[str, str] = {
     "symptom": "Crew wellness check-in procedure",
     "exercise_streak": "Resistive exercise routine",
     "radiation_pct_of_career_limit": "Radiation shelter procedure",
+    "reaction_change_pct": "Fatigue management procedure",
 }
 
 # (label, unit) used to state the finding in plain words.
@@ -78,6 +79,8 @@ _STEPS: dict[str, dict[str, list[str]]] = {
         "Do 30 min of resistive exercise today: squats, deadlifts, heel raises.",
         "Split it into two 15 min sessions if you are short on time or energy.",
     ]},
+    "reaction_change_pct": {"any": ["Take a 20-minute rest before any critical task.",
+                                    "Repeat the reaction test after resting."]},
     "radiation_pct_of_career_limit": {"any": ["No same-day action: the dose accumulates over the mission.",
                                               "Plan shelter time during solar events."]},
 }
@@ -112,6 +115,8 @@ def finding_line(indicator: str, ctx: AdviceContext) -> str | None:
     if indicator == "exercise_streak":
         days = int(ctx.value)
         return f"{days} day{'s' if days != 1 else ''} in a row under 30 min of exercise."
+    if indicator == "reaction_change_pct":
+        return f"Reaction time {round(ctx.value)} % slower than your own baseline (screening test, not validated)."
     if indicator not in _FINDING:
         return None
     label, unit = _FINDING[indicator]

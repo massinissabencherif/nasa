@@ -24,6 +24,7 @@ class CheckinBody(BaseModel):
     sleep_h: float | None = Field(default=None, ge=0, le=24)
     mood: float | None = Field(default=None, ge=1, le=5)
     exercise_min: float | None = Field(default=None, ge=0, le=600)
+    reaction_ms: float | None = Field(default=None, ge=100, le=3000)
     symptoms: list[str] = Field(default_factory=list, max_length=12)
 
 

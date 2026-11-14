@@ -142,6 +142,9 @@ def seed_crew_and_history(session: Session, mars_base: MissionContext) -> list[C
 
     for crew in crew_rows:
         rng = random.Random(SEED + crew.id)
+        # separate generator: adding the reaction test must not shift the other series
+        reaction_rng = random.Random(SEED + 1000 + crew.id)
+        reaction_mean = reaction_rng.uniform(285, 325)
         weight = crew.weight_kg
         for day in range(HISTORY_DAYS):
             days_ago = HISTORY_DAYS - day
@@ -187,6 +190,9 @@ def seed_crew_and_history(session: Session, mars_base: MissionContext) -> list[C
                 ("exercise_min", round(exercise_min, 1), "min"),
                 ("weight", round(weight, 1), "kg"),
                 ("radiation_dose_msv", radiation_dose, "mSv"),
+                # reaction self-test: stays within a few percent of the personal mean,
+                # so the seeded baseline is calm and a slow live test stands out
+                ("reaction_ms", round(reaction_mean * reaction_rng.uniform(0.94, 1.06)), "ms"),
             ]
             measurements = [
                 Measurement(ts=ts, crew_member_id=crew.id, type=t, value=v, unit=u, source="simulated")

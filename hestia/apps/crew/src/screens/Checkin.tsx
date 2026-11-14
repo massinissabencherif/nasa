@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { CheckinResult } from '@hestia/api-client';
 import { Button, IconCaution, IconCheck, IconCritical, IconInfo, indicatorLabel, ZONE_META, ZONES } from '@hestia/ui';
 import { ExplainSheet, FieldRow } from '../components/FieldRow';
+import { ReactionTest } from '../components/ReactionTest';
 import { EXPLANATIONS, SYMPTOM_OPTIONS } from '../lib/explanations';
 import { useApi } from '../lib/ApiProvider';
 import { useLatestMeasurements, useSelectedCrewId } from '../lib/hooks';
@@ -80,7 +81,9 @@ export function Checkin() {
   const [form, setForm] = useState<FormState>({});
   const [mood, setMood] = useState<number | null>(null);
   const [symptoms, setSymptoms] = useState<Set<string>>(new Set());
-  const [openSheet, setOpenSheet] = useState<'mood' | 'symptoms' | null>(null);
+  const [openSheet, setOpenSheet] = useState<'mood' | 'symptoms' | 'reaction_ms' | null>(null);
+  const [reactionMs, setReactionMs] = useState<number | null>(null);
+  const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CheckinResult | null>(null);
@@ -94,7 +97,11 @@ export function Checkin() {
     });
   }
 
-  const filled = FIELDS.filter(({ key }) => form[key] !== '' && form[key] !== undefined).length + (mood != null ? 1 : 0) + symptoms.size;
+  const filled =
+    FIELDS.filter(({ key }) => form[key] !== '' && form[key] !== undefined).length +
+    (mood != null ? 1 : 0) +
+    (reactionMs != null ? 1 : 0) +
+    symptoms.size;
 
   async function save() {
     if (crewId == null) return;
@@ -105,6 +112,7 @@ export function Checkin() {
       if (form[key] !== '' && form[key] !== undefined) body[key] = form[key];
     }
     if (mood != null) body.mood = mood;
+    if (reactionMs != null) body.reaction_ms = reactionMs;
     try {
       setResult(await api.checkin(crewId, body));
     } catch (err) {
@@ -115,6 +123,17 @@ export function Checkin() {
   }
 
   if (result) return <Result result={result} onDone={() => navigate('/home')} />;
+  if (testing) {
+    return (
+      <ReactionTest
+        onCancel={() => setTesting(false)}
+        onDone={(ms) => {
+          setReactionMs(ms);
+          setTesting(false);
+        }}
+      />
+    );
+  }
 
   const card = { border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--panel)', overflow: 'hidden' } as const;
 
@@ -125,6 +144,38 @@ export function Checkin() {
         <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
           Fill in what you measured today; leave the rest empty. The (i) button explains how, why and the risk.
         </p>
+      </div>
+
+      <div style={card}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 8px 10px 14px' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 'var(--text-sm)', fontWeight: 500 }}>{EXPLANATIONS.reaction_ms.label}</p>
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>
+              {reactionMs != null
+                ? 'measured just now by this phone'
+                : latest?.reaction_ms
+                  ? `last: ${Math.round(latest.reaction_ms.value)} ms · 20 seconds, measured by this phone`
+                  : '20 seconds, measured by this phone'}
+            </p>
+          </div>
+          {reactionMs != null && (
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-lg)' }}>
+              {reactionMs} <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>ms</span>
+            </span>
+          )}
+          <Button variant={reactionMs != null ? 'secondary' : 'primary'} onClick={() => setTesting(true)}>
+            {reactionMs != null ? 'Redo' : 'Start'}
+          </Button>
+          <button
+            onClick={() => setOpenSheet((s) => (s === 'reaction_ms' ? null : 'reaction_ms'))}
+            aria-label="How, why and risk: reaction test"
+            aria-expanded={openSheet === 'reaction_ms'}
+            style={{ background: 'none', border: 'none', color: openSheet === 'reaction_ms' ? 'var(--accent)' : 'var(--text-faint)', cursor: 'pointer', padding: 10 }}
+          >
+            <IconInfo size={20} />
+          </button>
+        </div>
+        {openSheet === 'reaction_ms' && <ExplainSheet field="reaction_ms" />}
       </div>
 
       {FIELDS.map(({ key, step }) => (

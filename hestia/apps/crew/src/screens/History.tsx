@@ -13,6 +13,7 @@ const INDICATORS: { key: string; label: string; unit: string }[] = [
   { key: 'weight', label: 'Weight', unit: 'kg' },
   { key: 'sleep_h', label: 'Sleep', unit: 'h' },
   { key: 'mood', label: 'Mood', unit: '1-5' },
+  { key: 'reaction_ms', label: 'Reaction', unit: 'ms' },
   { key: 'exercise_min', label: 'Exercise', unit: 'min' },
 ];
 

@@ -171,6 +171,35 @@ def test_advice_depends_on_value_direction_and_level():
         assert passes_guardrails("\n".join(line for line in text.splitlines() if line[:1].isdigit()))
 
 
+def test_reaction_test_is_judged_against_the_personal_baseline():
+    with Session(engine) as session:
+        alex = _crew(session, "Alex Mercer")
+        zones = crew_status(session, alex.id)
+        assert zones["brain_morale"]["indicators"]["reaction_change_pct"] == "green"
+        baseline = float(zones["brain_morale"]["display"]["reaction_change_pct"].split("(")[1].split(" ms")[0])
+
+        _m, alerts = record_checkin(session, alex, {"reaction_ms": round(baseline * 1.2)})
+        assert [(a.indicator, a.level, a.sent_to_earth) for a in alerts] == [("reaction_change_pct", "orange", False)]
+        assert "slower than your own baseline" in alerts[0].message
+        assert "Fatigue management procedure" in alerts[0].message
+        assert crew_status(session, alex.id)["brain_morale"]["level"] == "orange"
+
+        # a screening test never raises a red alert, however slow the result
+        record_checkin(session, alex, {"reaction_ms": round(baseline * 2)})
+        assert crew_status(session, alex.id)["brain_morale"]["indicators"]["reaction_change_pct"] == "orange"
+        assert session.exec(select(EarthMessage)).all() == []
+
+        # no baseline yet: the first tests of a new crew member are not judged
+        nobody = CrewMember(name="Nobody", sex="F", age=35, height_cm=165, weight_kg=60,
+                            activity_factor=1.5, avatar="x")
+        session.add(nobody)
+        session.commit()
+        record_checkin(session, nobody, {"reaction_ms": 900})
+        brain = crew_status(session, nobody.id)["brain_morale"]
+        assert brain["indicators"]["reaction_change_pct"] is None
+        assert brain["display"]["reaction_change_pct"] == "900 ms, building your baseline (0 of 3 tests)"
+
+
 def test_llm_output_guardrails():
     ok = "1. Rest and hydrate.\n2. Recheck in a few hours.\n3. See Procedure: Fever procedure."
     assert passes_guardrails(ok)
