@@ -1,3 +1,8 @@
+> **Historique — ce document ne donne plus d'ordres.** Premier brief du projet
+> (vers le 10 nov. 2026), conservé pour mémoire. Règles actuelles :
+> [`AGENTS.md`](../../../AGENTS.md). Décisions actuelles :
+> [decisions.md](../decisions.md). Voir [README.md](README.md).
+
 # HESTIA — brief projet (NASA Space Apps 2026, ESGI Paris)
 
 > Fichier de contexte pour Claude Code. Le placer à la racine du repo sous le nom `CLAUDE.md`.

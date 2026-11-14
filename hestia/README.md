@@ -185,10 +185,13 @@ hestia/
 ├─ server/vision/        capture, grid, VLM pipeline, benchmark, fixtures
 ├─ server/data/          thresholds, NASA reference values, food catalogue, shelf grid
 ├─ server/tests/         pytest suite
-└─ docs/                 deliverables (see below)
+└─ docs/                 documentation, sources and deliverables (index: docs/README.md)
 ```
 
 ## Deliverables in `docs/`
+
+Index of all documentation: [docs/README.md](docs/README.md). Scope and
+decisions: [docs/product.md](docs/product.md), [docs/decisions.md](docs/decisions.md).
 
 - [nasa-project-page.md](docs/nasa-project-page.md) — project page draft with the "NASA Data" and "Use of AI" sections
 - [demo-script.md](docs/demo-script.md) — 3-minute demo, in French

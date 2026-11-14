@@ -1,8 +1,45 @@
 # HESTIA — status
 
-Last update: 11 Nov 2026 (pre-event). All phases 0–10 of the brief have been
-worked through. This file says what works, how it was checked, and what is
-still open.
+Last update: 14 Nov 2026 (first day of the event). This file says what
+works, how it was checked, and what is still open. Decisions are in
+[decisions.md](decisions.md).
+
+## 14 Nov — consolidation in progress
+
+Branch `chore/agents-docs` (documentation only, not merged, not committed):
+shared rules in `AGENTS.md`, documentation index, `product.md`,
+`decisions.md`, old briefs marked as history.
+
+### Open defects, reproduced on 14 Nov on version `39ddd85`
+
+Reproduced through the HTTP API on a throwaway database, on David's Mac.
+Details and causes:
+[sources/2026-11-14-counter-review-claude.md](sources/2026-11-14-counter-review-claude.md).
+None is fixed yet.
+
+1. Seven check-ins on the same day count as seven days of low exercise: the
+   bones zone turns red and a report is queued for Earth.
+2. A crew member with no measurement at all shows eight green zones.
+3. Eating one 212 kcal item removes a whole demo lot (44,944 kcal) from the
+   stock: autonomy drops from 412.7 to 408.0 days.
+4. A systolic pressure of 140 alone queues a report for Earth.
+5. The advice text is identical for an orange and a red reading.
+
+Science and wording to correct (same review, section 4): the radiation zone
+is labelled "Skin"; the lunar dose rate comes from Chang'e-4, not from NASA;
+the Mars delay is about 3–22 min, not 4–24; 12,000 kJ/day and ISS
+0.523 mSv/day have no source.
+
+### What was run on 14 Nov, and where
+
+| Check | Machine | Result |
+|---|---|---|
+| Backend tests | David's Mac (M1 Pro), with the bundled `.venv`, Python 3.13 | 53 pass |
+| Native iOS build on an iPhone | Massi's Mac | Works, as reported by Massi below; not seen by anyone else |
+| Vision scan, Tauri window, real shelf, hotspot without internet | — | Not run on 14 Nov. David's Mac has no `uv`, `ollama` or `cargo` |
+
+The sections below were written on 11 Nov, before the event, except where a
+date says otherwise.
 
 ## What works, and how it was verified
 
@@ -106,16 +143,16 @@ still open.
   real shelf under venue lighting.
 - **The ≤ 20 s scan target has almost no margin** (19.4 s measured) and
   depends on the laptop not throttling.
-- **No APK**: the Android SDK is not installed on this machine (no
-  `~/Library/Android/sdk`, no `ANDROID_HOME`), and there is no full Xcode, so
-  neither native build was attempted (both Capacitor projects exist). The Capacitor Android project exists
-  and is configured for cleartext LAN HTTP. The browser path is the
-  supported one.
+- **No Android APK**: the Android SDK is not installed on Massi's machine
+  (no `~/Library/Android/sdk`, no `ANDROID_HOME`), so the Android build was
+  never attempted. The Capacitor Android project exists and is configured for
+  cleartext LAN HTTP. The iOS app was built and run on an iPhone on 14 Nov
+  (see above). The browser path remains the fallback.
 - **No OS push notification** on phones: red alerts are an in-app banner,
   refreshed every 5 s.
-- **Not tested on a physical phone, and not with Wi-Fi off.** Phone access was
-  only simulated from the laptop through its LAN address. A run with the
-  network disabled was not done in this session.
+- **Not tested with Wi-Fi off.** An iPhone reached the station on 14 Nov, on
+  a network that had internet. The phone hotspot with mobile data off, and a
+  full run with the network disabled, have not been done.
 - **Tauri production build** (`tauri build`) was not tried; the demo uses
   `tauri dev` (or the browser with `make station-web`).
 - The forecast's weight model (7,700 kcal/kg with need recomputed from
@@ -130,7 +167,9 @@ still open.
 
 ## To do before / during the event
 
-1. 13 Nov: follow `docs/nasa-resources.md`, fix values and citations.
+1. Fix the five open defects and the science wording listed at the top.
+   Citations: use section 4 of the counter-review, then
+   `docs/nasa-resources.md`.
 2. Install the Android SDK from Android Studio if an APK is wanted, then
    `make android`.
 3. Test the phone hotspot (mobile data off) with the real phone; click the
