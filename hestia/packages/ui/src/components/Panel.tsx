@@ -6,9 +6,12 @@ export function Panel({
   children,
   style,
   bodyStyle,
+  elevated = false,
 }: {
   title?: string;
   action?: ReactNode;
+  /** the detail the person just opened: lifted above the work area */
+  elevated?: boolean;
   children: ReactNode;
   style?: CSSProperties;
   bodyStyle?: CSSProperties;
@@ -22,6 +25,7 @@ export function Panel({
         display: 'flex',
         flexDirection: 'column',
         minWidth: 0,
+        ...(elevated ? { background: 'var(--panel-raised)', borderColor: 'var(--text-faint)', boxShadow: 'var(--shadow-detail)' } : {}),
         ...style,
       }}
     >

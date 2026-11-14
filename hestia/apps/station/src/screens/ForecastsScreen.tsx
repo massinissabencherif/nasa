@@ -290,7 +290,7 @@ export function ForecastsScreen() {
 
         {error && (
           <Panel>
-            <p role="alert" style={{ color: 'var(--red)' }}>
+            <p role="alert" style={{ color: 'var(--red-ink)' }}>
               {error}
             </p>
           </Panel>
@@ -343,7 +343,7 @@ export function ForecastsScreen() {
               color="var(--chart-series-2)"
               markers={[
                 { y: -2, label: 'orange −2 %', color: 'var(--orange)' },
-                { y: -5, label: 'red −5 %', color: 'var(--red)' },
+                { y: -5, label: 'red −5 %', color: 'var(--red-ink)' },
               ]}
               domain={[(min: number) => Math.min(-6, Math.floor(min)), (max: number) => Math.max(1, Math.ceil(max))] as never}
             />
@@ -373,7 +373,7 @@ export function ForecastsScreen() {
               dataKey="radiation_msv"
               unit="mSv"
               color="var(--chart-series-2)"
-              markers={[{ y: summary.radiation_limit_msv, label: `career limit ${summary.radiation_limit_msv} mSv`, color: 'var(--red)' }]}
+              markers={[{ y: summary.radiation_limit_msv, label: `career limit ${summary.radiation_limit_msv} mSv`, color: 'var(--red-ink)' }]}
               domain={[0, (max: number) => Math.max(summary.radiation_limit_msv * 1.08, max)] as never}
             />
           </div>

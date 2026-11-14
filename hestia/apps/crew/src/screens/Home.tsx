@@ -133,7 +133,7 @@ export function Home() {
       </Panel>
 
       {selectedZone && status && (
-        <Panel>
+        <Panel elevated>
           <ZoneDetailPanel zone={selectedZone} status={status} thresholds={thresholds} contextType={context?.type} onClose={() => setSelectedZone(null)} />
           {selectedZone === 'brain_morale' && <Button onClick={() => navigate('/assessments')}>Open reaction time assessment</Button>}
         </Panel>

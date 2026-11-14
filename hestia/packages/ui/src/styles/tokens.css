@@ -45,6 +45,11 @@
   --space-7: 40px;
   --space-8: 56px;
 
+  /* Three levels of surface: the frame (--bg), the work area (--panel) and the
+     detail the person just opened. Only the detail is lifted, with a plain
+     dark shadow: no glow, no colour. */
+  --shadow-detail: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 24px rgba(0, 0, 0, 0.35);
+
   --radius-sm: 3px;
   --radius-md: 6px;
 

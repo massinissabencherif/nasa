@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Panel, ReactionHistory, SilhouetteBody, StatusBadge, StatusDot, ZoneDetailPanel, ZONE_META, ZONES, worstLevel } from '@hestia/ui';
 import { api } from '../lib/api';
 import { crewVitals, freshness, FRESHNESS_LABEL } from '../lib/crewVitals';
@@ -15,6 +15,14 @@ export function CrewScreen() {
   const thresholds = useThresholds();
   const [expanded, setExpanded] = useState<number | null>(null);
   const [selectedZone, setSelectedZone] = useState<ZoneKey | null>(null);
+  const detail = useRef<HTMLDivElement>(null);
+
+  // the opened detail can sit below the fold: bring it into view, without motion if the person asked for none
+  useEffect(() => {
+    if (expanded == null) return;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    detail.current?.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' });
+  }, [expanded]);
 
   function toggle(memberId: number) {
     if (expanded === memberId) {
@@ -117,7 +125,8 @@ export function CrewScreen() {
       )}
 
       {expanded != null && statuses[expanded] && (
-        <Panel title={`${crew.find((c) => c.id === expanded)?.name} · body status`}>
+        <div ref={detail} style={{ scrollMarginBottom: 'var(--space-4)' }}>
+        <Panel elevated title={`${crew.find((c) => c.id === expanded)?.name} · body status`}>
           <div style={{ display: 'grid', gridTemplateColumns: '400px minmax(0, 1fr)', gap: 28 }}>
             <div style={{ display: 'grid', justifyItems: 'center', alignContent: 'start', gap: 8 }}>
               <SilhouetteBody status={statuses[expanded]} width={400} showLabels selectedZone={selectedZone} onSelectZone={setSelectedZone} />
@@ -128,6 +137,7 @@ export function CrewScreen() {
             )}
           </div>
         </Panel>
+        </div>
       )}
       {expanded != null && <ReactionHistory api={api} crewId={expanded} />}
     </div>

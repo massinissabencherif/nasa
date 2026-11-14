@@ -90,7 +90,7 @@ function SlotCard({
               <IconCaution size={13} /> confirm
             </span>
           ) : (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--green)', fontSize: 'var(--text-xs)' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--green-ink)', fontSize: 'var(--text-xs)' }}>
               <IconCheck size={13} /> {slot.source === 'manual' ? 'confirmed' : 'ok'}
             </span>
           ))}
@@ -435,7 +435,7 @@ export function PantryScreen() {
             </div>
 
             {error && (
-              <p role="alert" style={{ color: 'var(--red)', fontSize: 'var(--text-sm)' }}>
+              <p role="alert" style={{ color: 'var(--red-ink)', fontSize: 'var(--text-sm)' }}>
                 {error}
               </p>
             )}

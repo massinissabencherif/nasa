@@ -313,7 +313,7 @@ export function Pantry() {
       )}
 
       {error && (
-        <p role="alert" style={{ color: 'var(--red)', fontSize: 'var(--text-sm)' }}>
+        <p role="alert" style={{ color: 'var(--red-ink)', fontSize: 'var(--text-sm)' }}>
           {error}
         </p>
       )}

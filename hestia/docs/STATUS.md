@@ -44,6 +44,12 @@ that kept the answers and an error message, then a successful save. Station
 board at 1280×800 with one stale, one yesterday, one red and one current
 astronaut.
 
+**Depth and ink, same day:** the opened detail is the only lifted surface
+(`Panel elevated`); the station scrolls it into view (checked: its title is
+visible after opening a card at 1280×800); error and status text outside the
+shared components uses the ink colours. Station build copy pointed at my own
+server for these checks.
+
 **Honest note about that run:** a preview server started earlier by someone
 else (Python, port 8000, a temporary database) was already listening, so the
 first browser checks of lots 1 and 2 ran against it, not against a server of
@@ -52,10 +58,10 @@ but a few demo scenarios were triggered on that temporary database. The
 station checks of lot 3 used my own server on port 8010 and a copy of the
 station build pointed at it.
 
-**Still not implemented:** visual depth between surfaces and the light
-harmonisation of lot 4 (profile, settings, calibration, simulator), the
-pantry screens (lot 3), the alerts and Earth screens beyond the corrected
-texts.
+**Still not implemented:** the light harmonisation of lot 4 (profile,
+settings, calibration, simulator), a redesign of the pantry screens, and the
+alerts and Earth screens beyond their corrected texts. No screen was checked
+on a physical phone, with a screen reader or by a new user.
 Small texts written with `var(--red)` or `var(--green)` outside the shared
 components (for example the red values on the station crew board and the
 reaction card) still need the ink colours: they belong to the screens of

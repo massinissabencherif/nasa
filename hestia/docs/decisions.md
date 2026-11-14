@@ -88,7 +88,12 @@ says nothing about the code.
   *Meal:* the estimated need is separate from what was logged. *Station
   crew board:* "Checked in today", "No check-in today", "Data too old" and
   "No data yet" are different; a stale reading keeps its number but loses its
-  colour; an old board is never badged "nominal".
+  colour; an old board is never badged "nominal". *Depth (D16):* the detail
+  a person just opened (the station body-status panel, the zone panel on the
+  phone) is the only lifted surface: a lighter fill, a brighter border and a
+  plain dark shadow, no glow; the station scrolls it into view, without
+  motion when the person asked for none. Small red and green text outside
+  the shared components now uses the readable ink colours.
 
 ## Proposed, not decided
 
