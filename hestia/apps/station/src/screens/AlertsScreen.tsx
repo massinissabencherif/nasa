@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Alert } from '@hestia/api-client';
-import { Button, indicatorLabel, Panel, StatusBadge } from '@hestia/ui';
+import { AdviceText, Button, indicatorLabel, Panel, StatusBadge } from '@hestia/ui';
 import { api } from '../lib/api';
 import { useCrew } from '../lib/hooks';
 import { useRefreshOn } from '../lib/useSSE';
@@ -33,7 +33,7 @@ export function AlertsScreen() {
               </span>
               <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>{new Date(alert.ts).toLocaleString()}</span>
             </div>
-            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', whiteSpace: 'pre-line' }}>{alert.message}</p>
+            <AdviceText message={alert.message} />
             {alert.sent_to_earth && (
               <Button size="sm" variant="ghost" onClick={() => navigate('/earth')} style={{ marginTop: 8, paddingLeft: 0, color: 'var(--accent)' }}>
                 Report queued for Earth: open Earth link

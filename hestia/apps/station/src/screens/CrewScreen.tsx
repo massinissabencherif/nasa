@@ -29,8 +29,8 @@ export function CrewScreen() {
   return (
     <div style={{ display: 'grid', gap: 12 }}>
       <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-        Four fictional astronauts, SIMULATED data. Each silhouette is coloured from the latest check-in; open a card and click a body
-        zone for the indicators, the hazard and the advised action.
+        Four fictional astronauts, simulated data. Each silhouette shows the latest check-in. Open a card, then click a body zone
+        to see what was measured, the hazard behind it and what to do.
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12 }}>
         {crew.map((member) => {
@@ -62,7 +62,7 @@ export function CrewScreen() {
               </p>
               {status && <StatusBadge level={overall} />}
               <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', minHeight: 16 }}>
-                {attention.length ? attention.map((z) => ZONE_META[z].label).join(', ') : status ? 'all zones nominal' : ''}
+                {attention.map((z) => ZONE_META[z].label).join(', ')}
               </p>
             </button>
           );

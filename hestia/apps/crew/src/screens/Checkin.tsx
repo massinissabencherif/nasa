@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { CheckinResult } from '@hestia/api-client';
-import { Button, IconCaution, IconCheck, IconCritical, IconInfo, indicatorLabel, ZONE_META, ZONES } from '@hestia/ui';
+import { AdviceText, Button, IconCaution, IconCheck, IconCritical, IconInfo, indicatorLabel, ZONE_META, ZONES } from '@hestia/ui';
 import { ExplainSheet, FieldRow } from '../components/FieldRow';
 import { ReactionTest } from '../components/ReactionTest';
 import { EXPLANATIONS, SYMPTOM_OPTIONS } from '../lib/explanations';
@@ -61,8 +61,7 @@ function Result({ result, onDone }: { result: CheckinResult; onDone: () => void 
                 {red ? 'Red alert' : 'Advice'}: {indicatorLabel(alert.indicator)}
               </span>
             </div>
-            <p style={{ fontSize: 'var(--text-sm)', whiteSpace: 'pre-line' }}>{alert.message}</p>
-            {alert.sent_to_earth && <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>The crew is alerted and a report is on its way to Earth.</p>}
+            <AdviceText message={alert.message} />
           </div>
         );
       })}
@@ -260,9 +259,12 @@ export function Checkin() {
           Not saved: {error}
         </p>
       )}
-      <Button variant="primary" size="lg" onClick={save} disabled={saving || filled === 0} style={{ marginTop: 6 }}>
-        {saving ? 'Saving…' : filled === 0 ? 'Fill in at least one field' : `Save check-in (${filled} value${filled > 1 ? 's' : ''})`}
-      </Button>
+      {/* stays in view: the form is long and saving is the one action that matters */}
+      <div style={{ position: 'sticky', bottom: 0, display: 'grid', padding: 'var(--space-3) 0', background: 'var(--bg)' }}>
+        <Button variant="primary" size="lg" onClick={save} disabled={saving || filled === 0}>
+          {saving ? 'Saving…' : filled === 0 ? 'Fill in at least one field' : `Save check-in (${filled} value${filled > 1 ? 's' : ''})`}
+        </Button>
+      </div>
     </div>
   );
 }

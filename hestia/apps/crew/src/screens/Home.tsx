@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, IconCaution, IconCheck, IconCheckin, IconCritical, indicatorLabel, Panel, SilhouetteBody, StatusBadge, unknownCount, worstLevel, ZoneDetailPanel } from '@hestia/ui';
+import { AdviceText, Button, IconCaution, IconCheck, IconCheckin, IconCritical, indicatorLabel, Panel, SilhouetteBody, StatusBadge, unknownCount, worstLevel, ZoneDetailPanel } from '@hestia/ui';
 import type { ZoneKey } from '@hestia/ui';
 import { useApi } from '../lib/ApiProvider';
 import {
@@ -66,13 +66,7 @@ export function Home() {
             <IconCritical size={18} />
             <span style={{ fontWeight: 700, color: 'var(--text)' }}>Red alert: {indicatorLabel(alert.indicator)}</span>
           </div>
-          <p style={{ fontSize: 'var(--text-sm)', whiteSpace: 'pre-line' }}>{alert.message}</p>
-          {alert.sent_to_earth && (
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-              Report sent to Earth{context ? `: an answer takes about ${Math.max(1, Math.round((context.delay_s * 2) / 60))} min round trip` : ''}. Follow
-              the procedure in the meantime and tell a crewmate.
-            </p>
-          )}
+          <AdviceText message={alert.message} />
           <Button onClick={() => api.ackAlert(alert.id).then(refreshAlerts)} style={{ justifySelf: 'start' }}>
             I have read this
           </Button>
@@ -88,7 +82,7 @@ export function Home() {
             <IconCaution size={18} />
             <span style={{ fontWeight: 700, color: 'var(--text)' }}>Advice: {indicatorLabel(alert.indicator)}</span>
           </div>
-          <p style={{ fontSize: 'var(--text-sm)', whiteSpace: 'pre-line' }}>{alert.message}</p>
+          <AdviceText message={alert.message} />
           <Button onClick={() => api.ackAlert(alert.id).then(refreshAlerts)} style={{ justifySelf: 'start' }}>
             Got it
           </Button>
