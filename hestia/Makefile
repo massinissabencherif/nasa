@@ -10,7 +10,7 @@ help:
 	@echo "make server        start only the API + crew app on :$(SERVER_PORT)"
 	@echo "make station       start only the station (Tauri desktop window)"
 	@echo "make station-web   station in a browser tab instead of the Tauri window"
-	@echo "make test          run the backend test suite (53 tests)"
+	@echo "make test          run the backend test suite"
 	@echo "make reset         reseed the database (Mars-base baseline, ~412 days)"
 	@echo "make check-offline list every non-local URL found in the source"
 	@echo "make ios           sync the crew app into the Xcode project (needs full Xcode)"

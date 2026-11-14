@@ -4,11 +4,18 @@ Last update: 14 Nov 2026 (first day of the event). This file says what
 works, how it was checked, and what is still open. Decisions are in
 [decisions.md](decisions.md).
 
-## 14 Nov — consolidation in progress
+## 14 Nov — consolidation
 
-Branch `chore/agents-docs` (documentation only, not merged, not committed):
-shared rules in `AGENTS.md`, documentation index, `product.md`,
-`decisions.md`, old briefs marked as history.
+Four local branches, stacked, **not merged and not pushed**. The commits are
+unsigned because the signing key could not be unlocked from the agent's
+shell; they can be re-signed before pushing.
+
+| Branch | Content |
+|---|---|
+| `chore/agents-docs` | `AGENTS.md`, documentation index, `product.md`, `decisions.md`, old briefs marked as history |
+| `fix/health-rules` | The five defects below, science wording and sources |
+| `feat/reaction-test` | Reaction self-test; station navigation health first |
+| `chore/shared-skills` | Five shared skills, advice hierarchy, this documentation |
 
 ### Defects of version `39ddd85`: fixed on branch `fix/health-rules`
 
@@ -37,18 +44,24 @@ flagged. Each reference value now has a source line in
 
 Still open:
 
-- The database schema did not change, but the meaning of meal events did:
-  run `make reset` once after pulling this branch.
-- The phone screens were only compiled, not looked at, after these changes.
-- `docs/nasa-project-page.md` still has `[cite]` placeholders and still
-  describes the old behaviours.
+- The seed and the meaning of meal events changed: run `make reset` once
+  after pulling these branches.
+- Nothing was run on a physical phone, with the vision model, on a real
+  shelf or in the Tauri window on 14 Nov by the agent.
+- The reaction test was driven by a script, not by a finger: its timing on
+  a real phone is unknown.
+- The demo rules D6 to D8 and the critical bands of D7 wait for
+  confirmation by David and Massi.
+- A fresh agent session and Codex have not yet been tried on the new
+  documentation (see [ai-workflow.md](ai-workflow.md)).
 
 ### What was run on 14 Nov, and where
 
 | Check | Machine | Result |
 |---|---|---|
-| Backend tests | David's Mac (M1 Pro), with the bundled `.venv`, Python 3.13 | 59 pass on `fix/health-rules` (53 on `39ddd85`) |
+| Backend tests | David's Mac (M1 Pro), with the bundled `.venv`, Python 3.13 | 60 pass on `chore/shared-skills` (53 on `39ddd85`) |
 | Type check and production build of both web apps | David's Mac, Node 20 (the repository asks for 22) | Pass |
+| Demo steps replayed in headless Chrome: reaction test, check-in, orange advice, red alert, alerts screen, crew screen | David's Mac | Pass, screenshots looked at. The camera scan was not part of it |
 | Native iOS build on an iPhone | Massi's Mac | Works, as reported by Massi below; not seen by anyone else |
 | Vision scan, Tauri window, real shelf, hotspot without internet | — | Not run on 14 Nov. David's Mac has no `uv`, `ollama` or `cargo` |
 
@@ -181,8 +194,8 @@ date says otherwise.
 
 ## To do before / during the event
 
-1. Fill the `[cite]` placeholders of `docs/nasa-project-page.md` from the
-   "sources" block of `server/data/nasa_reference.json`.
+1. Massi: pull the branches, `make reset`, run `make test` and one full
+   demo with the camera and a phone; write the result here.
 2. Install the Android SDK from Android Studio if an APK is wanted, then
    `make android`.
 3. Test the phone hotspot (mobile data off) with the real phone; click the

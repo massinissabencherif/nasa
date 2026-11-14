@@ -92,8 +92,17 @@ file. Never experiment on `server/hestia.db` during the event.
 | Current state and tasks | `hestia/docs/STATUS.md` |
 | How the code is organised, technical choices | `hestia/docs/architecture.md` |
 | Sources, audits, reviews | `hestia/docs/sources/` |
+| How the agents share skills and tools | `hestia/docs/ai-workflow.md` |
+| The five-minute demo | `hestia/docs/demo-script.md` |
 | Risks and fallbacks for the demo | `hestia/docs/risks.md` |
 | NASA submission texts | `hestia/docs/nasa-project-page.md` |
+
+## Skills
+
+Five project skills are in `.agents/skills/`: `hestia-context`,
+`hestia-development`, `hestia-verification`, `hestia-ui-polish`,
+`hestia-ux-research`. Use the one that matches the task; each points back
+to the documents above.
 
 ## End of a session
 

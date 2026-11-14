@@ -74,7 +74,7 @@ Then:
 - Crew app on a phone: open **Mission settings** on the station and scan the QR
   code, or type `http://<station-ip>:8000/crew/`. On the laptop itself:
   http://localhost:8000/crew/ in a phone-sized browser window.
-- `make test` runs the 53 backend tests, including an end-to-end smoke test of
+- `make test` runs the backend tests, including an end-to-end smoke test of
   the demo script. `make reset` reseeds the baseline. `make check-offline`
   greps the source for non-local URLs.
 

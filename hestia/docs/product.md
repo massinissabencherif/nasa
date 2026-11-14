@@ -1,7 +1,8 @@
 # HESTIA — product: promise, scope, what is out
 
 Status: proposed on 14 Nov 2026, validated by David the same day. Massi has
-not confirmed it yet (see [decisions.md](decisions.md), D3).
+not confirmed it yet (see [decisions.md](decisions.md), D3). The "Check"
+column describes the branch `chore/shared-skills`.
 
 ## Promise
 
@@ -15,6 +16,7 @@ HESTIA is not a medical device. It does not diagnose. Crew data is simulated.
 | Feature | Place | Why |
 |---|---|---|
 | Daily check-in on the phone | Core | It is the self-assessment the challenge asks for |
+| Reaction self-test in the check-in | Core | A measurement taken by the phone itself, not typed; the challenge allows any input that represents a health indicator |
 | Clickable silhouette, each zone explained | Core | The challenge's own example of a good interface |
 | Vigilance levels and advice | Core | "When might a result warrant attention", "what actions can be taken" |
 | Earth link with the communication delay | Core | Attention "from flight surgeons on the ground" |
@@ -37,14 +39,14 @@ ideas as optional.
 
 | What the challenge asks | Screen | Explanation given to the astronaut | Check |
 |---|---|---|---|
-| A visual tool to assess one's own health | Crew app: Home and silhouette | Eight zones, each with a level, an icon and a word | `server/tests/` cover the status rules. Open: a profile with no data shows green (review, item 2) |
-| Guidance on treatments and improvements | Alert banner, zone panel | At most four steps and an onboard procedure | Tests cover the guardrails. Open: the advice ignores the value and the level (review, item 5) |
-| Which measurements can be done in space | Check-in form | Cuff, pulse, fingerstick glucose, thermometer, scale, sleep, mood, symptoms, exercise | The six indicators named by the challenge are all entered |
+| A visual tool to assess one's own health | Crew app: Home and silhouette | Eight zones, each with a level, an icon and a word | `server/tests/` cover the status rules; a zone with no reading is "no data", never green |
+| Guidance on treatments and improvements | Alert banner, zone panel | At most four steps and an onboard procedure | Tests cover the guardrails and that the advice changes with the value, its direction and the level |
+| Which measurements can be done in space | Check-in form | Cuff, pulse, fingerstick glucose, thermometer, scale, sleep, mood, symptoms, exercise | The six indicators named by the challenge are all entered; reaction time is measured by the phone |
 | Why an exam is needed | "How / why / what risk" sheet on each field; zone panel | One paragraph per field and per zone | Read on 14 Nov, not user-tested |
-| How hazards affect the indicators | Zone panel, with the note of the active mission context | Each zone names its spaceflight hazard | Open: the radiation zone is labelled "Skin" (review, section 4) |
-| When to alert the crew or the ground | Alerts screen, Earth link | Indicative thresholds; red goes to the crew and to Earth | Reproduced on 14 Nov. Open: every red reaches Earth, even a non-urgent one (review, item 4) |
+| How hazards affect the indicators | Zone panel, with the note of the active mission context | Each zone names its spaceflight hazard, in the wording of the challenge | Read on 14 Nov; the radiation zone is now "Radiation exposure" |
+| When to alert the crew or the ground | Alerts screen, Earth link | Indicative thresholds; red alerts the crew; a report goes to Earth for a critical value or two red indicators | Tests cover both cases. The bands are demo rules (decision D7) |
 | What actions prevent a critical condition | Advice, reminders | Steps and a named procedure | Tests cover the templates |
-| Inadequate nutrition | Pantry, Meal, "Digestive / nutrition" zone | Days of food left, need per astronaut | End-to-end test pins 412 → 398 days. Open: one meal removes a whole demo lot (review, item 3) |
+| Inadequate nutrition | Pantry, Meal, "Digestive / nutrition" zone | Days of food left, need per astronaut | End-to-end test pins 412 → 398 days; a meal removes portions, a scan removes boxes |
 
-"Review" is
+The defects these checks replaced are described in
 [sources/2026-11-14-counter-review-claude.md](sources/2026-11-14-counter-review-claude.md).

@@ -18,6 +18,17 @@ says nothing about the code.
 | D8 | 14 Nov 2026 | A meal removes real portions; a shelf scan adds or removes boxes, each box being a whole lot at the demo scale. **A box removed between two scans is no longer attributed to the person who logged a meal just before** | Fable, under David's delegation — **David and Massi to confirm, since a behaviour was removed** | implemented, verified by tests | One 212 kcal meal removed 44,944 kcal. Attributing a whole lot to one meal has no meaning at the demo scale |
 | D9 | 14 Nov 2026 | A zone with no reading is "no data", and a zone whose newest reading is older than 72 h is "no recent data" with its last level kept aside. Neither is shown green. The cumulative radiation dose is exempt | Fable, under David's delegation | implemented, verified by tests | A profile with no measurement showed eight green zones |
 | D10 | 14 Nov 2026 | Removed from the app and the data: the "12,000 kJ/day NASA reference" and the unused O₂, CO₂ and water-recycling figures. The radiation zone is labelled "Radiation exposure", not "Skin". The lunar dose rate is attributed to Chang'e-4 | Fable, under David's delegation | implemented | No source found, or wrong attribution. See `nasa_reference.json`, "sources" |
+| D11 | 14 Nov 2026 | A reaction self-test is added to the check-in: five signals, measured by the phone, compared with the astronaut's own baseline, capped at an orange advice | David chose the idea; rule details by Fable under delegation | implemented, verified by tests and by a replay in a headless browser | "Measured, not typed". Inspired by NASA's Reaction Self-Test on the ISS; this short version is a screening aid, not a validated test |
+| D12 | 14 Nov 2026 | The station opens on Crew and its navigation is health first; streak and badges are collapsed on the phone; the forecast screen is named "What-if simulator" | Fable, applying D3 | implemented | The challenge is about health self-assessment |
+| D13 | 14 Nov 2026 | Five shared skills live in `.agents/skills/`; `.claude/skills` is a symlink to it | Fable, applying the consolidation brief | implemented; discovery by Codex not verified | One source for both agents. See [ai-workflow.md](ai-workflow.md) |
+
+## Proposed, not decided
+
+| # | Idea | State |
+|---|---|---|
+| P1 | Compare every vital sign with the astronaut's own 30-day baseline, in addition to the fixed bands ("your heart rate has been rising for five days") | Proposed by Fable. David: interesting if it is quick and useful, otherwise not. Done only for the reaction test so far |
+| P2 | Heart rate measured by the camera from the face (remote photoplethysmography) | Proposed by Fable. David: maybe, possibly for Massi. Not started. Sensitive to lighting; the typed value must remain as a fallback |
+| P3 | Other self-tests run by the phone (for example a near-vision check for the eyes zone) | Raised by David. Not started. Any such test needs a source and a "screening only" label |
 
 ## Open
 

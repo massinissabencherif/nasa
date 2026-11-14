@@ -13,6 +13,7 @@ Read in this order when you arrive:
 |---|---|
 | [product.md](product.md) | What HESTIA promises, what is in scope, how each need of the challenge is covered |
 | [architecture.md](architecture.md) | How the code is organised, technical choices, known debts |
+| [ai-workflow.md](ai-workflow.md) | How Claude Code and Codex share rules, skills and tools; what was tested |
 | [../README.md](../README.md) | How to install and run everything |
 | [risks.md](risks.md) | What can fail during the demo and the fallback for each case |
 | [vision-benchmark.md](vision-benchmark.md) | Measured accuracy and latency of the shelf reading |
@@ -23,14 +24,15 @@ Read in this order when you arrive:
 | Document | What it is |
 |---|---|
 | [sources/2026-11-14-counter-review-claude.md](sources/2026-11-14-counter-review-claude.md) | Independent review of version `39ddd85`: five reproduced defects, science check with sources, demo scenario (in French) |
-| [nasa-resources.md](nasa-resources.md) | Checklist of NASA values to verify. Still a stub: superseded in part by section 4 of the review above |
+| [sources/2026-11-14-ui-ux-review.md](sources/2026-11-14-ui-ux-review.md) | UI and UX review of the real screens: each change with its reason, its trade-off and how it was checked |
+| [nasa-resources.md](nasa-resources.md) | The official resources of the challenge and where each reference value comes from |
 
 ## Deliverables
 
 | Document | State |
 |---|---|
-| [nasa-project-page.md](nasa-project-page.md) | Draft; citations marked `[cite]` are not filled in |
-| [demo-script.md](demo-script.md) | Three-minute script from 11 Nov; the five-minute scenario is in the review, section 5 |
+| [nasa-project-page.md](nasa-project-page.md) | Draft updated on 14 Nov; fields in brackets are to fill in before submitting |
+| [demo-script.md](demo-script.md) | Five-minute script for the local jury, in French, with fallbacks and likely questions |
 | [slides-outline.md](slides-outline.md), [video-script.md](video-script.md), [video-subtitles.srt](video-subtitles.srt) | Drafts from 11 Nov |
 
 ## History

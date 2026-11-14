@@ -59,13 +59,13 @@
   },
   "notes": "Every value here is either a sourced reference (see \"sources\") or an explicitly flagged assumption (see \"assumptions\"). None is a measured constant for this fictional crew. Rules chosen for the demo live in demo_rules.json, not here.",
   "sources": {
-    "status": "Checked on 14 Nov 2026 from press releases, agency pages and abstracts, not from the full text of the papers. Details: docs/sources/2026-11-14-counter-review-claude.md, section 4.",
-    "five_hazards": "NASA Human Research Program, 5 Hazards of Human Spaceflight - https://www.nasa.gov/hrp/hazards (official resource of the challenge)",
-    "radiation_career_limit_msv": "NASA-STD-3001, career limit of 600 mSv effective dose; NASA OCHMO radiation protection technical brief - https://www.nasa.gov/wp-content/uploads/2023/03/radiation-protection-technical-brief-ochmo.pdf",
-    "mars_surface_dose": "Hassler et al., Science 343 (2014), doi:10.1126/science.1244797; SwRI release gives 0.67 mSv/day - https://www.swri.org/press-release/swri-scientists-publish-first-radiation-measurements-surface-mars",
+    "status": "Checked on 14 Nov 2026 from press releases, agency pages and abstracts, not from the full text of the papers. Links and reading notes: docs/nasa-resources.md.",
+    "five_hazards": "NASA Human Research Program, 5 Hazards of Human Spaceflight (official resource of the challenge)",
+    "radiation_career_limit_msv": "NASA-STD-3001, career limit of 600 mSv effective dose; NASA OCHMO radiation protection technical brief",
+    "mars_surface_dose": "Hassler et al., Science 343 (2014), doi:10.1126/science.1244797; SwRI release gives 0.67 mSv/day",
     "mars_transit_dose": "Zeitlin et al., Science 340 (2013); 1.8 mSv/day in the SwRI release, 1.84 in other reports",
     "moon_surface_dose": "Zhang et al., Science Advances 6 (2020), doi:10.1126/sciadv.aaz1334 - Chang'e-4 (CNSA), not NASA",
-    "bone_loss_pct_per_month_in_flight": "About 1-1.5 % per month on average, more at the hip. Canadian Space Agency, TBone studies - https://www.asc-csa.gc.ca/eng/sciences/tbone.asp ; review: https://pmc.ncbi.nlm.nih.gov/articles/PMC7200725",
+    "bone_loss_pct_per_month_in_flight": "About 1-1.5 % per month on average, more at the hip. Canadian Space Agency, TBone studies; systematic review in PMC (PMC7200725)",
     "mars_delay": "About 3-22 min one way, up to 44 min round trip. NASA, Communication Delays, Disruptions, and Blackouts for Crewed Mars Missions (NTRS 20220013418)"
   }
 }

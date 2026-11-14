@@ -1,38 +1,59 @@
-# NASA challenge resources — TO UPDATE ON 13 NOV 2026
+# Challenge resources and where our values come from
 
-> **Stub.** NASA publishes the official resources for this challenge on
-> Friday 13 November 2026. Nothing below has been checked against them yet.
+Updated on 14 Nov 2026. It replaces the stub written before the official
+resources were published.
 
-## Checklist when the resources are out
+## Official resources of the challenge
 
-1. Read the challenge resources and list every value they give for: Earth
-   delay, radiation dose rates, career dose limit, bone loss, energy needs,
-   medical thresholds.
-2. Compare with `server/data/nasa_reference.json` (contexts and reference
-   values) and `server/data/thresholds.json` (indicative bands). Both files
-   are plain JSON, read at startup; no code change is needed to update a
-   number. `uv run pytest` will tell you if a pinned demo number moved.
-3. For every value that changes, update the "NASA Data" table in
-   `docs/nasa-project-page.md` and the source note in the JSON file.
-4. Anything we still cannot source goes under "assumptions" in
-   `nasa_reference.json` so it shows as an ASSUMPTION in the Forecasts drawer.
-5. Add the links below.
+Listed on the challenge page, read on 14 Nov 2026
+(<https://www.spaceappschallenge.org/2026/challenges/health-monitoring-software/>).
 
-## Values currently used and where they come from
-
-These came from the pre-event brief, not from the official resource list:
-
-| Value | Used as | To verify |
+| Resource | From | Used for |
 |---|---|---|
-| Mars surface dose 0.67 mSv/day | Curiosity RAD measurement | exact figure and citation |
-| Transit dose 1.8 mSv/day | Curiosity RAD cruise measurement | exact figure and citation |
-| Moon 1.369 mSv/day, ISS 0.523 mSv/day | brief | source |
-| Career limit 600 mSv | NASA standard | citation (NASA-STD-3001) |
-| Bone loss 1–1.5 %/month | NASA HRP | citation |
-| Energy 12,000 kJ/day ≈ 2,870 kcal | brief | source |
-| O₂ 0.82 g/min, CO₂ 1.04 g/min per person; ISS water recycling 98 % | stored, not used in a calculation | source |
-| Mars delay 4–24 min | light-time range | citation |
+| 5 Hazards of Human Spaceflight | NASA Human Research Program | The hazard named in each body zone |
+| Risks of Human Spaceflight | NASA Human Research Program | Not yet linked zone by zone: to do before quoting a risk by its official name |
+| Ongoing HRP Research in Space | NASA Human Research Program | Not used |
+| Monitoring Radiation for Astronaut Health | Canadian Space Agency | A lead for the ISS dose rate, which has no source today |
+| Why Do We Conduct Science Experiments in Space? | Canadian Space Agency | Not used |
 
-## Links
+## Where each value comes from
 
-_(add the official resource links here)_
+The machine-readable version is the `sources` block of
+`server/data/nasa_reference.json`; the reading notes are in
+[sources/2026-11-14-counter-review-claude.md](sources/2026-11-14-counter-review-claude.md),
+section 4.
+
+| Value | Source | Verified how |
+|---|---|---|
+| Five hazards | NASA HRP, <https://www.nasa.gov/hrp/hazards> | Challenge page and search summary |
+| Career limit 600 mSv | NASA-STD-3001; NASA OCHMO radiation protection technical brief | Search summary of the NASA brief |
+| Mars surface 0.67 mSv/day | Curiosity RAD, Hassler et al., Science 2014; SwRI press release | Press release; other reports give 0.64 |
+| Transit 1.8 mSv/day | Curiosity RAD cruise data, Zeitlin et al., Science 2013 | Press reports (1.8 and 1.84) |
+| Moon 1.369 mSv/day | Chang'e-4 lander, Zhang et al., Science Advances 2020. **Not a NASA measurement** | Press coverage of the paper |
+| Bone loss about 1–1.5 %/month | Canadian Space Agency (TBone); review in PMC | Agency page and review abstract |
+| Mars delay about 3–22 min one way | NASA, NTRS 20220013418 | Search summary |
+| Reaction Self-Test on the ISS | NASA NTRS 20090029851 and 20140000075; University of Pennsylvania | Search summary |
+| ISS 0.523 mSv/day | **None found** | Flagged as an assumption in the app |
+
+Links:
+
+- NASA OCHMO radiation protection technical brief — <https://www.nasa.gov/wp-content/uploads/2023/03/radiation-protection-technical-brief-ochmo.pdf>
+- SwRI, first radiation measurements from the surface of Mars — <https://www.swri.org/press-release/swri-scientists-publish-first-radiation-measurements-surface-mars>
+- Hassler et al. 2014 — doi:10.1126/science.1244797
+- Zhang et al. 2020 — doi:10.1126/sciadv.aaz1334
+- Canadian Space Agency, TBone — <https://www.asc-csa.gc.ca/eng/sciences/tbone.asp>
+- Bone loss review — <https://pmc.ncbi.nlm.nih.gov/articles/PMC7200725>
+- NASA, communication delays for crewed Mars missions — <https://ntrs.nasa.gov/citations/20220013418>
+- NASA, Reaction Self-Test — <https://ntrs.nasa.gov/citations/20090029851>
+
+None of these was checked against the full text of a paper. Read the
+primary source before quoting a figure to the jury (open question O6 in
+[decisions.md](decisions.md)).
+
+## Not from NASA, and said so in the app
+
+The indicative colour bands (common clinical ranges), the rules for a report
+to Earth, the 72-hour freshness rule, the reaction-test bands, the energy
+need formula (Mifflin-St Jeor), 7,700 kcal per kg, the effect of exercise on
+bone loss, the solar-storm dose, the resupply dates, all food values and the
+demo scale of the shelf.
