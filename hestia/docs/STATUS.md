@@ -52,8 +52,9 @@ Still open:
   a real phone is unknown.
 - The demo rules D6 to D8 and the critical bands of D7 wait for
   confirmation by David and Massi.
-- A fresh agent session and Codex have not yet been tried on the new
-  documentation (see [ai-workflow.md](ai-workflow.md)).
+- A fresh Claude Code session and a fresh Codex session both found their
+  way through the new documentation on David's Mac (see
+  [ai-workflow.md](ai-workflow.md)). Nothing was tried on Massi's machine.
 
 ### What was run on 14 Nov, and where
 

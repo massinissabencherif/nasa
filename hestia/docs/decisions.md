@@ -20,7 +20,7 @@ says nothing about the code.
 | D10 | 14 Nov 2026 | Removed from the app and the data: the "12,000 kJ/day NASA reference" and the unused O₂, CO₂ and water-recycling figures. The radiation zone is labelled "Radiation exposure", not "Skin". The lunar dose rate is attributed to Chang'e-4 | Fable, under David's delegation | implemented | No source found, or wrong attribution. See `nasa_reference.json`, "sources" |
 | D11 | 14 Nov 2026 | A reaction self-test is added to the check-in: five signals, measured by the phone, compared with the astronaut's own baseline, capped at an orange advice | David chose the idea; rule details by Fable under delegation | implemented, verified by tests and by a replay in a headless browser | "Measured, not typed". Inspired by NASA's Reaction Self-Test on the ISS; this short version is a screening aid, not a validated test |
 | D12 | 14 Nov 2026 | The station opens on Crew and its navigation is health first; streak and badges are collapsed on the phone; the forecast screen is named "What-if simulator" | Fable, applying D3 | implemented | The challenge is about health self-assessment |
-| D13 | 14 Nov 2026 | Five shared skills live in `.agents/skills/`; `.claude/skills` is a symlink to it | Fable, applying the consolidation brief | implemented; discovery by Codex not verified | One source for both agents. See [ai-workflow.md](ai-workflow.md) |
+| D13 | 14 Nov 2026 | Five shared skills live in `.agents/skills/`; `.claude/skills` is a symlink to it | Fable, applying the consolidation brief | implemented; discovery verified in Claude Code and Codex on David's Mac | One source for both agents. See [ai-workflow.md](ai-workflow.md) |
 
 ## Proposed, not decided
 

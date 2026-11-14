@@ -10,7 +10,7 @@ and what was really tested. Rules themselves are in
 | What | Where | How each agent finds it |
 |---|---|---|
 | Rules | `AGENTS.md` at the repository root | Codex reads `AGENTS.md`. Claude Code reads `CLAUDE.md`, which contains only `@AGENTS.md` |
-| Skills | `.agents/skills/<name>/SKILL.md` | Claude Code: through the `.claude/skills` symlink. Codex: see "Not verified" below |
+| Skills | `.agents/skills/<name>/SKILL.md` | Claude Code: through the `.claude/skills` symlink. Codex: reads `.agents/skills` directly |
 | Decisions, state | `hestia/docs/decisions.md`, `hestia/docs/STATUS.md` | Both read them at the start of a session |
 
 Never create a second copy of a rule or a skill for one agent. If an agent
@@ -69,6 +69,6 @@ was not checked, the next action) and `decisions.md`.
 | Claude Code 2.1.236 reads `CLAUDE.md` → `AGENTS.md` and works in the repository | David's Mac | Used for all the work of 14 Nov |
 | `.claude/skills` resolves to the five skill folders | David's Mac | Yes (`ls .claude/skills`) |
 | Links between documents | David's Mac | Checked by script on 14 Nov |
-| A fresh session, with no history, finds the goal, the excluded scope, the commands, the open decisions and the sources | — | **Not tested yet** |
-| Codex 0.159.2 discovers the skills in `.agents/skills` | — | **Not verified.** If it does not, link the folder it expects to `.agents/skills` |
+| A fresh Claude Code session (`claude -p`, no history) finds the goal, the excluded scope, the test command, the branch in progress, the decisions awaiting confirmation and the source of a reference value | David's Mac, 14 Nov | Pass on all seven questions; the five skills appeared as skills, not only as files |
+| A fresh Codex 0.159.2 session (`codex exec --sandbox read-only`), same questions | David's Mac, 14 Nov | Pass on all seven questions; the five skills were exposed as skills from `.agents/skills` |
 | Anything on Massi's machine | — | **Not tested.** The symlink needs a checkout that keeps symlinks (default on macOS and Linux) |
