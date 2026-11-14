@@ -88,6 +88,15 @@ still open.
   warning and its camera prompt are expected to work but are unverified. The
   native iOS project has never been compiled (no full Xcode here).
 
+## Added 14 Nov: native iOS app on a real iPhone
+
+- Full Xcode 27.2 installed; `make ios` + build signed with a personal team,
+  run on an iPhone: the crew app opens and reaches the station.
+- Found on the day: the Ollama model files had been deleted from disk
+  (`~/.ollama/models` empty) while `qwen2.5vl:7b` was still in RAM, so every
+  scan returned 404. Re-pulled. Mission settings now shows the model in red
+  ("missing — run: ollama pull …") in that case instead of green "in memory".
+
 ## Known limits (true today)
 
 - **Vision**: 11/12 on the full test photo, 10/12 on the after-removal photo

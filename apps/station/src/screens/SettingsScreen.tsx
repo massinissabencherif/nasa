@@ -200,8 +200,8 @@ export function SettingsScreen() {
                 <StatusBadge level={info.ollama.running ? 'green' : 'red'} label={info.ollama.running ? 'Ollama running' : 'Ollama not running'} />
                 {info.ollama.running && (
                   <StatusBadge
-                    level={info.ollama.loaded ? 'green' : info.ollama.installed ? 'orange' : 'red'}
-                    label={info.ollama.loaded ? `${info.ollama.model} in memory` : info.ollama.installed ? `${info.ollama.model} not loaded yet` : `${info.ollama.model} missing`}
+                    level={!info.ollama.installed ? 'red' : info.ollama.loaded ? 'green' : 'orange'}
+                    label={!info.ollama.installed ? `${info.ollama.model} missing — run: ollama pull ${info.ollama.model}` : info.ollama.loaded ? `${info.ollama.model} in memory` : `${info.ollama.model} not loaded yet`}
                   />
                 )}
               </div>
