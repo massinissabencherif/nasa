@@ -53,7 +53,7 @@ export function FieldRow({
           inputMode="decimal"
           step={step}
           value={value}
-          placeholder={last != null ? String(last) : ''}
+          placeholder="–"
           onChange={(e) => onChange(e.target.value === '' ? '' : Number(e.target.value))}
           style={{
             width: 84,

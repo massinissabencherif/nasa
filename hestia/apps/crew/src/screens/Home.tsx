@@ -167,6 +167,10 @@ export function Home() {
       )}
 
       {gamification && (
+        <details>
+          <summary style={{ cursor: 'pointer', fontSize: 'var(--text-sm)', color: 'var(--text-muted)', padding: '6px 2px' }}>
+            Routine and badges: {gamification.streak}-day check-in streak
+          </summary>
         <Panel title="Crew routine">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
             {(
@@ -205,6 +209,7 @@ export function Home() {
             ))}
           </div>
         </Panel>
+        </details>
       )}
     </div>
   );

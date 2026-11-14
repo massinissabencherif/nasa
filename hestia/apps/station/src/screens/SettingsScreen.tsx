@@ -88,7 +88,8 @@ export function SettingsScreen() {
             </p>
           )}
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginTop: 6 }}>
-            Radiation and delay values are NASA references; the resupply dates for Moon and ISS and "next cargo in N days" are assumptions.
+            Mars radiation values come from NASA's Curiosity rover (RAD instrument); the lunar value comes from the Chang'e-4
+            lander. The ISS dose rate, the resupply dates and "next cargo in N days" are assumptions.
           </p>
         </Panel>
 

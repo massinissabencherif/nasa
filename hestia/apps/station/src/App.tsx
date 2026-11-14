@@ -11,11 +11,12 @@ import { EarthScreen } from './screens/EarthScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 
 const NAV = [
+  // health first: the crew, what needs attention, what went to Earth; then the resources
   { key: 'crew', label: 'Crew', icon: IconCrew, path: '/crew' },
-  { key: 'pantry', label: 'Pantry', icon: IconPantry, path: '/pantry' },
-  { key: 'forecasts', label: 'Forecasts', icon: IconForecast, path: '/forecasts' },
   { key: 'alerts', label: 'Alerts', icon: IconAlert, path: '/alerts' },
   { key: 'earth', label: 'Earth link', icon: IconEarthLink, path: '/earth' },
+  { key: 'pantry', label: 'Pantry', icon: IconPantry, path: '/pantry' },
+  { key: 'forecasts', label: 'What-if simulator', icon: IconForecast, path: '/forecasts' },
   { key: 'settings', label: 'Mission settings', icon: IconSettings, path: '/settings' },
 ];
 
@@ -76,7 +77,7 @@ function Shell() {
               <ServerDown />
             ) : (
               <Routes>
-                <Route path="/" element={<Navigate to="/pantry" replace />} />
+                <Route path="/" element={<Navigate to="/crew" replace />} />
                 <Route path="/crew" element={<CrewScreen />} />
                 <Route path="/pantry" element={<PantryScreen />} />
                 <Route path="/pantry/calibration" element={<CalibrationScreen />} />

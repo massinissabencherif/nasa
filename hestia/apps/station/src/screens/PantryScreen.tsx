@@ -520,7 +520,7 @@ export function PantryScreen() {
             )}
             <p style={{ color: 'var(--text-faint)', fontSize: 'var(--text-xs)', marginTop: 10 }}>
               {pantry
-                ? `Crew need ${Math.round(pantry.daily_need_kcal).toLocaleString('en-US')} kcal/day (Mifflin-St Jeor × activity; NASA reference ≈ 2,870 kcal per person). ${pantry.assumption}`
+                ? `Crew need ${Math.round(pantry.daily_need_kcal).toLocaleString('en-US')} kcal/day (Mifflin-St Jeor × activity, an estimate). ${pantry.assumption}`
                 : ''}
             </p>
             <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
