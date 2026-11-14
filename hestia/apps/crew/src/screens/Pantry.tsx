@@ -421,7 +421,8 @@ export function Pantry() {
                 <span style={{ minWidth: 0 }}>
                   <span style={{ fontFamily: 'var(--font-mono)', color: event.qty < 0 ? 'var(--text)' : 'var(--green)' }}>
                     {event.qty < 0 ? '−' : '+'}
-                    {Math.abs(event.qty)}
+                    {Math.abs(event.qty)} {event.unit === 'portion' ? 'portion' : 'box'}
+                    {Math.abs(event.qty) > 1 ? (event.unit === 'portion' ? 's' : 'es') : ''}
                   </span>{' '}
                   {event.food_name}
                   <span style={{ color: 'var(--text-faint)' }}> · {event.crew_name ? `meal, ${event.crew_name.split(' ')[0]}` : 'photo'}</span>

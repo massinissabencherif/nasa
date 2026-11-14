@@ -625,7 +625,8 @@ export function PantryScreen() {
                   <span style={{ minWidth: 0 }}>
                     <span style={{ color: event.qty < 0 ? 'var(--text)' : 'var(--green)', fontFamily: 'var(--font-mono)' }}>
                       {event.qty < 0 ? '−' : '+'}
-                      {Math.abs(event.qty)}
+                      {Math.abs(event.qty)} {event.unit === 'portion' ? 'portion' : 'box'}
+                      {Math.abs(event.qty) > 1 ? (event.unit === 'portion' ? 's' : 'es') : ''}
                     </span>{' '}
                     {event.food_name ?? `item #${event.food_item_id}`}
                     <span style={{ color: 'var(--text-faint)' }}>

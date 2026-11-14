@@ -37,7 +37,8 @@ def test_exercise_streak_level():
 def test_worst_level():
     assert worst_level(["green", "orange", "green"]) == "orange"
     assert worst_level(["green", "red", "orange"]) == "red"
-    assert worst_level([]) == "green"
+    assert worst_level([]) == "unknown"  # no level at all is not "all good"
+    assert worst_level(["unknown", "green"]) == "green"
 
 
 def test_symptoms_only_colour_the_zones_they_concern():

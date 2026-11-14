@@ -23,7 +23,8 @@ const FIELDS: { key: string; step?: number }[] = [
 const MOODS = ['Very low', 'Low', 'OK', 'Good', 'Great'];
 
 function Result({ result, onDone }: { result: CheckinResult; onDone: () => void }) {
-  const attention = ZONES.filter((z) => result.status[z].level !== 'green');
+  const attention = ZONES.filter((z) => result.status[z].level === 'orange' || result.status[z].level === 'red');
+  const noData = ZONES.filter((z) => result.status[z].level === 'unknown');
   return (
     <div style={{ padding: 16, display: 'grid', gap: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--green)' }}>
@@ -31,9 +32,12 @@ function Result({ result, onDone }: { result: CheckinResult; onDone: () => void 
         <h1 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--text)' }}>Check-in saved</h1>
       </div>
       <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-        {attention.length === 0
-          ? 'Every body zone is nominal. Nothing to do.'
-          : `Zones needing attention: ${attention.map((z) => ZONE_META[z].label).join(', ')}.`}
+        {attention.length > 0
+          ? `Zones needing attention: ${attention.map((z) => ZONE_META[z].label).join(', ')}.`
+          : noData.length === 0
+            ? 'Every body zone is nominal. Nothing to do.'
+            : 'Every measured zone is nominal.'}
+        {noData.length > 0 && ` No recent data for: ${noData.map((z) => ZONE_META[z].label).join(', ')}.`}
       </p>
       {result.alerts.map((alert) => {
         const red = alert.level === 'red';

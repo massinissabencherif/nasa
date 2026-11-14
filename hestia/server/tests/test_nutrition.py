@@ -92,8 +92,8 @@ def test_eating_a_meal_decrements_pending_stock_before_next_scan():
         catalogue_kcal = next(
             item.kcal for item in available_items(session) if item.food_item_id == tomato_soup_id
         )
-        # one real unit removed, at the demo-scaled multiplier
-        assert before - after == pytest.approx(catalogue_kcal * 212, rel=0.01)
+        # a meal is one real portion, not a whole demo lot of 212 portions
+        assert before - after == pytest.approx(catalogue_kcal)
 
 
 def test_kcal_eaten_today_counts_only_this_crew_members_meals():

@@ -29,9 +29,12 @@ shared types).
 - `server/app/routes/` exposes them over HTTP.
 - `server/vision/` captures a frame, calls the local model and scores the
   answer. It knows nothing about the database.
-- `server/data/` holds every number that can change without a code change:
-  `thresholds.json`, `nasa_reference.json`, `food_catalogue.json`,
-  `shelf_grid.json`.
+- `server/data/` holds every number that can change without a code change,
+  in three files that must not be mixed: `nasa_reference.json` (sourced
+  reference values and flagged assumptions), `thresholds.json` (indicative
+  colour bands) and `demo_rules.json` (rules the team chose for the demo:
+  escalation to Earth, data freshness, how exercise and meals are counted).
+  Also `food_catalogue.json` and `shelf_grid.json`.
 - Every check-in — phone form, demo scenario, test — goes through
   `engines/checkin.py::record_checkin`.
 
@@ -78,5 +81,3 @@ Recorded on 14 Nov, not yet addressed:
   layout, with most styles written inline instead of using the shared tokens.
 - `server/app/routes/pantry.py` (518 lines) mixes HTTP handling, stock
   calculations and database writes.
-- `engines/status.py` hard-codes the 600 mSv limit that also lives in
-  `nasa_reference.json`.

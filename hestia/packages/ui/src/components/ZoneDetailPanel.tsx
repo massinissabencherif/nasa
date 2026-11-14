@@ -2,7 +2,15 @@ import type { CrewStatus, Thresholds } from '@hestia/api-client';
 import { IconCheck, IconCaution, IconCritical } from '../icons';
 import { CONTEXT_ZONE_NOTES, INDICATOR_LABELS, ZONE_META, type ZoneKey } from '../zones';
 import { formatThresholdBands } from '../thresholdText';
-import { StatusBadge } from './StatusBadge';
+import { LEVEL_META, StatusBadge } from './StatusBadge';
+
+function formatAge(iso: string | null): string {
+  if (!iso) return 'an unknown date';
+  // the server stores UTC and sends it without a zone
+  const then = new Date(/[zZ]|[+-]\d\d:\d\d$/.test(iso) ? iso : `${iso}Z`).getTime();
+  const hours = Math.max(0, Math.round((Date.now() - then) / 3_600_000));
+  return hours < 48 ? `${hours} h ago` : `${Math.round(hours / 24)} days ago`;
+}
 
 const LEVEL_ICON = { green: IconCheck, orange: IconCaution, red: IconCritical };
 
@@ -40,6 +48,16 @@ export function ZoneDetailPanel({
           </button>
         )}
       </div>
+
+      {zoneStatus.reason && (
+        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text)' }}>
+          {zoneStatus.reason === 'no_data'
+            ? 'Nothing has been recorded for this zone yet. No data is not the same as nominal: do a check-in.'
+            : `The last reading is from ${formatAge(zoneStatus.last_ts)} and was ${
+                zoneStatus.last_level ? LEVEL_META[zoneStatus.last_level].word : 'not judged'
+              }. It is too old to stand for today: do a check-in.`}
+        </p>
+      )}
 
       <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>{meta.function}</p>
 
@@ -112,7 +130,7 @@ export function ZoneDetailPanel({
           }}
         >
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginBottom: 4 }}>
-            {zoneStatus.level === 'green' ? 'Preventive action' : 'Advised action'}
+            {zoneStatus.level === 'green' || zoneStatus.level === 'unknown' ? 'Preventive action' : 'Advised action'}
           </p>
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text)' }}>{meta.action}</p>
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginTop: 6 }}>

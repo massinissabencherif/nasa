@@ -5,7 +5,7 @@ import { api } from '../lib/api';
 import { formatDelay, useStation } from '../lib/hooks';
 
 const CONTEXTS = [
-  { type: 'mars_base', label: 'Mars base', delay: '4-24 min (20 min used)', radiation: '0.67 mSv/day (Curiosity RAD)', resupply: 'window every ~26 months' },
+  { type: 'mars_base', label: 'Mars base', delay: '3-22 min (20 min used)', radiation: '0.67 mSv/day (Curiosity RAD)', resupply: 'window every ~26 months' },
   { type: 'mars_transit', label: 'Earth-Mars transit', delay: 'growing (10 min used)', radiation: '1.8 mSv/day', resupply: 'none' },
   { type: 'moon_base', label: 'Moon base', delay: '~1.3 s', radiation: '1.369 mSv/day', resupply: 'assumption: 6 months' },
   { type: 'iss', label: 'ISS', delay: '~0 s', radiation: '0.523 mSv/day', resupply: 'assumption: 2-3 months' },

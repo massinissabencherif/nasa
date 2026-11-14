@@ -24,10 +24,20 @@ export type CrewMember = {
   avatar: string;
 };
 
+/** A vigilance level computed from a value. */
 export type Level = 'green' | 'orange' | 'red';
 
+/** What a zone can show: a level, or "unknown" when there is nothing recent to judge. */
+export type ZoneLevel = Level | 'unknown';
+
 export type ZoneStatus = {
-  level: Level;
+  level: ZoneLevel;
+  /** why the level is unknown: nothing ever recorded, or the newest reading is too old */
+  reason: 'no_data' | 'stale' | null;
+  /** the level of the last reading when it is stale */
+  last_level: Level | null;
+  /** ISO time of the newest reading behind this zone */
+  last_ts: string | null;
   indicators: Record<string, Level | null>;
   display: Record<string, string>;
   hazard: string;
@@ -93,6 +103,8 @@ export type ConsumptionEvent = {
   crew_member_id: number | null;
   food_name: string | null;
   crew_name: string | null;
+  /** a meal is counted in portions; a scan in boxes, i.e. whole lots at the demo scale */
+  unit: 'portion' | 'box';
 };
 
 export type RationCrewLine = {
@@ -156,14 +168,16 @@ export type MealItem = {
   protein_g: number;
   carbs_g: number;
   fat_g: number;
+  /** boxes seen on the shelf by the last scan */
   available_count: number;
+  /** portions left in those boxes */
+  available_portions: number;
 };
 
 export type MealProposal = {
   daily_need_kcal: number;
   kcal_eaten_today: number;
   kcal_remaining_today: number;
-  nasa_reference_kcal: number;
   suggestion: { food_item_id: number; name: string; kcal: number }[];
   available: MealItem[];
 };

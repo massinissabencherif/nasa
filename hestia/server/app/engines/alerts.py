@@ -5,16 +5,27 @@ from sqlmodel import Session, select
 
 from app.models import Alert, CrewMember, EarthMessage, MissionContext
 
-from .advice import PROCEDURES, generate_advice
-from .status import _latest, _recent_values, indicator_level
+from .advice import PROCEDURES, AdviceContext, generate_advice
+from .status import _latest, _recent_values, indicator_level, indicator_value, raw_type
+from .thresholds import direction_of, is_critical, load_demo_rules
 
 ALERT_INDICATORS: list[str] = list(PROCEDURES.keys())
 
-_RAW_TYPE: dict[str, str] = {"weight_change_pct": "weight", "exercise_streak": "exercise_min"}
-
 
 def _raw_type(indicator: str) -> str:
-    return _RAW_TYPE.get(indicator, indicator)
+    return raw_type(indicator)
+
+
+def should_report_to_earth(levels: dict[str, str | None], values: dict[str, float | None]) -> bool:
+    """Demo rule (demo_rules.json): a report goes to Earth when one red
+    indicator is in its critical band, or when several indicators are red at
+    once. A colour alone never escalates."""
+    reds = [indicator for indicator, level in levels.items() if level == "red"]
+    if not reds:
+        return False
+    if any(is_critical(indicator, values.get(indicator)) for indicator in reds):
+        return True
+    return len(reds) >= load_demo_rules()["earth_report"]["min_red_indicators"]
 
 
 def _trend_7d(session: Session, crew_member_id: int, indicator: str) -> str:
@@ -96,22 +107,28 @@ def _scripted_reply(level: str) -> str:
 
 
 def evaluate_and_alert(session: Session, crew_member_id: int, use_llm: bool = False) -> list[Alert]:
-    """Check every alertable indicator for one crew member; create an Alert (and,
-    for red, a queued EarthMessage) for each that just changed level. Does not
-    commit — the caller owns the transaction. Only level *changes* create a new
-    alert, so repeated check-ins at the same level don't spam the crew or Earth
-    (PROMPT_FABLE.md §7: "only significant changes are sent")."""
+    """Check every alertable indicator for one crew member; create an Alert
+    for each that just changed level and, when the escalation rule is met, one
+    queued EarthMessage listing every red finding. Does not commit — the
+    caller owns the transaction. Only level *changes* create a new alert, so
+    repeated check-ins at the same level don't spam the crew or Earth."""
     crew = session.get(CrewMember, crew_member_id)
     if crew is None:
         return []
 
     now = datetime.now(timezone.utc)
+    context = _active_context(session)
+    delay_s = context.delay_s if context else 1200
+
+    levels = {i: indicator_level(session, crew_member_id, i) for i in ALERT_INDICATORS}
+    values = {i: indicator_value(session, crew_member_id, i) for i in ALERT_INDICATORS}
+    escalate = should_report_to_earth(levels, values)
+
     created: list[Alert] = []
-    red_findings: list[dict] = []
-    red_alert_ids: list[int] = []
+    active_reds: list[Alert] = []  # red alerts standing after this evaluation
 
     for indicator in ALERT_INDICATORS:
-        level = indicator_level(session, crew_member_id, indicator)
+        level = levels[indicator]
         last_alert = session.exec(
             select(Alert)
             .where(Alert.crew_member_id == crew_member_id, Alert.indicator == indicator)
@@ -125,36 +142,49 @@ def evaluate_and_alert(session: Session, crew_member_id: int, use_llm: bool = Fa
                 session.add(active)
             continue
         if active is not None and active.level == level:
+            if level == "red":
+                active_reds.append(active)
             continue
         if active is not None:
             active.resolved = True  # superseded by the new level
             session.add(active)
 
-        message, _source = generate_advice(indicator, use_llm=use_llm)
+        advice_context = AdviceContext(
+            level=level,
+            value=values[indicator],
+            direction=direction_of(indicator, values[indicator]),
+            sent_to_earth=level == "red" and escalate,
+            round_trip_s=2 * delay_s,
+        )
+        message, _source = generate_advice(indicator, advice_context, use_llm=use_llm)
         alert = Alert(
             ts=now,
             crew_member_id=crew_member_id,
             level=level,
             indicator=indicator,
             message=message,
-            sent_to_earth=(level == "red"),
+            sent_to_earth=advice_context.sent_to_earth,
         )
         session.add(alert)
         session.flush()
         created.append(alert)
-
         if level == "red":
-            value = _latest(session, crew_member_id, _raw_type(indicator))
-            red_findings.append({
-                "indicator": indicator,
-                "value": round(value, 1) if value is not None else None,
-                "trend_7d": _trend_7d(session, crew_member_id, indicator),
-            })
-            red_alert_ids.append(alert.id)
+            active_reds.append(alert)
 
-    if red_findings:
-        context = _active_context(session)
-        delay_s = context.delay_s if context else 1200
+    new_red = any(alert.level == "red" for alert in created)
+    already_reported = any(alert.sent_to_earth for alert in active_reds if alert not in created)
+    if escalate and active_reds and (new_red or not already_reported):
+        findings = []
+        for alert in active_reds:
+            value = _latest(session, crew_member_id, _raw_type(alert.indicator))
+            findings.append({
+                "indicator": alert.indicator,
+                "value": round(value, 1) if value is not None else None,
+                "trend_7d": _trend_7d(session, crew_member_id, alert.indicator),
+            })
+            alert.sent_to_earth = True
+            session.add(alert)
+
         scale = context.time_scale if context else 1.0
         effective_delay = max(1, round(delay_s / scale))
         deliver_ts = now + timedelta(seconds=effective_delay)
@@ -163,10 +193,10 @@ def evaluate_and_alert(session: Session, crew_member_id: int, use_llm: bool = Fa
                 created_ts=now,
                 deliver_ts=deliver_ts,
                 reply_ts=deliver_ts + timedelta(seconds=effective_delay),
-                payload=_earth_payload(crew, red_findings),
+                payload=_earth_payload(crew, findings),
                 reply_payload=_scripted_reply("red"),
                 status="queued",
-                alert_id=red_alert_ids[0],
+                alert_id=active_reds[0].id,
             )
         )
         session.flush()

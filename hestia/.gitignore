@@ -11,3 +11,6 @@ src-tauri/gen/
 *.db
 captures/
 certs/
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts

@@ -10,31 +10,45 @@ Branch `chore/agents-docs` (documentation only, not merged, not committed):
 shared rules in `AGENTS.md`, documentation index, `product.md`,
 `decisions.md`, old briefs marked as history.
 
-### Open defects, reproduced on 14 Nov on version `39ddd85`
+### Defects of version `39ddd85`: fixed on branch `fix/health-rules`
 
-Reproduced through the HTTP API on a throwaway database, on David's Mac.
-Details and causes:
+Reproduced on 14 Nov through the HTTP API on a throwaway database, then
+fixed and reproduced again with the same script. Details of the original
+behaviour:
 [sources/2026-11-14-counter-review-claude.md](sources/2026-11-14-counter-review-claude.md).
-None is fixed yet.
+The rules chosen are decisions D6 to D10 in [decisions.md](decisions.md) and
+are written in `server/data/demo_rules.json`.
 
-1. Seven check-ins on the same day count as seven days of low exercise: the
-   bones zone turns red and a report is queued for Earth.
-2. A crew member with no measurement at all shows eight green zones.
-3. Eating one 212 kcal item removes a whole demo lot (44,944 kcal) from the
-   stock: autonomy drops from 412.7 to 408.0 days.
-4. A systolic pressure of 140 alone queues a report for Earth.
-5. The advice text is identical for an orange and a red reading.
+| Defect | Now | Test |
+|---|---|---|
+| Seven check-ins on one day counted as seven days of low exercise | One day; the latest check-in of the day is the day's total | `test_several_checkins_on_one_day_are_one_day_of_exercise` |
+| A crew member with no measurement showed eight green zones | Eight zones "no data"; a reading older than 72 h is "no recent data" | `test_a_crew_member_without_any_measurement_is_unknown_not_green`, `test_an_old_reading_is_stale_and_keeps_its_last_level` |
+| One 212 kcal meal removed 44,944 kcal from the stock | A meal removes portions; only a scan removes boxes | `test_a_meal_removes_portions_and_a_scan_removes_boxes` |
+| A systolic pressure of 140 alone queued a report for Earth | A report needs a critical value or two red indicators | `test_one_red_reading_outside_the_critical_band_stays_with_the_crew`, `test_a_second_red_indicator_escalates_and_the_report_lists_both` |
+| Same advice for an orange and a red reading | The advice states the value, its direction and the level; red starts with "Tell the crew medical officer now" | `test_advice_depends_on_value_direction_and_level` |
 
-Science and wording to correct (same review, section 4): the radiation zone
-is labelled "Skin"; the lunar dose rate comes from Chang'e-4, not from NASA;
-the Mars delay is about 3–22 min, not 4–24; 12,000 kJ/day and ISS
-0.523 mSv/day have no source.
+Science and wording corrected in the same branch: the radiation zone is
+"Radiation exposure"; the bones zone says it tracks exercise adherence, not
+bone density; the eyes zone says SANS is detected by imaging; hazards use
+the wording of the challenge; the lunar dose rate is attributed to
+Chang'e-4; the Mars delay is 3–22 min; unsourced figures are removed or
+flagged. Each reference value now has a source line in
+`server/data/nasa_reference.json`.
+
+Still open:
+
+- The database schema did not change, but the meaning of meal events did:
+  run `make reset` once after pulling this branch.
+- The phone screens were only compiled, not looked at, after these changes.
+- `docs/nasa-project-page.md` still has `[cite]` placeholders and still
+  describes the old behaviours.
 
 ### What was run on 14 Nov, and where
 
 | Check | Machine | Result |
 |---|---|---|
-| Backend tests | David's Mac (M1 Pro), with the bundled `.venv`, Python 3.13 | 53 pass |
+| Backend tests | David's Mac (M1 Pro), with the bundled `.venv`, Python 3.13 | 59 pass on `fix/health-rules` (53 on `39ddd85`) |
+| Type check and production build of both web apps | David's Mac, Node 20 (the repository asks for 22) | Pass |
 | Native iOS build on an iPhone | Massi's Mac | Works, as reported by Massi below; not seen by anyone else |
 | Vision scan, Tauri window, real shelf, hotspot without internet | — | Not run on 14 Nov. David's Mac has no `uv`, `ollama` or `cargo` |
 
@@ -167,9 +181,8 @@ date says otherwise.
 
 ## To do before / during the event
 
-1. Fix the five open defects and the science wording listed at the top.
-   Citations: use section 4 of the counter-review, then
-   `docs/nasa-resources.md`.
+1. Fill the `[cite]` placeholders of `docs/nasa-project-page.md` from the
+   "sources" block of `server/data/nasa_reference.json`.
 2. Install the Android SDK from Android Studio if an APK is wanted, then
    `make android`.
 3. Test the phone hotspot (mobile data off) with the real phone; click the

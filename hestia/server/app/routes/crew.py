@@ -143,7 +143,9 @@ def get_reminders(crew_id: int) -> list[dict]:
             )
         ).all()
         types_today = {m.type for m in today}
-        exercise_today = max((m.value for m in today if m.type == "exercise_min"), default=0)
+        # the latest check-in of the day is the day's total (demo_rules.json)
+        exercise_rows = sorted((m for m in today if m.type == "exercise_min"), key=lambda m: (m.ts, m.id))
+        exercise_today = exercise_rows[-1].value if exercise_rows else 0
         vitals = {"systolic_bp", "heart_rate", "temperature"}
         context = session.exec(
             select(MissionContext).where(MissionContext.active == True)  # noqa: E712
@@ -206,7 +208,6 @@ def propose_meal(crew_id: int) -> dict:
             "daily_need_kcal": round(need, 1),
             "kcal_eaten_today": round(eaten, 1),
             "kcal_remaining_today": round(max(0.0, need - eaten), 1),
-            "nasa_reference_kcal": 2870,
             "suggestion": _suggest_meal(available_items(session), max(0.0, min(need / 3, need - eaten))),
             "available": [
                 {
@@ -217,6 +218,7 @@ def propose_meal(crew_id: int) -> dict:
                     "carbs_g": item.carbs_g,
                     "fat_g": item.fat_g,
                     "available_count": item.available_count,
+                    "available_portions": item.available_portions,
                 }
                 for item in available_items(session)
             ],
@@ -236,7 +238,7 @@ def eat_meal(crew_id: int, body: MealBody) -> ConsumptionEvent:
             raise HTTPException(404, f"no crew member {crew_id}")
         available = {item.food_item_id: item for item in available_items(session)}
         item = available.get(body.food_item_id)
-        if item is None or item.available_count < body.qty:
+        if item is None or item.available_portions < body.qty:
             raise HTTPException(400, "that item isn't available in the current stock")
         event = ConsumptionEvent(
             ts=datetime.now(timezone.utc),

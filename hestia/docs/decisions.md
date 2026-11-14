@@ -13,16 +13,20 @@ says nothing about the code.
 | D3 | 14 Nov 2026 | Scope as written in [product.md](product.md): check-in, silhouette, alerts, Earth link and history are the core; the pantry is in the main demo; forecasts close the demo as the next step; calibration gets one sentence; gamification leaves the main path | David (Massi to confirm) | decided, not implemented | Five minutes of demo; fit with the challenge text |
 | D4 | 14 Nov 2026 | No feature code is deleted without a line in this file | David | decided | "Not in the pitch" is not "to remove" |
 | D5 | 14 Nov 2026 | `AGENTS.md` at the repository root is the only rule file for agents; `CLAUDE.md` imports it; `docs/prompt/` is history | David | implemented on branch `chore/agents-docs`, not merged | Two agents, two people, one set of rules |
+| D6 | 14 Nov 2026 | The exercise minutes of a check-in are the total for that calendar day; the latest check-in of a day replaces the earlier ones; a streak counts days | Fable, under David's delegation — **David and Massi to confirm** | implemented, verified by tests | Seven check-ins in one day counted as seven days. Rule text: `server/data/demo_rules.json` |
+| D7 | 14 Nov 2026 | A report goes to Earth when one red indicator is in its critical band, or when two or more indicators are red together. A single red reading outside the critical band stays with the crew. Critical bands: systolic ≥ 180 or < 80, diastolic ≥ 120 or < 50, heart rate > 130 or < 40, temperature ≥ 39.5 or < 35.0, glucose ≥ 250 or < 55, dose > 100 % of the limit | Fable, under David's delegation — **David and Massi to confirm the bands** | implemented, verified by tests | A systolic pressure of 140 alone queued a report. These are demo rules, not a medical protocol |
+| D8 | 14 Nov 2026 | A meal removes real portions; a shelf scan adds or removes boxes, each box being a whole lot at the demo scale. **A box removed between two scans is no longer attributed to the person who logged a meal just before** | Fable, under David's delegation — **David and Massi to confirm, since a behaviour was removed** | implemented, verified by tests | One 212 kcal meal removed 44,944 kcal. Attributing a whole lot to one meal has no meaning at the demo scale |
+| D9 | 14 Nov 2026 | A zone with no reading is "no data", and a zone whose newest reading is older than 72 h is "no recent data" with its last level kept aside. Neither is shown green. The cumulative radiation dose is exempt | Fable, under David's delegation | implemented, verified by tests | A profile with no measurement showed eight green zones |
+| D10 | 14 Nov 2026 | Removed from the app and the data: the "12,000 kJ/day NASA reference" and the unused O₂, CO₂ and water-recycling figures. The radiation zone is labelled "Radiation exposure", not "Skin". The lunar dose rate is attributed to Chang'e-4 | Fable, under David's delegation | implemented | No source found, or wrong attribution. See `nasa_reference.json`, "sources" |
 
 ## Open
 
 | # | Question | Proposal | Who decides |
 |---|---|---|---|
-| O1 | What does the "exercise minutes" field of a check-in mean when there are several check-ins in a day? | Minutes for the day so far: the latest check-in of a day replaces the earlier ones | David and Massi |
-| O2 | Which results justify a report to Earth? Today every red does, including a systolic pressure of 140 | A separate "critical" band per indicator, stored as a demo rule, apart from the scientific references | David and Massi |
 | O3 | Which machine runs the demo, and which is the spare? | Massi's Mac runs it today. David's Mac lacks `uv`, `ollama` and `cargo`; installing them would give a spare | David and Massi |
 | O4 | NASA submission: 30-second video or 7 slides? | — | David and Massi |
-| O5 | Figures without a source: 12,000 kJ/day, ISS 0.523 mSv/day | Source them or remove them from the app and the project page | Whoever takes the science task |
+| O5 | ISS dose rate 0.523 mSv/day has no source; it is now flagged as an assumption in the app | Source it (the CSA radiation resource of the challenge is a lead) or keep it as an assumption | Whoever takes the science task |
+| O6 | The sources in `nasa_reference.json` were checked from press releases and abstracts, not from the full papers | Read the primary sources before quoting a figure to the jury | Whoever takes the science task |
 
 ## Rules for this file
 

@@ -3,12 +3,12 @@
     "mars_base": {
       "label": "Mars base",
       "delay_s_default": 1200,
-      "delay_s_min": 240,
-      "delay_s_max": 1440,
+      "delay_s_min": 180,
+      "delay_s_max": 1320,
       "radiation_msv_day": 0.67,
       "resupply_days": 790,
       "next_resupply_in_days": 380,
-      "source": "One-way delay 4-24 min (default 20 min for demo); radiation from Curiosity RAD instrument; resupply window ~26 months (assumption)."
+      "source": "One-way light delay about 3-22 min depending on the positions of the planets (20 min used for the demo). Surface dose rate 0.67 mSv/day: RAD instrument on the Curiosity rover, Aug 2012-Jun 2013, near solar maximum (Hassler et al., Science 2014). Resupply window ~26 months (assumption)."
     },
     "mars_transit": {
       "label": "Earth-Mars transit",
@@ -16,7 +16,7 @@
       "radiation_msv_day": 1.8,
       "resupply_days": null,
       "next_resupply_in_days": null,
-      "source": "Delay grows over the transit; fixed at a representative mid-transit value for the demo (assumption). No resupply in transit."
+      "source": "Dose rate 1.8 mSv/day: RAD instrument during Curiosity's cruise to Mars (Zeitlin et al., Science 2013). Delay grows over the transit; fixed at a representative mid-transit value for the demo (assumption). No resupply in transit."
     },
     "moon_base": {
       "label": "Moon base",
@@ -24,7 +24,7 @@
       "radiation_msv_day": 1.369,
       "resupply_days": 180,
       "next_resupply_in_days": 120,
-      "source": "~1.3 s one-way light delay; resupply ~6 months (assumption)."
+      "source": "~1.3 s one-way light delay. Dose rate 1.369 mSv/day: LND instrument on the Chang'e-4 lander (Zhang et al., Science Advances 2020) - a CNSA mission, not a NASA measurement. Resupply ~6 months (assumption)."
     },
     "iss": {
       "label": "ISS",
@@ -32,28 +32,40 @@
       "radiation_msv_day": 0.523,
       "resupply_days": 75,
       "next_resupply_in_days": 45,
-      "source": "~0 delay; resupply 2-3 months (assumption, midpoint used)."
+      "source": "~0 delay. Dose rate 0.523 mSv/day: no primary source found, treated as an assumption. Resupply 2-3 months (assumption, midpoint used)."
     }
   },
   "reference_values": {
-    "o2_consumption_g_per_min_per_person": 0.82,
-    "co2_production_g_per_min_per_person": 1.04,
-    "iss_water_recycling_pct": 98,
-    "bone_loss_pct_per_month_in_flight": [1.0, 1.5],
+    "bone_loss_pct_per_month_in_flight": [
+      1.0,
+      1.5
+    ],
     "bone_loss_exercise_attenuation_max_pct": 50,
     "radiation_career_limit_msv": 600,
     "kcal_per_kg_bodyweight_change": 7700,
-    "nasa_daily_energy_reference_kj": 12000,
-    "nasa_daily_energy_reference_kcal": 2870,
     "bone_loss_full_attenuation_exercise_h_per_day": 2.0,
     "solar_storm_dose_msv_default": 50,
-    "solar_storm_dose_msv_range": [10, 500]
+    "solar_storm_dose_msv_range": [
+      10,
+      500
+    ]
   },
   "assumptions": {
     "next_resupply_in_days": "Demo assumption, not a NASA value: days until the next scheduled cargo for each context (Mars 380, Moon 120, ISS 45, transit none). Chosen so the seeded ~412-day stock covers the Mars window with a small margin.",
     "solar_storm_dose_msv": "Assumption: a solar particle event adds a one-off dose, configurable 10-500 mSv (default 50 mSv, the order of magnitude of a sheltered crew in a large event).",
     "bone_loss_attenuation": "Assumption: resistive exercise attenuates in-flight bone loss linearly, up to 50% at >= 2 h/day.",
-    "kcal_per_kg": "Approximation: 7700 kcal of cumulative energy imbalance per kg of body-mass change."
+    "kcal_per_kg": "Approximation: 7700 kcal of cumulative energy imbalance per kg of body-mass change. A common rule of thumb, not a NASA value.",
+    "iss_radiation_msv_day": "Assumption: 0.523 mSv/day in low Earth orbit. No primary source was found for this exact figure; it is an order of magnitude only."
   },
-  "notes": "Every value here is a NASA-informed reference or an explicitly flagged assumption, not a measured constant for this specific (fictional) crew. See PROMPT_FABLE.md §9 for sources; official NASA challenge resources for this cycle are expected 2026-11-13 and should be cross-checked then (docs/nasa-resources.md)."
+  "notes": "Every value here is either a sourced reference (see \"sources\") or an explicitly flagged assumption (see \"assumptions\"). None is a measured constant for this fictional crew. Rules chosen for the demo live in demo_rules.json, not here.",
+  "sources": {
+    "status": "Checked on 14 Nov 2026 from press releases, agency pages and abstracts, not from the full text of the papers. Details: docs/sources/2026-11-14-counter-review-claude.md, section 4.",
+    "five_hazards": "NASA Human Research Program, 5 Hazards of Human Spaceflight - https://www.nasa.gov/hrp/hazards (official resource of the challenge)",
+    "radiation_career_limit_msv": "NASA-STD-3001, career limit of 600 mSv effective dose; NASA OCHMO radiation protection technical brief - https://www.nasa.gov/wp-content/uploads/2023/03/radiation-protection-technical-brief-ochmo.pdf",
+    "mars_surface_dose": "Hassler et al., Science 343 (2014), doi:10.1126/science.1244797; SwRI release gives 0.67 mSv/day - https://www.swri.org/press-release/swri-scientists-publish-first-radiation-measurements-surface-mars",
+    "mars_transit_dose": "Zeitlin et al., Science 340 (2013); 1.8 mSv/day in the SwRI release, 1.84 in other reports",
+    "moon_surface_dose": "Zhang et al., Science Advances 6 (2020), doi:10.1126/sciadv.aaz1334 - Chang'e-4 (CNSA), not NASA",
+    "bone_loss_pct_per_month_in_flight": "About 1-1.5 % per month on average, more at the hip. Canadian Space Agency, TBone studies - https://www.asc-csa.gc.ca/eng/sciences/tbone.asp ; review: https://pmc.ncbi.nlm.nih.gov/articles/PMC7200725",
+    "mars_delay": "About 3-22 min one way, up to 44 min round trip. NASA, Communication Delays, Disruptions, and Blackouts for Crewed Mars Missions (NTRS 20220013418)"
+  }
 }

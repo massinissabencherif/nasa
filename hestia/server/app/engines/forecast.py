@@ -193,18 +193,19 @@ def assumptions(inputs: ForecastInputs | None = None) -> list[dict]:
         {"kind": "method", "label": "Simulator, not a trained model",
          "text": "Deterministic day-by-day arithmetic on the reference values below. It shows the "
                  "direction and order of magnitude of a decision, not a prediction for a real person."},
-        {"kind": "nasa", "label": "Energy need",
+        {"kind": "assumption", "label": "Energy need",
          "text": "Mifflin-St Jeor BMR x activity factor per crew member, recomputed as weight changes. "
-                 f"NASA reference for comparison: about {values['nasa_daily_energy_reference_kj']} kJ/day "
-                 f"({values['nasa_daily_energy_reference_kcal']} kcal)."},
+                 "A ground formula, not validated for spaceflight."},
         {"kind": "assumption", "label": "Weight", "text": notes["kcal_per_kg"]},
         {"kind": "nasa", "label": "Bone mass",
-         "text": f"In-flight loss of {low}-{high} %/month (midpoint used), applied to every context "
-                 "including partial gravity, which is conservative."},
+         "text": f"In-flight loss of about {low}-{high} %/month on average (midpoint used; the hip loses "
+                 "more), applied to every context including partial gravity, which is conservative."},
         {"kind": "assumption", "label": "Exercise effect", "text": notes["bone_loss_attenuation"]},
         {"kind": "nasa", "label": "Radiation",
          "text": f"Daily dose of the active context against the {values['radiation_career_limit_msv']} mSv "
-                 "career limit (Mars surface 0.67 mSv/day from Curiosity RAD, transit 1.8, Moon 1.369, ISS 0.523)."},
+                 "career limit of NASA-STD-3001. Mars surface 0.67 and transit 1.8 mSv/day: Curiosity RAD. "
+                 "Moon 1.369 mSv/day: Chang'e-4 lander (not a NASA measurement)."},
+        {"kind": "assumption", "label": "ISS dose rate", "text": notes["iss_radiation_msv_day"]},
         {"kind": "assumption", "label": "Solar storm", "text": notes["solar_storm_dose_msv"]},
         {"kind": "assumption", "label": "Resupply", "text": notes["next_resupply_in_days"]
          + " A cargo restores the stock to its initial level."},

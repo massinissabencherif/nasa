@@ -50,7 +50,7 @@ export function Meal() {
           <div style={{ width: `${progress}%`, height: '100%', background: 'var(--accent)', transition: 'width 400ms ease' }} />
         </div>
         <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginTop: 8 }}>
-          Your need: Mifflin-St Jeor × activity factor. NASA reference for comparison: about {proposal.nasa_reference_kcal} kcal/day.
+          Your need: Mifflin-St Jeor × activity factor, a ground formula used as an estimate.
         </p>
       </Panel>
 
@@ -104,7 +104,7 @@ export function Meal() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{item.name}</p>
                   <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>
-                    {item.kcal} kcal · P {item.protein_g} g · C {item.carbs_g} g · F {item.fat_g} g · {item.available_count} on the shelf
+                    {item.kcal} kcal · P {item.protein_g} g · C {item.carbs_g} g · F {item.fat_g} g · {item.available_portions} portions in stock
                   </p>
                 </div>
                 <Button onClick={() => eat([item.food_item_id], item.food_item_id)} disabled={eating != null} style={{ padding: '10px 14px' }}>

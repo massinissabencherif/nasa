@@ -95,18 +95,31 @@ def test_confirming_a_slot_corrects_stock_and_feed(client):
     assert client.get("/api/pantry/consumption").json()[0]["qty"] == -2
 
 
-def test_meal_then_scan_is_attributed_not_double_counted(client):
+def test_a_meal_removes_portions_and_a_scan_removes_boxes(client):
     alex = crew_id(client, "Alex Mercer")
     meal = client.get(f"/api/crew/{alex}/meal").json()
     soup = next(i for i in meal["available"] if i["name"] == "Tomato soup can")
     assert meal["suggestion"]
-    for _ in range(3):
+    assert soup["available_count"] == 3 and soup["available_portions"] == 3 * 212
+
+    before = client.get("/api/pantry").json()
+    for _ in range(4):  # four portions out of three boxes of 212: all available
         assert client.post(f"/api/crew/{alex}/meal", json={"food_item_id": soup["food_item_id"]}).status_code == 200
-    assert client.post(f"/api/crew/{alex}/meal", json={"food_item_id": soup["food_item_id"]}).status_code == 400
+    after = client.get("/api/pantry").json()
+    assert before["stock_kcal"] - after["stock_kcal"] == pytest.approx(4 * soup["kcal"])
+    assert before["autonomy_days"] - after["autonomy_days"] < 0.2  # not a whole lot per meal
+    assert after["pending_meals"] == 4
+    assert client.post(
+        f"/api/crew/{alex}/meal", json={"food_item_id": soup["food_item_id"], "qty": 10}
+    ).status_code == 200
+
+    # the scan then sees three boxes gone: a stock event, not somebody's meal
     client.post("/api/pantry/scan", params={"mode": "mock", "variant": "after_removal"})
     soup_events = [e for e in client.get("/api/pantry/consumption").json() if e["food_name"] == "Tomato soup can"]
-    assert sum(e["qty"] for e in soup_events) == -3
-    assert all(e["crew_name"] == "Alex Mercer" for e in soup_events)
+    boxes = [e for e in soup_events if e["unit"] == "box"]
+    assert [(e["qty"], e["crew_name"]) for e in boxes] == [(-3, None)]
+    meals = [e for e in soup_events if e["unit"] == "portion"]
+    assert sum(e["qty"] for e in meals) == -14 and all(e["crew_name"] == "Alex Mercer" for e in meals)
 
 
 def test_gamification_reminders_station_info_and_validation(client):

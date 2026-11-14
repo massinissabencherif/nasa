@@ -1,6 +1,6 @@
 import json
 import threading
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 
 import cv2
@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
 from app.db import engine
-from app.engines.nutrition import autonomy_report, crew_daily_need
+from app.engines.nutrition import autonomy_report, crew_daily_need, is_meal
 from app.models import (
     ConsumptionEvent,
     CrewMember,
@@ -31,7 +31,6 @@ SERVER_DIR = Path(__file__).resolve().parent.parent.parent
 FIXTURES_DIR = SERVER_DIR / "vision" / "fixtures"
 DEFAULT_FIXTURE = FIXTURES_DIR / "shelf_full.png"
 CAPTURES_DIR = SERVER_DIR / "captures"  # git-ignored; webcam frames of live scans
-MEAL_ATTRIBUTION_WINDOW = timedelta(minutes=10)
 
 _scan_lock = threading.Lock()  # one scan at a time: the VLM is the bottleneck
 
@@ -61,10 +60,12 @@ def get_pantry() -> dict:
                 select(InventoryLine).where(InventoryLine.snapshot_id == snapshot.id)
             ).all()
             lines_by_slot = {line.slot_id: line for line in lines}
-            pending_meals = len(
-                session.exec(
+            pending_meals = sum(
+                1
+                for event in session.exec(
                     select(ConsumptionEvent).where(ConsumptionEvent.ts > snapshot.ts)
-                ).all()
+                )
+                if is_meal(event)
             )
 
         need = crew_daily_need(session)
@@ -244,28 +245,12 @@ def scan_pantry(
 
 
 def _record_delta(session: Session, food_item_id: int, delta: int, snapshot_ts: datetime) -> None:
-    """Turn a count change between two scans into a consumption (negative) or
-    restock (positive) event. Units a crew member already logged as a meal in
-    the last 10 minutes are attributed to them, not counted a second time."""
-    if delta == 0:
-        return
-    if delta > 0:
+    """Turn a count change between two scans into a stock event: boxes taken
+    off the shelf (negative) or put back (positive). A box is a whole lot at
+    the demo scale, so it is never attributed to one person's meal: meals are
+    logged in portions by the crew app (demo_rules.json, "meals")."""
+    if delta != 0:
         session.add(ConsumptionEvent(ts=snapshot_ts, food_item_id=food_item_id, qty=delta))
-        return
-    recent_meal_qty = sum(
-        e.qty
-        for e in session.exec(
-            select(ConsumptionEvent).where(
-                ConsumptionEvent.food_item_id == food_item_id,
-                ConsumptionEvent.crew_member_id.is_not(None),
-                ConsumptionEvent.ts >= snapshot_ts - MEAL_ATTRIBUTION_WINDOW,
-                ConsumptionEvent.ts < snapshot_ts,
-            )
-        )
-    )
-    remainder = delta - recent_meal_qty
-    if remainder < 0:
-        session.add(ConsumptionEvent(ts=snapshot_ts, food_item_id=food_item_id, qty=remainder))
 
 
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024
@@ -474,6 +459,8 @@ def get_consumption(limit: int = 30) -> list[dict]:
                 "crew_member_id": e.crew_member_id,
                 "food_name": foods.get(e.food_item_id),
                 "crew_name": crew.get(e.crew_member_id) if e.crew_member_id else None,
+                # a meal is counted in portions, a scan in boxes (= lots at the demo scale)
+                "unit": "portion" if is_meal(e) else "box",
             }
             for e in events
         ]

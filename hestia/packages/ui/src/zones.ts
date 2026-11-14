@@ -41,9 +41,9 @@ export const ZONE_META: Record<ZoneKey, ZoneMeta> = {
     label: 'Eyes (SANS)',
     bodyPart: 'eyes',
     indicators: ['symptom'],
-    function: 'Vision changes linked to Spaceflight-Associated Neuro-ocular Syndrome (SANS).',
-    why: 'Fluid shifts in microgravity can raise pressure around the optic nerve and blur vision over a long mission.',
-    action: 'Log any blurred vision as a symptom and mention it at the next check-in.',
+    function: 'Reported vision changes. Spaceflight-Associated Neuro-ocular Syndrome (SANS) is detected by eye imaging (OCT), not by symptoms: this zone cannot rule it out.',
+    why: 'Fluid shifts in microgravity can swell the optic disc. Most long-duration crew members show some sign of it on imaging, often without noticing a change.',
+    action: 'Log any blurred vision as a symptom, and keep the scheduled eye imaging sessions even when you see well.',
   },
   heart: {
     label: 'Heart',
@@ -57,7 +57,7 @@ export const ZONE_META: Record<ZoneKey, ZoneMeta> = {
     label: 'Bones',
     bodyPart: 'pelvis',
     indicators: ['exercise_streak'],
-    function: 'Resistive-exercise streak — the main defense against bone density loss.',
+    function: 'Adherence to resistive exercise, the main countermeasure against bone density loss. This is not a bone measurement: bone density cannot be measured with this app.',
     why: 'Altered gravity removes the mechanical load bones need; hip and spine density are the most-studied losses in spaceflight.',
     action: 'Log a resistive exercise session today — see Procedure: resistive exercise routine.',
   },
@@ -78,11 +78,11 @@ export const ZONE_META: Record<ZoneKey, ZoneMeta> = {
     action: 'Rest and monitor your temperature. A fever should go to the crew lead right away.',
   },
   skin: {
-    label: 'Skin',
+    label: 'Radiation exposure',
     bodyPart: 'arms',
     indicators: ['radiation_pct_of_career_limit'],
-    function: 'Cumulative radiation dose versus the 600 mSv career limit.',
-    why: 'Radiation is one of the five HRP hazards; skin and underlying tissue absorb dose over the whole mission.',
+    function: 'Cumulative whole-body radiation dose versus the 600 mSv career limit (NASA-STD-3001). Shown on the arms for lack of a better place: the dose concerns the whole body.',
+    why: 'Space radiation is one of the five HRP hazards. The career limit exists to cap the added risk of cancer; radiation can also affect the central nervous system.',
     action: 'No same-day action — this accumulates over the mission. Track it and plan shelter time during solar events.',
   },
   digestive_nutrition: {
@@ -90,7 +90,7 @@ export const ZONE_META: Record<ZoneKey, ZoneMeta> = {
     bodyPart: 'abdomen',
     indicators: ['weight_change_pct', 'glucose', 'symptom'],
     function: 'Weight trend and glucose versus your energy need from the pantry.',
-    why: 'Insufficient nutrition is one of the five HRP effects, and it shows up first as a weight trend.',
+    why: 'Inadequate nutrition is one of the health problems of long missions, and it shows up first as a weight trend.',
     action: 'Check the Meal screen — you may be under your daily kcal need.',
   },
 };
@@ -117,7 +117,7 @@ export function indicatorLabel(indicator: string): string {
 /** Risk text shown in the zone panel, adapted to the active mission context. */
 export const CONTEXT_ZONE_NOTES: Record<string, Partial<Record<ZoneKey, string>>> = {
   mars_base: {
-    brain_morale: 'Mars base: a reply from Earth takes 40 min round trip. The crew is its own support.',
+    brain_morale: 'Mars base: a reply from Earth takes up to 44 min round trip. The crew is its own support.',
     bones: 'Mars gravity is 0.38 g: partial loading, countermeasures still required.',
     skin: 'Mars surface: about 0.67 mSv/day (Curiosity RAD).',
     digestive_nutrition: 'Mars base: next cargo is months away, every ration counts.',
@@ -131,12 +131,12 @@ export const CONTEXT_ZONE_NOTES: Record<string, Partial<Record<ZoneKey, string>>
   },
   moon_base: {
     bones: 'Moon gravity is 0.16 g: very little loading, keep the resistive routine.',
-    skin: 'Lunar surface: about 1.37 mSv/day, no atmosphere or magnetic field.',
+    skin: "Lunar surface: about 1.37 mSv/day (Chang'e-4 lander), no atmosphere or magnetic field.",
     immunity: 'Lunar dust is abrasive and irritant: watch airways and eyes after EVAs.',
   },
   iss: {
     eyes_sans: 'ISS microgravity: SANS has been observed on long-duration crews.',
-    bones: 'ISS microgravity: 1-1.5 % bone loss per month without countermeasures.',
-    skin: 'Low Earth orbit: about 0.52 mSv/day, partly shielded by the magnetosphere.',
+    bones: 'ISS microgravity: about 1-1.5 % bone loss per month on average.',
+    skin: 'Low Earth orbit: about 0.5 mSv/day (assumption), partly shielded by the magnetosphere.',
   },
 };

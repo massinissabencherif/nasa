@@ -45,6 +45,22 @@ def _latest_snapshot(session: Session) -> InventorySnapshot | None:
     ).first()
 
 
+def is_meal(event: ConsumptionEvent) -> bool:
+    """A consumption event logged by a crew member is a meal, counted in real
+    portions. An event without a crew member comes from a shelf scan and is
+    counted in boxes, i.e. whole lots at the demo scale."""
+    return event.crew_member_id is not None
+
+
+def pending_portions(session: Session, snapshot: InventorySnapshot) -> dict[int, int]:
+    """Portions eaten per food item since the given snapshot."""
+    eaten: dict[int, int] = {}
+    for event in session.exec(select(ConsumptionEvent).where(ConsumptionEvent.ts > snapshot.ts)):
+        if is_meal(event):
+            eaten[event.food_item_id] = eaten.get(event.food_item_id, 0) - event.qty
+    return eaten
+
+
 def current_stock(session: Session) -> StockTotals:
     snapshot = _latest_snapshot(session)
     if snapshot is None:
@@ -55,14 +71,10 @@ def current_stock(session: Session) -> StockTotals:
     ).all()
     slots = {s.id: s for s in session.exec(select(ShelfSlot)).all()}
 
-    # Units logged between this snapshot and now (e.g. a crew meal) aren't
-    # physically confirmed by a scan yet, but should still move the autonomy
-    # number — the next scan will reconcile the real count.
-    pending_delta: dict[int, int] = {}
-    for event in session.exec(
-        select(ConsumptionEvent).where(ConsumptionEvent.ts > snapshot.ts)
-    ):
-        pending_delta[event.food_item_id] = pending_delta.get(event.food_item_id, 0) + event.qty
+    # Meals logged since this snapshot are real portions eaten out of the
+    # lots the snapshot counted (demo_rules.json, "meals"). They move the
+    # autonomy number by what was actually eaten, not by a whole lot.
+    portions_eaten = pending_portions(session, snapshot)
 
     kcal = protein = carbs = fat = 0.0
     min_expiry: int | None = None
@@ -70,11 +82,10 @@ def current_stock(session: Session) -> StockTotals:
         slot = slots.get(line.slot_id)
         if slot is None or slot.food_item_id is None:
             continue
-        count = line.count + pending_delta.get(slot.food_item_id, 0)
-        if count <= 0:
-            continue
         food = session.get(FoodItem, slot.food_item_id)
-        lot_count = count * food.units_per_lot
+        lot_count = line.count * food.units_per_lot - portions_eaten.pop(slot.food_item_id, 0)
+        if lot_count <= 0:
+            continue
         kcal += lot_count * food.kcal
         protein += lot_count * food.protein_g
         carbs += lot_count * food.carbs_g
@@ -108,13 +119,14 @@ class AvailableItem:
     protein_g: float
     carbs_g: float
     fat_g: float
-    available_count: int
+    available_count: int      # boxes seen on the shelf by the last scan
+    available_portions: int   # portions left in those boxes (demo scale)
 
 
 def available_items(session: Session) -> list[AvailableItem]:
-    """Real per-unit nutrition (not the units_per_lot demo scale) for whatever
-    the latest scan still shows in stock — used for individual meal proposals,
-    as opposed to the whole-crew autonomy numbers above."""
+    """Per-portion nutrition for whatever the latest scan still shows in
+    stock — used for individual meal proposals, as opposed to the whole-crew
+    autonomy numbers above."""
     snapshot = _latest_snapshot(session)
     if snapshot is None:
         return []
@@ -122,19 +134,18 @@ def available_items(session: Session) -> list[AvailableItem]:
         select(InventoryLine).where(InventoryLine.snapshot_id == snapshot.id)
     ).all()
     slots = {s.id: s for s in session.exec(select(ShelfSlot)).all()}
-    pending_delta: dict[int, int] = {}
-    for event in session.exec(select(ConsumptionEvent).where(ConsumptionEvent.ts > snapshot.ts)):
-        pending_delta[event.food_item_id] = pending_delta.get(event.food_item_id, 0) + event.qty
+    portions_eaten = pending_portions(session, snapshot)
 
     out = []
     for line in lines:
         slot = slots.get(line.slot_id)
-        if slot is None or slot.food_item_id is None:
-            continue
-        count = line.count + pending_delta.get(slot.food_item_id, 0)
-        if count <= 0:
+        if slot is None or slot.food_item_id is None or line.count <= 0:
             continue
         food = session.get(FoodItem, slot.food_item_id)
+        portions = line.count * food.units_per_lot - portions_eaten.get(food.id, 0)
+        if portions <= 0:
+            continue
+        count = line.count
         out.append(
             AvailableItem(
                 food_item_id=food.id,
@@ -144,6 +155,7 @@ def available_items(session: Session) -> list[AvailableItem]:
                 carbs_g=food.carbs_g,
                 fat_g=food.fat_g,
                 available_count=count,
+                available_portions=portions,
             )
         )
     return out

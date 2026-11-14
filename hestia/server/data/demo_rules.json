@@ -1,0 +1,25 @@
+{
+  "note": "Rules chosen by the team for the demonstration. They are NOT medical protocols, NOT NASA flight rules and NOT scientific references. Scientific reference values are in nasa_reference.json; indicative colour bands are in thresholds.json.",
+  "earth_report": {
+    "rule": "A report is queued for Earth when at least one indicator is in its critical band, or when two or more indicators are red at the same time. A single red reading outside a critical band stays with the crew.",
+    "min_red_indicators": 2,
+    "critical": {
+      "systolic_bp": [{ "gte": 180 }, { "lt": 80 }],
+      "diastolic_bp": [{ "gte": 120 }, { "lt": 50 }],
+      "heart_rate": [{ "gt": 130 }, { "lt": 40 }],
+      "temperature": [{ "gte": 39.5 }, { "lt": 35.0 }],
+      "glucose": [{ "gte": 250 }, { "lt": 55 }],
+      "radiation_pct_of_career_limit": [{ "gt": 100 }]
+    }
+  },
+  "exercise": {
+    "rule": "The exercise minutes of a check-in are the total for that calendar day (UTC) so far. The latest check-in of a day replaces the earlier ones. A streak counts days, not check-ins."
+  },
+  "freshness": {
+    "rule": "A zone whose most recent reading is older than this is shown as 'no recent data', not as its last colour. The cumulative radiation dose is exempt: it is a running total, not a reading taken at check-in.",
+    "stale_after_hours": 72
+  },
+  "meals": {
+    "rule": "A logged meal removes real portions from the stock. A box on the demo shelf stands for a whole storage lot (food_item.units_per_lot portions); only a shelf scan adds or removes lots."
+  }
+}

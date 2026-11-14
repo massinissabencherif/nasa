@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, IconCaution, IconCheck, IconCheckin, IconCritical, indicatorLabel, Panel, SilhouetteBody, StatusBadge, worstLevel, ZoneDetailPanel } from '@hestia/ui';
+import { Button, IconCaution, IconCheck, IconCheckin, IconCritical, indicatorLabel, Panel, SilhouetteBody, StatusBadge, unknownCount, worstLevel, ZoneDetailPanel } from '@hestia/ui';
 import type { ZoneKey } from '@hestia/ui';
 import { useApi } from '../lib/ApiProvider';
 import {
@@ -32,6 +32,7 @@ export function Home() {
   const reds = openAlerts.filter((a) => a.level === 'red');
   const oranges = openAlerts.filter((a) => a.level === 'orange');
   const overall = status ? worstLevel(Object.values(status).map((z) => z.level)) : null;
+  const missing = status ? unknownCount(Object.values(status).map((z) => z.level)) : 0;
   const checkinDone = reminders.find((r) => r.key === 'measurements')?.done ?? false;
 
   return (
@@ -105,7 +106,13 @@ export function Home() {
           <div style={{ display: 'grid', gap: 6 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
               <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-                {overall === 'green' ? 'All zones nominal' : 'Some zones need attention'}
+                {overall === 'unknown'
+                  ? 'No recent data: do a check-in'
+                  : overall === 'green'
+                    ? missing === 0
+                      ? 'All zones nominal'
+                      : `Nominal where measured, ${missing} zone${missing > 1 ? 's' : ''} without recent data`
+                    : 'Some zones need attention'}
               </span>
               {overall && <StatusBadge level={overall} />}
             </div>

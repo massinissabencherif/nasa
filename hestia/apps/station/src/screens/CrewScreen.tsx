@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Panel, SilhouetteBody, StatusBadge, ZoneDetailPanel, ZONE_META, ZONES, worstLevel } from '@hestia/ui';
-import type { Level } from '@hestia/api-client';
+import type { ZoneLevel } from '@hestia/api-client';
 import type { ZoneKey } from '@hestia/ui';
 import { useCrew, useCrewStatuses, useStation, useThresholds } from '../lib/hooks';
 
-const ORDER: Record<Level, number> = { red: 0, orange: 1, green: 2 };
+const ORDER: Record<ZoneLevel, number> = { red: 0, orange: 1, unknown: 2, green: 3 };
 
 export function CrewScreen() {
   const { context } = useStation();
@@ -35,7 +35,7 @@ export function CrewScreen() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12 }}>
         {crew.map((member) => {
           const status = statuses[member.id];
-          const overall: Level = status ? worstLevel(Object.values(status).map((z) => z.level)) : 'green';
+          const overall: ZoneLevel = status ? worstLevel(Object.values(status).map((z) => z.level)) : 'unknown';
           const attention = status ? ZONES.filter((z) => status[z].level !== 'green') : [];
           const isOpen = expanded === member.id;
           return (

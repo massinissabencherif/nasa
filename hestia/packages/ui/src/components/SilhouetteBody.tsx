@@ -1,14 +1,16 @@
 import type { KeyboardEvent } from 'react';
-import type { CrewStatus, Level } from '@hestia/api-client';
+import type { CrewStatus, ZoneLevel } from '@hestia/api-client';
 import { ZONE_META, type ZoneKey } from '../zones';
 
-const LEVEL_COLOR: Record<Level, string> = {
+const LEVEL_COLOR: Record<ZoneLevel, string> = {
   green: 'var(--green)',
   orange: 'var(--orange)',
   red: 'var(--red)',
+  unknown: 'var(--text-faint)',
 };
-const LEVEL_FILL_OPACITY: Record<Level, number> = { green: 0.3, orange: 0.8, red: 0.88 };
-const LEVEL_WORD: Record<Level, string> = { green: 'nominal', orange: 'caution', red: 'critical' };
+const LEVEL_FILL_OPACITY: Record<ZoneLevel, number> = { green: 0.3, orange: 0.8, red: 0.88, unknown: 0.12 };
+const LEVEL_WORD: Record<ZoneLevel, string> = { green: 'nominal', orange: 'caution', red: 'critical', unknown: 'no data' };
+const LEVEL_MARK: Record<ZoneLevel, string> = { green: '✓', orange: '!', red: '✕', unknown: '–' };
 
 // Hand-drawn front view, 200 x 440 units. Each zone is one or two closed paths.
 const ZONE_PATHS: Record<ZoneKey, string[]> = {
@@ -63,8 +65,8 @@ const BADGES: Record<ZoneKey, [number, number]> = {
   muscles: [84, 320],
 };
 
-function Badge({ x, y, level }: { x: number; y: number; level: Level }) {
-  if (level === 'green') return null;
+function Badge({ x, y, level }: { x: number; y: number; level: ZoneLevel }) {
+  if (level === 'green' || level === 'unknown') return null;
   const color = LEVEL_COLOR[level];
   return (
     <g transform={`translate(${x},${y})`} pointerEvents="none">
@@ -99,7 +101,8 @@ export function SilhouetteBody({
   showLabels?: boolean;
   width?: number;
 }) {
-  const levelFor = (zone: ZoneKey): Level => status?.[zone]?.level ?? 'green';
+  // nothing loaded yet is "unknown", never green
+  const levelFor = (zone: ZoneKey): ZoneLevel => status?.[zone]?.level ?? 'unknown';
   const clickable = interactive && Boolean(onSelectZone);
 
   function handlers(zone: ZoneKey) {
@@ -155,6 +158,7 @@ export function SilhouetteBody({
                 fill={LEVEL_COLOR[level]}
                 fillOpacity={LEVEL_FILL_OPACITY[level]}
                 stroke={selected ? 'var(--text)' : LEVEL_COLOR[level]}
+                strokeDasharray={level === 'unknown' ? '3 3' : undefined}
                 strokeWidth={selected ? 2.4 : 1.2}
                 strokeLinejoin="round"
               />
@@ -202,7 +206,7 @@ export function SilhouetteBody({
                 fill={LEVEL_COLOR[level]}
                 fontFamily="var(--font-sans)"
               >
-                {level === 'green' ? '✓' : level === 'orange' ? '!' : '✕'} {LEVEL_WORD[level]}
+                {LEVEL_MARK[level]} {LEVEL_WORD[level]}
               </text>
             </g>
           );

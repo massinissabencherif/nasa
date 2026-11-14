@@ -35,6 +35,7 @@
   },
   "glucose": {
     "unit": "mg/dL",
+    "assumption": "bands are for a fasting reading; after a meal a higher value is expected",
     "rules": [
       { "level": "red", "when": { "gte": 126 } },
       { "level": "red", "when": { "lt": 55 } },

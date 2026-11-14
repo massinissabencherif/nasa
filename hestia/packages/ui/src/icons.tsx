@@ -92,6 +92,15 @@ export function IconCaution(props: IconProps) {
   );
 }
 
+export function IconUnknown(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="10" cy="10" r="7.2" strokeDasharray="2.6 2.6" />
+      <path d="M7.4 10h5.2" />
+    </svg>
+  );
+}
+
 export function IconCritical(props: IconProps) {
   return (
     <svg {...base(props)}>
