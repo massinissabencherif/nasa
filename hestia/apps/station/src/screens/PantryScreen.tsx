@@ -290,6 +290,7 @@ export function PantryScreen() {
             pantry={pantry}
             context={context}
             onSettings={() => navigate('/settings')}
+            onSimulator={() => navigate('/forecasts')}
             onDelay={(mission) => {
               setPlannedMission(mission);
               setRationDays((mission?.next_resupply_in_days ?? 30) + 60);

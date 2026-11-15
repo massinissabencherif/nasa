@@ -99,6 +99,7 @@ def simulate(inputs: ForecastInputs) -> ForecastResult:
     daily_bone_factor = (1 - monthly_bone_loss / 100) ** (1 / 30)
 
     stockout_day: int | None = None
+    short_days = 0  # days on which the planned ration could not be served in full
     limit_day: int | None = None
     step = max(1, days // MAX_POINTS)
     series: list[dict] = []
@@ -123,8 +124,10 @@ def simulate(inputs: ForecastInputs) -> ForecastResult:
         planned = crew_need * ration
         served = min(planned, stock)
         stock -= served
-        if stock <= 0 and stockout_day is None and served < planned:
-            stockout_day = day
+        if served < planned:
+            short_days += 1
+            if stockout_day is None:
+                stockout_day = day
         served_share = served / planned if planned > 0 else 0.0
 
         for member in inputs.crew:
@@ -164,10 +167,8 @@ def simulate(inputs: ForecastInputs) -> ForecastResult:
         "autonomy_days_at_ration": round(initial_stock / (crew_need * ration), 1) if crew_need * ration else None,
         "resupply_day": resupply_day,
         "stockout_day": stockout_day,
-        "days_without_food": (
-            max(0, (horizon if resupply_day is not None and resupply_day <= days else days) - stockout_day)
-            if stockout_day is not None else 0
-        ),
+        # counted day by day, so a second shortage after the cargo is not lost
+        "days_without_food": short_days,
         "required_ration_pct": round(need_pct, 1),
         "required_ration_below_floor": need_pct < RATION_SAFETY_FLOOR_PCT,
         "ration_below_floor": inputs.ration_pct < RATION_SAFETY_FLOOR_PCT,

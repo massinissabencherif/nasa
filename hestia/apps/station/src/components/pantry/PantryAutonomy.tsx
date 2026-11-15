@@ -224,6 +224,7 @@ export function PantryAutonomy(
   props: Parameters<typeof MissionProjection>[0] & {
     onSettings: () => void;
     onDelay: (context: MissionContext | null) => void;
+    onSimulator: () => void;
   },
 ) {
   const [projection, setProjection] = useState<MissionContext | null>(null);
@@ -311,8 +312,8 @@ export function PantryAutonomy(
             </Button>
           )}
         </div>
-        <Button icon={<IconCargo size={18} />} onClick={() => props.onDelay(props.context)}>
-          {t('What if the next supply is late?', 'Et si le ravitaillement était en retard ?')}
+        <Button icon={<IconCargo size={18} />} onClick={props.onSimulator}>
+          {t('Management simulator', 'Simulateur de gestion')}
         </Button>
         <Button variant="ghost" size="sm" onClick={props.onSettings}>
           {t('Change mission in Settings', 'Changer de mission dans les Réglages')}

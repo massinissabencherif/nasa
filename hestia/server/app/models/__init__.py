@@ -7,6 +7,7 @@ from .measurement import Measurement
 from .mission import MissionContext
 from .pantry import ConsumptionEvent, InventoryLine, InventorySnapshot, ShelfSlot
 from .reaction import ReactionSession, ReactionTrial
+from .simulation import SimulationReport
 
 __all__ = [
     "Alert",
@@ -22,4 +23,5 @@ __all__ = [
     "ShelfSlot",
     "ReactionSession",
     "ReactionTrial",
+    "SimulationReport",
 ]

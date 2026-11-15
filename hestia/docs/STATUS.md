@@ -4,6 +4,34 @@ Last update: 15 Nov 2026. This file says what
 works, how it was checked, and what is still open. Decisions are in
 [decisions.md](decisions.md).
 
+## 15 Nov — management simulator (Massi, branch `feat/management-simulator`)
+
+- The What-if simulator becomes the **Management simulator**: five confirmed
+  steps (mission and horizon, food and cargo delay, ration, exercise,
+  radiation event), each pre-filled from today's mission and stock, then a
+  saved report. Reports are frozen (`SimulationReport` table, additive) and
+  listed newest first; "Change" on a report reopens the steps and writes a
+  new report. The Pantry button now reads "Management simulator" and opens it.
+- Fix: `days_without_food` is counted day by day; a second shortage after the
+  cargo was reported as 0 (test added).
+- Run on Massi's Mac: 101 backend tests, 11 station tests, both type checks,
+  `make check-offline`; report created through the API on a throwaway DB.
+- UI polish (light, `hestia-ui-polish`): page title, step bar on one line
+  with icons, no repeated step title, the needed ration as the key figure,
+  numbers in the reader's locale, chart markers translated, chart headlines
+  in text type. Rendered with headless Chrome (Playwright) at 1440×900 and
+  1024×768, FR and EN: no horizontal overflow, no page error.
+- Report findings are now three large counters (critical, caution, nominal),
+  worst first; a click opens a modal listing that category. **Disagreement
+  with the HESTIA rule** "progressive disclosure is never for a warning":
+  Massi chose that red findings also sit behind a click. The red counter is
+  coloured, iconed, worded and counted, and the food chart below still shows
+  its red badge. David to confirm or revert. Esc closes the modal and focus
+  returns to the counter (checked with headless Chrome).
+- **Not checked:** keyboard path, screen reader, real Tauri window, phone
+  widths (the station sends phones to the crew app). A demo reset drops the
+  report history.
+
 ## Current handover — 15 Nov, before David's sleep
 
 David approved consolidating and pushing the night's work onto `main`, with the

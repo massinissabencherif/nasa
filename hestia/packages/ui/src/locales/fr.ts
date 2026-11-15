@@ -56,6 +56,7 @@ export const french: Record<string, string> = {
   Alerts: 'Alertes',
   'Earth link': 'Liaison Terre',
   'What-if simulator': 'Simulateur',
+  'Management simulator': 'Simulateur de gestion',
   'Mission settings': 'Réglages de la mission',
   'Close details': 'Fermer la fiche',
   Close: 'Fermer',

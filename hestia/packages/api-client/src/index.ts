@@ -304,11 +304,37 @@ export type ForecastSummary = {
 
 export type ForecastAssumption = { kind: 'method' | 'nasa' | 'assumption'; label: string; text: string };
 
+export type ForecastContext = {
+  type: string;
+  label: string;
+  radiation_msv_day: number;
+  next_resupply_in_days: number | null;
+  crew_count: number;
+  stock_kcal: number;
+  current_dose_msv: number;
+};
+
 export type ForecastResponse = {
-  context: { type: string; label: string; radiation_msv_day: number; next_resupply_in_days: number | null };
+  context: ForecastContext;
   inputs: ForecastParams;
   series: ForecastPoint[];
   summary: ForecastSummary;
+  assumptions: ForecastAssumption[];
+};
+
+/** A saved management-simulator run. The list omits context, series and assumptions. */
+export type SimulationReportSummary = {
+  id: number;
+  created_ts: string;
+  context_type: string;
+  context_label: string;
+  inputs: ForecastParams;
+  summary: ForecastSummary;
+};
+
+export type SimulationReport = SimulationReportSummary & {
+  context: ForecastContext;
+  series: ForecastPoint[];
   assumptions: ForecastAssumption[];
 };
 
@@ -557,6 +583,10 @@ export function createApiClient(baseUrl: string) {
 
     forecast: (params: ForecastParams) =>
       request<ForecastResponse>('/api/forecast', { method: 'POST', body: JSON.stringify(params) }),
+    createSimulationReport: (params: ForecastParams) =>
+      request<SimulationReport>('/api/forecast/reports', { method: 'POST', body: JSON.stringify(params) }),
+    listSimulationReports: () => request<SimulationReportSummary[]>('/api/forecast/reports'),
+    getSimulationReport: (id: number) => request<SimulationReport>(`/api/forecast/reports/${id}`),
 
     getStationInfo: () => request<StationInfo>('/api/station/info'),
     crewQrUrl: (secure = false) => `${baseUrl}/api/station/qr.svg?secure=${secure}`,

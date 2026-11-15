@@ -30,7 +30,7 @@ const NAV = [
   { key: 'alerts', label: 'Alerts', icon: IconAlert, path: '/alerts' },
   { key: 'earth', label: 'Earth link', icon: IconEarthLink, path: '/earth' },
   { key: 'pantry', label: 'Pantry', icon: IconPantry, path: '/pantry' },
-  { key: 'forecasts', label: 'What-if simulator', icon: IconForecast, path: '/forecasts' },
+  { key: 'forecasts', label: 'Management simulator', icon: IconForecast, path: '/forecasts' },
   { key: 'settings', label: 'Mission settings', icon: IconSettings, path: '/settings' },
 ];
 

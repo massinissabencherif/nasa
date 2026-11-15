@@ -1,3 +1,5 @@
+import json
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlmodel import Session, select
@@ -6,7 +8,7 @@ from app.db import engine
 from app.engines.forecast import CrewProfile, ForecastInputs, reference, simulate
 from app.engines.nutrition import current_stock, daily_need, rationing_plan
 from app.engines.status import _latest
-from app.models import CrewMember, MissionContext
+from app.models import CrewMember, MissionContext, SimulationReport
 
 router = APIRouter(tags=["forecast"])
 
@@ -65,8 +67,8 @@ class ForecastBody(BaseModel):
     storm_day: int = Field(default=30, ge=1, le=1500)
 
 
-@router.post("/api/forecast")
-def post_forecast(body: ForecastBody) -> dict:
+def run_forecast(body: ForecastBody) -> dict:
+    """Run the simulator on the live mission context, crew and stock."""
     with Session(engine) as session:
         context = session.exec(
             select(MissionContext).where(MissionContext.active == True)  # noqa: E712
@@ -92,6 +94,9 @@ def post_forecast(body: ForecastBody) -> dict:
             "label": context.label,
             "radiation_msv_day": context.radiation_msv_day,
             "next_resupply_in_days": context.next_resupply_in_days,
+            "crew_count": len(crew),
+            "stock_kcal": round(stock.kcal),
+            "current_dose_msv": round(inputs.current_dose_msv, 1),
         }
     result = simulate(inputs)
     return {
@@ -101,6 +106,61 @@ def post_forecast(body: ForecastBody) -> dict:
         "summary": result.summary,
         "assumptions": result.assumptions,
     }
+
+
+@router.post("/api/forecast")
+def post_forecast(body: ForecastBody) -> dict:
+    return run_forecast(body)
+
+
+def _report_out(report: SimulationReport, full: bool) -> dict:
+    result = json.loads(report.result_json)
+    out = {
+        "id": report.id,
+        "created_ts": report.created_ts,
+        "context_type": report.context_type,
+        "context_label": report.context_label,
+        "inputs": json.loads(report.inputs_json),
+        "summary": result["summary"],
+    }
+    if full:
+        out.update(context=result["context"], series=result["series"], assumptions=result["assumptions"])
+    return out
+
+
+@router.post("/api/forecast/reports", status_code=201)
+def create_report(body: ForecastBody) -> dict:
+    """Run the simulator once and keep the result as a report that does not change later."""
+    result = run_forecast(body)
+    report = SimulationReport(
+        context_type=result["context"]["type"],
+        context_label=result["context"]["label"],
+        inputs_json=json.dumps(result["inputs"]),
+        result_json=json.dumps(result),
+    )
+    with Session(engine) as session:
+        session.add(report)
+        session.commit()
+        session.refresh(report)
+        return _report_out(report, full=True)
+
+
+@router.get("/api/forecast/reports")
+def list_reports(limit: int = Query(default=50, ge=1, le=200)) -> list[dict]:
+    with Session(engine) as session:
+        reports = session.exec(
+            select(SimulationReport).order_by(SimulationReport.id.desc()).limit(limit)  # type: ignore[union-attr]
+        ).all()
+        return [_report_out(r, full=False) for r in reports]
+
+
+@router.get("/api/forecast/reports/{report_id}")
+def get_report(report_id: int) -> dict:
+    with Session(engine) as session:
+        report = session.get(SimulationReport, report_id)
+        if report is None:
+            raise HTTPException(404, "report not found")
+        return _report_out(report, full=True)
 
 
 @router.get("/api/reference")
