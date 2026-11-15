@@ -1,7 +1,7 @@
 # NASA Space Apps project page — final draft (15 Nov 2026)
 
 Copy each section into the matching field of the project page. Every statement was checked against the code on
-`main` (8daaa75) on 15 Nov 2026, including Codex's corrections of the same day. Text in _[brackets]_ is still to fill in.
+`main` (8daaa75) on 15 Nov 2026, including Codex's corrections of the same day.
 
 ## Project name
 
@@ -142,7 +142,7 @@ IBM Plex fonts (open licences; full list in `hestia/docs/licenses.md`).
 
 - The code and documentation were written with AI coding assistants (Claude Code by Anthropic, Codex by OpenAI),
   directed, reviewed and tested by the team.
-- AI-generated images: the shelf test photos (generator: _[confirm before submitting]_), the blood-pressure monitor
+- AI-generated images: the shelf test photos (believed to be Google Imagen; the tool was not recorded at the time), the blood-pressure monitor
   illustration and the HESTIA companion (built-in OpenAI image tool; model identifier not returned; provenance in
   `hestia/docs/licenses.md`). They are labelled as AI-generated in the app and in the film. No NASA logo or mark
   appears in them. The unchanged Space Apps event mark and the ESGI mark appear only in student-project credits, with
