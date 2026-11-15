@@ -58,6 +58,8 @@ controls** replay each step of the demo.
 ## 5. Check before you commit
 
 ```bash
+pnpm lint                               # both apps + shared packages; warnings still open
+pnpm format:check                       # Prettier on frontend sources
 make test                               # backend tests
 pnpm --filter crew test                 # reaction timing, sync, check-in flow, newest reading (Node 22.6+)
 pnpm --filter station test              # crew data freshness and readings (Node 22.6+)
@@ -89,12 +91,12 @@ result in `STATUS.md`:
       with mobile data off), and the crew app works on it.
 - [ ] The reaction test with a real finger: the timings look plausible and
       a tap before the signal is a false start and repeats the trial. Verify
-      3 practice + 15 measured trials, background interruption, and a pending
+      1 practice + 5 measured trials, background interruption, and a pending
       result that syncs once after reconnecting. See [reaction-protocol.md](reaction-protocol.md).
 - [ ] The webcam scan of the real shelf, in both modes; note the accuracy.
 - [ ] The grid calibration on the real shelf.
 - [ ] `make demo` with the Tauri window, and one full run of
-      [demo-script.md](demo-script.md) with Wi-Fi off, timed.
+      [demo-script.md](demo-script.md) without internet, timed (retain local Wi-Fi when using a separate phone).
 - [ ] The same run on a second machine, as a spare.
 
 ## If something does not start
@@ -106,3 +108,62 @@ result in `STATUS.md`:
 | The phone cannot reach the station | Firewall prompt not accepted on the Mac, or the network isolates its clients: see [risks.md](risks.md) |
 | `make test` says `uv: command not found` | Install uv, or run `server/.venv/bin/python -m pytest -q` from `server/` if the environment already exists |
 | `pnpm` warns about the Node version | The repository asks for Node 22; Node 20 built both apps on 14 Nov, but use 22 |
+
+Formatting: `pnpm format` applies Prettier to frontend sources. Python formatting/linting and CI are not configured. For a disposable station API preview: `VITE_API_BASE=http://127.0.0.1:8011 pnpm dev:station --port 1421`. Production defaults to localhost:8000.
+
+## 15 Nov camera rehearsal and current preview
+
+From station Pantry: New photo → Mac camera (or import) → frame → Assign products
+to slots → back to photo → analyse → compare/correct → acknowledge → save.
+A 1×3 photo uses A1/A2/A3; 2×2 uses A1/A2/B1/B2. Recheck assignments when changing
+dimensions. Other slots retain their old inventory by default. When the photo
+contains the whole new reserve, select that option before confirming the counts;
+unseen slots then become zero. Do not choose it for a partial update.
+Settings → Presentation tools → Prepare my products shows unused/multi-slot
+assignments and adds products with package nutrition. “Start with empty stock”
+requires confirmation and keeps the catalogue, assignments and health records.
+One type per slot, several identical packages allowed. Use label nutrition for
+real quantities; ×212 and the existing catalogue remain demo assumptions.
+
+For the isolated preview, API 8011 is bound to localhost with a temporary DB; it
+is not a phone server. For a real phone, run the intended station server on the
+local network, accept the firewall prompt, test reachability and camera permission.
+Browser camera needs localhost or HTTPS; a QR alone cannot solve school Wi-Fi
+client isolation. Importing/transferring a photo is the fallback. Do not reset the
+real database or kill unrelated ports to set up the rehearsal.
+
+Record actual counts and elapsed time on several new photos, including empty
+slots, one removal, changed lighting and an unrelated picture. A passed fake-camera
+browser test does not validate physical hardware or vision accuracy. See the
+[latest review](sources/2026-11-15-camera-review-and-pantry.md).
+
+### Rehearsal to hand to Massi
+
+David proposed Massi taking the full Earth-link rehearsal; no message has been
+sent or ownership confirmed externally. Backend tests already cover red alert →
+queued report → 1200 s advance → delivered → 1200 s advance → simulated reply.
+A human still needs to rehearse the actual screen, inspect what was sent, and
+explain the delay/accelerator. This is a local scripted exchange, not contact with
+NASA or a remote medical team. Do this on a disposable/demo database.
+
+At 390px the shared product sheet fits, but the station navigation/header is
+still a desktop shell and overflows. Use the crew app for the phone demonstration;
+a responsive station-shell pass is still open.
+
+### Product values and demo scale (D42)
+
+Settings → Presentation tools → Prepare my products → Products & values → Edit.
+The centred form changes the existing product, keeps counts, and recalculates
+nutrition for meals already linked to it. This prototype has no immutable nutrition
+snapshot per historical meal. Enter values for a whole package, not per 100g.
+
+Adjust multiplier in the same settings section: ×1 uses the catalogue's package
+values, ×212 simulates mission lots, or choose a custom integer. Save explicitly.
+This also changes the available demo meal portions; it does not rewrite counts or
+consumption-event quantities. A full demo reset returns to the seeded default.
+The recorded-package energy excludes scaling and meals after the last photo.
+
+Below 768px the station displays an orientation screen to the crew app, replacing
+the previously documented overflow. The link uses the configured API address;
+a separate phone still requires a reachable local server. It is not an access-control
+mechanism, nor a complete tablet/responsive station redesign.

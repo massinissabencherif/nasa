@@ -1,0 +1,37 @@
+{
+  "checks": [
+    "360 px: mood select/deselect, keyboard symptom toggle/focus, 44 px targets, answers preserved after review and failed save; busy button accepts only one request",
+    "360/390 px: history shares 9 buttons, touch targets hold, no overflow; settings keeps mono address; reduced motion removes transitions",
+    "1280 px: shared panels render in station profile without horizontal overflow"
+  ],
+  "errors": [],
+  "followup": {
+    "result": "Final CSS: check-in/history passed again; settings capture initially timed out waiting for fonts. Targeted retry passes with Space Grotesk/Plex Mono loaded, reduced motion and station screenshot.",
+    "fonts": [
+      [
+        "Space Grotesk",
+        "400"
+      ],
+      [
+        "Space Grotesk",
+        "500"
+      ],
+      [
+        "Space Grotesk",
+        "600"
+      ],
+      [
+        "Space Grotesk",
+        "700"
+      ],
+      [
+        "Plex Mono",
+        "400"
+      ],
+      [
+        "Plex Mono",
+        "500"
+      ]
+    ]
+  }
+}

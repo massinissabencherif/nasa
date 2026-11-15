@@ -1,0 +1,20 @@
+[
+  {
+    "image": "captures/photo-20261115-015648.jpg",
+    "accepted": false,
+    "elapsed_s": 4.02,
+    "error": "This photo cannot be identified as food storage. Retake a clear photo of the shelf; stock is unchanged.",
+    "response": "{ \"scene\": \"unrelated\", \"description\": \"The image shows a logo with the text \\\"Terraskola Cultivons l'excellence\\\" on a dark green background. There are no visible food packages, shelves, or storage trays.\" }",
+    "model": "qwen2.5vl:7b",
+    "load_duration_ns": 23512250
+  },
+  {
+    "image": "vision/fixtures/shelf_full.png",
+    "accepted": true,
+    "elapsed_s": 17.42,
+    "error": null,
+    "response": "{ \"scene\": \"food_storage\", \"description\": \"The image shows a compartmented storage tray with labeled sections (A1 to C4) containing various food items such as canned goods, jars, bags of rice, and sealed containers. The items are neatly arranged and appear to be part of a food storage system, possibly in a space environment given the background view of Earth through a window.\" }",
+    "model": "qwen2.5vl:7b",
+    "load_duration_ns": 22333083
+  }
+]

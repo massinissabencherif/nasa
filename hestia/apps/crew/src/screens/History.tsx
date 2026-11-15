@@ -1,8 +1,9 @@
+import { t, dateLocale, MeasurementIcon } from '@hestia/ui';
 import { newestReading, originLabel } from '../lib/latestReading';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Thresholds } from '@hestia/api-client';
-import { Panel } from '@hestia/ui';
+import { Button, Panel } from '@hestia/ui';
 import { IndicatorChart } from '../components/IndicatorChart';
 import { useApi } from '../lib/ApiProvider';
 import { useMeasurements, useSelectedCrewId } from '../lib/hooks';
@@ -26,7 +27,10 @@ export function History() {
   const [thresholds, setThresholds] = useState<Thresholds | null>(null);
 
   useEffect(() => {
-    api.getThresholds().then(setThresholds).catch(() => {});
+    api
+      .getThresholds()
+      .then(setThresholds)
+      .catch(() => {});
   }, [api]);
 
   const data = useMeasurements(crewId, selected, 30);
@@ -37,50 +41,89 @@ export function History() {
   return (
     <div style={{ padding: 16, display: 'grid', gap: 14 }}>
       <div>
-        <h1 style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>History</h1>
-        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>Bands show the indicative green, orange and red ranges. Each series says where its newest value comes from.</p>
+        <h1 style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>{t('History')}</h1>
+        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
+          {t(
+            'Bands show the indicative green, orange and red ranges. Each series says where its newest value comes from.',
+          )}
+        </p>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
+      <div
+        className="hz-indicator-picker"
+        role="group"
+        aria-label={t('Choose a measurement', 'Choisir une mesure')}
+      >
         {INDICATORS.map((ind) => (
-          <button
+          <Button
             key={ind.key}
+            className="hz-choice"
+            active={selected === ind.key}
             onClick={() => setSelected(ind.key)}
             aria-pressed={selected === ind.key}
-            style={{
-              flexShrink: 0,
-              minHeight: 44,
-              padding: 'var(--space-2) var(--space-4)',
-              borderRadius: 999,
-              border: `1px solid ${selected === ind.key ? 'var(--accent)' : 'var(--border)'}`,
-              background: selected === ind.key ? 'var(--accent-dim)' : 'var(--panel)',
-              color: selected === ind.key ? 'var(--accent)' : 'var(--text-muted)',
-              fontSize: 'var(--text-sm)',
-              fontWeight: selected === ind.key ? 600 : 400,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
           >
-            {ind.label}
-          </button>
+            <MeasurementIcon name={ind.key} size={18} aria-hidden="true" />
+            {t(ind.label)}
+          </Button>
         ))}
       </div>
 
-      <Panel title={`${indicator.label} · last 30 days`}>
-        {selected === 'reaction_ms' && <p className="assessment-muted">Previous five-trial protocol. <Link to="/assessments">Open the new reaction sessions</Link>; the two protocols are not combined.</p>}
+      <Panel title={`${t(indicator.label)} · ${t('last 30 days', '30 derniers jours')}`}>
+        {selected === 'reaction_ms' && (
+          <p className="assessment-muted">
+            {t('Previous five-trial protocol.')}{' '}
+            <Link to="/assessments">{t('Open the new reaction sessions')}</Link>
+            {t('; the two protocols are not combined.')}
+          </p>
+        )}
         <IndicatorChart data={data} threshold={thresholds?.[selected]} unit={indicator.unit} />
         <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', marginTop: 'var(--space-2)' }}>
-          {newest
-            ? <>Newest: <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text)' }}>{newest.value} {indicator.unit}</span> · {new Date(newest.ts.endsWith('Z') ? newest.ts : `${newest.ts}Z`).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} · {originLabel(newest.source)}</>
-            : 'No reading in the last 30 days.'}
+          {newest ? (
+            <>
+              {t('Newest:')}{' '}
+              <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text)' }}>
+                {newest.value} {indicator.unit}
+              </span>{' '}
+              ·{' '}
+              {new Date(newest.ts.endsWith('Z') ? newest.ts : `${newest.ts}Z`).toLocaleString(dateLocale(), {
+                day: 'numeric',
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}{' '}
+              · {t(originLabel(newest.source))}
+            </>
+          ) : (
+            t('No reading in the last 30 days.', 'Aucune mesure au cours des 30 derniers jours.')
+          )}
         </p>
         {selected === 'systolic_bp' && (
           <div style={{ marginTop: 4 }}>
-            <div style={{ display: 'flex', gap: 14, fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: -8 }}>
-              <span><span style={{ color: 'var(--chart-series-1)' }}>●</span> systolic</span>
-              <span><span style={{ color: 'var(--chart-series-2)' }}>●</span> diastolic</span>
+            <div
+              style={{
+                display: 'flex',
+                gap: 14,
+                fontSize: 'var(--text-xs)',
+                color: 'var(--text-muted)',
+                marginBottom: -8,
+              }}
+            >
+              <span>
+                <span style={{ color: 'var(--chart-series-1)' }}>●</span>
+                {t('systolic')}
+              </span>
+              <span>
+                <span style={{ color: 'var(--chart-series-2)' }}>●</span>
+                {t('diastolic')}
+              </span>
             </div>
-            <IndicatorChart data={diastolic} threshold={thresholds?.diastolic_bp} unit="mmHg" color="var(--chart-series-2)" height={140} />
+            <IndicatorChart
+              data={diastolic}
+              threshold={thresholds?.diastolic_bp}
+              unit="mmHg"
+              color="var(--chart-series-2)"
+              height={140}
+            />
           </div>
         )}
       </Panel>

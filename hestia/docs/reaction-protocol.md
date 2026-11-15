@@ -1,6 +1,6 @@
-# Reaction time sessions — reaction-15-v1
+# Reaction time sessions — reaction-5-v1
 
-Decision: D15. This evolves the existing reaction test; it is not a second
+Decisions: D15, shortened by D37. This evolves the existing reaction test; it is not a second
 independent test. Parameters in `server/data/reaction_protocols.json` are
 team choices for this prototype, not a validated NASA or clinical protocol.
 
@@ -10,7 +10,9 @@ Home → **Health assessments**, or **Check-in → Start**. The check-in form
 is kept while the test is open; the session saves separately from that form.
 The brain-zone panel also links to the assessment. There is no extra tab.
 
-Three practice trials are discarded, then fifteen measured trials follow.
+One practice trial is discarded, then five measured trials follow.
+The previous 3 + 15 protocol remains accepted for saved/pending sessions;
+its results and personal references are never mixed with the new version.
 Each waits randomly 2–5 seconds; the visible text changes to “Tap now”.
 Touch, primary mouse press, Space and Enter work. A false start has no
 reaction time and repeats the same trial. After 3 seconds without a response,

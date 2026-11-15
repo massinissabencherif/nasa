@@ -1,0 +1,168 @@
+{
+ "full": {
+  "readings": {
+   "A1": {
+    "rows": 1,
+    "per_row": 3,
+    "count": 3
+   },
+   "A2": {
+    "rows": 1,
+    "per_row": 2,
+    "count": 2
+   },
+   "A3": {
+    "rows": 2,
+    "per_row": 2,
+    "count": 4
+   },
+   "A4": {
+    "rows": 1,
+    "per_row": 0,
+    "count": 0
+   },
+   "B1": {
+    "rows": 1,
+    "per_row": 5,
+    "count": 5
+   },
+   "B2": {
+    "rows": 2,
+    "per_row": 2,
+    "count": 4
+   },
+   "B3": {
+    "rows": 1,
+    "per_row": 3,
+    "count": 3
+   },
+   "B4": {
+    "rows": 1,
+    "per_row": 1,
+    "count": 1
+   },
+   "C1": {
+    "rows": 1,
+    "per_row": 4,
+    "count": 4
+   },
+   "C2": {
+    "rows": 1,
+    "per_row": 0,
+    "count": 0
+   },
+   "C3": {
+    "rows": 2,
+    "per_row": 3,
+    "count": 6
+   },
+   "C4": {
+    "rows": 1,
+    "per_row": 2,
+    "count": 2
+   }
+  },
+  "wrong": {
+   "B2": [
+    {
+     "rows": 2,
+     "per_row": 2,
+     "count": 4
+    },
+    2
+   ],
+   "C3": [
+    {
+     "rows": 2,
+     "per_row": 3,
+     "count": 6
+    },
+    3
+   ]
+  },
+  "s": 113.9
+ },
+ "removed": {
+  "readings": {
+   "A1": {
+    "rows": 0,
+    "per_row": 0,
+    "count": 0
+   },
+   "A2": {
+    "rows": 1,
+    "per_row": 2,
+    "count": 2
+   },
+   "A3": {
+    "rows": 2,
+    "per_row": 2,
+    "count": 4
+   },
+   "A4": {
+    "rows": 1,
+    "per_row": 0,
+    "count": 0
+   },
+   "B1": {
+    "rows": 1,
+    "per_row": 5,
+    "count": 5
+   },
+   "B2": {
+    "rows": 2,
+    "per_row": 2,
+    "count": 4
+   },
+   "B3": {
+    "rows": 1,
+    "per_row": 3,
+    "count": 3
+   },
+   "B4": {
+    "rows": 1,
+    "per_row": 1,
+    "count": 1
+   },
+   "C1": {
+    "rows": 1,
+    "per_row": 4,
+    "count": 4
+   },
+   "C2": {
+    "rows": 1,
+    "per_row": 0,
+    "count": 0
+   },
+   "C3": {
+    "rows": 2,
+    "per_row": 3,
+    "count": 6
+   },
+   "C4": {
+    "rows": 1,
+    "per_row": 2,
+    "count": 2
+   }
+  },
+  "wrong": {
+   "B2": [
+    {
+     "rows": 2,
+     "per_row": 2,
+     "count": 4
+    },
+    2
+   ],
+   "C3": [
+    {
+     "rows": 2,
+     "per_row": 3,
+     "count": 6
+    },
+    3
+   ]
+  },
+  "s": 24.3
+ }
+}

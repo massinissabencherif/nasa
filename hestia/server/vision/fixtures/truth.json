@@ -1,0 +1,38 @@
+{
+ "shelf_full.png": {
+  "split": "tune",
+  "note": "AI-generated; counted by eye on 15 Nov 2026",
+  "counts": {
+   "A1": 3,
+   "A2": 2,
+   "A3": 4,
+   "A4": 0,
+   "B1": 5,
+   "B2": 2,
+   "B3": 3,
+   "B4": 1,
+   "C1": 4,
+   "C2": 0,
+   "C3": 3,
+   "C4": 2
+  }
+ },
+ "shelf_after_removal.png": {
+  "split": "tune",
+  "note": "AI-generated; the three A1 cans removed; counted by eye on 15 Nov 2026",
+  "counts": {
+   "A1": 0,
+   "A2": 2,
+   "A3": 4,
+   "A4": 0,
+   "B1": 5,
+   "B2": 2,
+   "B3": 3,
+   "B4": 1,
+   "C1": 4,
+   "C2": 0,
+   "C3": 3,
+   "C4": 2
+  }
+ }
+}

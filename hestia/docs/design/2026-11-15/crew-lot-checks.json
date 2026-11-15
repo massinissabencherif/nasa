@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "Home: 3 visible actions above silhouette, 44 px targets at 360/390; no duplicate reaction card or routine accordions; settings/home navigation",
+    "Heart/brain/eyes/muscles framed above sheet; expansion tracks heart; closing restores scroll/focus; reference table retains exact bounds and full rules; unit help works by keyboard",
+    "Reduced motion uses immediate framing; short landscape screen retains reading space and does not reframe",
+    "History: 9 labelled icons, translated names/origin/dates, no horizontal overflow; EN/FR and credits available",
+    "Real meal on disposable DB: 1 POST under double activation, exact kcal increment and stock deduction, visible receipt; failed save has no success receipt; load error/retry recovers",
+    "Station HESTIA brand link returns to the crew overview",
+    "Follow-up: 18 px reaction icon stays uncompressed at 360/390; simulated second POST failure preserves the first real confirmed meal only, with exact server kcal and an explicit interruption message",
+    "Final polish: ranges and mmHg share one line at 360/390; no top border on body, symptom help, pressure help or general help sheets"
+  ],
+  "errors": []
+}

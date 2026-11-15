@@ -1,0 +1,11 @@
+{
+  "checks": [
+    "Eight resize handles; side pointer and keyboard resize; centre moves; no Move label covers A1/B1",
+    "Mascot loader with elapsed time, reduced motion, visible/focused rejection near Analyse; photo retained",
+    "Review shows only the retained region; whole-reserve option sends explicit replacement with six counted packages (write stubbed)",
+    "Preparation and stock-only reset are in Settings > Presentation tools; custom nutrition fields submitted; cancel does not clear stock; confirm sends one call (writes stubbed)",
+    "Mobile crop and reading method fit 390px; controls keep touch targets",
+    "Real browser timing: one practice then five measured trials complete; new protocol payload; persistence deliberately failed/stubbed"
+  ],
+  "errors": []
+}

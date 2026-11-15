@@ -19,14 +19,25 @@ def load_image(path: str) -> np.ndarray:
     return downscale(img)
 
 
-def capture_from_webcam(camera_index: int = 0) -> np.ndarray:
+BURST_FRAMES = 8
+
+
+def capture_from_webcam(camera_index: int = 0, frames: int = BURST_FRAMES) -> np.ndarray:
+    """Grab a short burst and keep the sharpest frame. A live camera is read
+    as one chosen picture: the model is never called on every video frame."""
+    from .quality import sharpest
+
     cap = cv2.VideoCapture(camera_index)
     try:
         if not cap.isOpened():
             raise RuntimeError(f"could not open camera index {camera_index}")
-        ok, frame = cap.read()
-        if not ok or frame is None:
+        burst = []
+        for _ in range(max(1, frames)):
+            ok, frame = cap.read()
+            if ok and frame is not None:
+                burst.append(frame)
+        if not burst:
             raise RuntimeError(f"could not read a frame from camera index {camera_index}")
-        return downscale(frame)
+        return downscale(sharpest(burst))
     finally:
         cap.release()

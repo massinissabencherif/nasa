@@ -1,0 +1,146 @@
+{
+ "model": [
+  {
+   "name": "qwen2.5vl:7b",
+   "model": "qwen2.5vl:7b",
+   "modified_at": "2026-11-14T23:38:31.984272514+01:00",
+   "size": 5969245856,
+   "digest": "5ced39dfa4bac325dc183dd1e4febaa1c46b3ea28bce48896c8e69c1e79611cc",
+   "details": {
+    "parent_model": "",
+    "format": "gguf",
+    "family": "qwen25vl",
+    "families": [
+     "qwen25vl"
+    ],
+    "parameter_size": "8.3B",
+    "quantization_level": "Q4_K_M",
+    "context_length": 128000,
+    "embedding_length": 3584,
+    "runner": "ggml"
+   },
+   "capabilities": [
+    "completion",
+    "vision"
+   ]
+  }
+ ],
+ "full/baseline/run1": {
+  "counts": {
+   "A1": 3,
+   "A2": 2,
+   "A3": 2,
+   "A4": 0,
+   "B1": 5,
+   "B2": 2,
+   "B3": 3,
+   "B4": 1,
+   "C1": 4,
+   "C2": 0,
+   "C3": 3,
+   "C4": 2
+  },
+  "s": 20.9,
+  "flagged": [
+   "A3"
+  ]
+ },
+ "full/baseline/run2": {
+  "counts": {
+   "A1": 3,
+   "A2": 2,
+   "A3": 2,
+   "A4": 0,
+   "B1": 5,
+   "B2": 2,
+   "B3": 3,
+   "B4": 1,
+   "C1": 4,
+   "C2": 0,
+   "C3": 3,
+   "C4": 2
+  },
+  "s": 4.7,
+  "flagged": [
+   "A3"
+  ]
+ },
+ "full/no-priming": {
+  "counts": {
+   "A1": 3,
+   "A2": 2,
+   "A3": 2,
+   "A4": 1,
+   "B1": 5,
+   "B2": 2,
+   "B3": 3,
+   "B4": 1,
+   "C1": 4,
+   "C2": 0,
+   "C3": 3,
+   "C4": 2
+  },
+  "s": 5.0
+ },
+ "removed/baseline/run1": {
+  "counts": {
+   "A1": 1,
+   "A2": 2,
+   "A3": 2,
+   "A4": 0,
+   "B1": 5,
+   "B2": 2,
+   "B3": 3,
+   "B4": 1,
+   "C1": 4,
+   "C2": 0,
+   "C3": 3,
+   "C4": 2
+  },
+  "s": 13.5,
+  "flagged": [
+   "A3"
+  ]
+ },
+ "removed/baseline/run2": {
+  "counts": {
+   "A1": 1,
+   "A2": 2,
+   "A3": 2,
+   "A4": 0,
+   "B1": 5,
+   "B2": 2,
+   "B3": 3,
+   "B4": 1,
+   "C1": 4,
+   "C2": 0,
+   "C3": 3,
+   "C4": 2
+  },
+  "s": 4.1,
+  "flagged": [
+   "A3"
+  ]
+ },
+ "removed/no-priming": {
+  "counts": {
+   "A1": 0,
+   "A2": 2,
+   "A3": 2,
+   "A4": 1,
+   "B1": 5,
+   "B2": 2,
+   "B3": 3,
+   "B4": 1,
+   "C1": 4,
+   "C2": 0,
+   "C3": 3,
+   "C4": 2
+  },
+  "s": 4.8
+ },
+ "removed/A1-crop-direct": {
+  "answer": "{\"count\": 0}",
+  "s": 9.2
+ }
+}

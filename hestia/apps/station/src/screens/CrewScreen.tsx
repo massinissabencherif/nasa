@@ -1,62 +1,42 @@
-import { useEffect, useRef, useState } from 'react';
-import { Panel, ReactionHistory, SilhouetteBody, StatusBadge, ZoneDetailPanel, ZONE_META, ZONES, worstLevel, measureIcon } from '@hestia/ui';
-import { api } from '../lib/api';
+import { ScienceSources } from '@hestia/ui';
+import { t } from '@hestia/ui';
+import { Link } from 'react-router-dom';
+import { Panel, SilhouetteBody, StatusBadge, ZONE_META, ZONES, worstLevel, measureIcon } from '@hestia/ui';
 import { crewVitals, freshness, FRESHNESS_LABEL } from '../lib/crewVitals';
 import type { ZoneLevel } from '@hestia/api-client';
-import type { ZoneKey } from '@hestia/ui';
-import { useCrew, useCrewStatuses, useStation, useThresholds } from '../lib/hooks';
-
-const ORDER: Record<ZoneLevel, number> = { red: 0, orange: 1, unknown: 2, green: 3 };
+import { useCrew, useCrewStatuses } from '../lib/hooks';
 
 export function CrewScreen() {
-  const { context } = useStation();
   const crew = useCrew();
   const statuses = useCrewStatuses(crew);
-  const thresholds = useThresholds();
-  const [expanded, setExpanded] = useState<number | null>(null);
-  const [selectedZone, setSelectedZone] = useState<ZoneKey | null>(null);
-  const detail = useRef<HTMLDivElement>(null);
-
-  // the opened detail can sit below the fold: bring it into view, without motion if the person asked for none
-  useEffect(() => {
-    if (expanded == null) return;
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    detail.current?.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' });
-  }, [expanded]);
-
-  function toggle(memberId: number) {
-    if (expanded === memberId) {
-      setExpanded(null);
-      setSelectedZone(null);
-      return;
-    }
-    setExpanded(memberId);
-    const status = statuses[memberId];
-    const worstZone = status ? [...ZONES].sort((a, b) => ORDER[status[a].level] - ORDER[status[b].level])[0] : null;
-    setSelectedZone(worstZone);
-  }
-
   return (
     <div style={{ display: 'grid', gap: 12 }}>
       <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-        Four fictional astronauts, simulated data. Each silhouette shows the latest check-in. Open a card, then click a body zone
-        to see what was measured, the hazard behind it and what to do.
+        {t(
+          'Open an astronaut’s profile to review their readings, see what needs attention and follow the relevant steps.',
+        )}
       </p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-3)' }}>
+      <div
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-3)' }}
+      >
         {crew.map((member) => {
           const status = statuses[member.id];
           const fresh = status ? freshness(Object.values(status)) : null;
           const worst: ZoneLevel = status ? worstLevel(Object.values(status).map((z) => z.level)) : 'unknown';
           // one zone (the cumulative dose) never goes stale: it must not make an old board look nominal
-          const overall: ZoneLevel = (fresh === 'stale' || fresh === 'no_data') && worst !== 'red' && worst !== 'orange' ? 'unknown' : worst;
-          const attention = status ? ZONES.filter((z) => status[z].level === 'orange' || status[z].level === 'red') : [];
+          const overall: ZoneLevel =
+            (fresh === 'stale' || fresh === 'no_data') && worst !== 'red' && worst !== 'orange'
+              ? 'unknown'
+              : worst;
+          const attention = status
+            ? ZONES.filter((z) => status[z].level === 'orange' || status[z].level === 'red')
+            : [];
           const vitals = status ? crewVitals(status) : [];
-          const isOpen = expanded === member.id;
           return (
-            <button
+            <Link
               key={member.id}
-              onClick={() => toggle(member.id)}
-              aria-expanded={isOpen}
+              to={`/crew/${member.id}`}
+              className="hz-crew-card"
               style={{
                 display: 'grid',
                 gridTemplateColumns: '112px minmax(0, 1fr)',
@@ -64,7 +44,7 @@ export function CrewScreen() {
                 gap: 'var(--space-5)',
                 padding: 'var(--space-4) var(--space-5)',
                 background: 'var(--panel)',
-                border: `1px solid ${isOpen ? 'var(--accent)' : overall === 'red' ? 'var(--red)' : 'var(--border)'}`,
+                border: `1px solid ${overall === 'red' ? 'var(--red)' : 'var(--border)'}`,
                 borderRadius: 'var(--radius-md)',
                 cursor: 'pointer',
                 color: 'var(--text)',
@@ -73,80 +53,116 @@ export function CrewScreen() {
             >
               <SilhouetteBody status={status ?? null} interactive={false} width={112} />
               <div style={{ display: 'grid', gap: 'var(--space-3)', minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'baseline',
+                    justifyContent: 'space-between',
+                    gap: 'var(--space-2)',
+                  }}
+                >
                   <p style={{ fontSize: 'var(--text-lg)', fontWeight: 600 }}>{member.name}</p>
-                  {status && <StatusBadge level={overall} label={overall === 'unknown' ? (fresh === 'stale' ? 'outdated' : 'no data') : undefined} />}
+                  {status && (
+                    <StatusBadge
+                      level={overall}
+                      label={overall === 'unknown' ? (fresh === 'stale' ? 'outdated' : 'no data') : undefined}
+                    />
+                  )}
                 </div>
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginTop: 'calc(-1 * var(--space-2))' }}>
-                  {member.sex === 'M' ? 'Male' : 'Female'} · {member.age} y · {member.height_cm} cm · {member.weight_kg} kg
+                <p
+                  style={{
+                    fontSize: 'var(--text-xs)',
+                    color: 'var(--text-faint)',
+                    marginTop: 'calc(-1 * var(--space-2))',
+                  }}
+                >
+                  {t(member.sex === 'M' ? 'Male' : 'Female')} · {member.age} {t('y ·')} {member.height_cm}{' '}
+                  {t('cm ·')} {member.weight_kg} {t('kg')}
                 </p>
                 <div style={{ display: 'grid', gap: 'var(--space-1)' }}>
                   {vitals.map((vital) => {
                     const VitalIcon = measureIcon(vital.key);
                     return (
-                    <div
-                      key={vital.label}
-                      style={{ display: 'grid', gridTemplateColumns: '18px minmax(0, 1fr) auto', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-sm)' }}
-                    >
-                      <span
-                        aria-hidden="true"
+                      <div
+                        key={vital.key}
                         style={{
-                          display: 'inline-flex',
-                          color: vital.level === 'red' ? 'var(--red-ink)' : vital.level === 'orange' ? 'var(--orange-ink)' : vital.level ? 'var(--green-ink)' : 'var(--decor)',
+                          display: 'grid',
+                          gridTemplateColumns: '18px minmax(0, 1fr) auto',
+                          alignItems: 'center',
+                          gap: 'var(--space-2)',
+                          fontSize: 'var(--text-sm)',
                         }}
                       >
-                        {VitalIcon && <VitalIcon size={16} />}
-                      </span>
-                      <span style={{ color: 'var(--text-muted)' }}>{vital.label}</span>
-                      <span
-                        style={{
-                          fontFamily: 'var(--font-mono)',
-                          fontVariantNumeric: 'tabular-nums',
-                          color: vital.level === 'red' ? 'var(--red-ink)' : vital.level === 'orange' ? 'var(--orange-ink)' : vital.level ? 'var(--text)' : 'var(--text-faint)',
-                        }}
-                      >
-                        {vital.value}
-                      </span>
-                    </div>
+                        <span
+                          aria-hidden="true"
+                          style={{
+                            display: 'inline-flex',
+                            color:
+                              vital.level === 'red'
+                                ? 'var(--red-ink)'
+                                : vital.level === 'orange'
+                                  ? 'var(--orange-ink)'
+                                  : vital.level
+                                    ? 'var(--green-ink)'
+                                    : 'var(--decor)',
+                          }}
+                        >
+                          {VitalIcon && <VitalIcon size={16} />}
+                        </span>
+                        <span style={{ color: 'var(--text-muted)' }}>{t(vital.label)}</span>
+                        <span
+                          style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontVariantNumeric: 'tabular-nums',
+                            color:
+                              vital.level === 'red'
+                                ? 'var(--red-ink)'
+                                : vital.level === 'orange'
+                                  ? 'var(--orange-ink)'
+                                  : vital.level
+                                    ? 'var(--text)'
+                                    : 'var(--text-faint)',
+                          }}
+                        >
+                          {t(vital.value)}
+                        </span>
+                      </div>
                     );
                   })}
                 </div>
-                <p style={{ fontSize: 'var(--text-xs)', color: attention.length ? 'var(--text)' : 'var(--text-muted)', minHeight: 16 }}>
-                  {attention.length > 0 && `Needs attention: ${attention.map((z) => ZONE_META[z].label).join(', ')} · `}
+                <p
+                  style={{
+                    fontSize: 'var(--text-xs)',
+                    color: attention.length ? 'var(--text)' : 'var(--text-muted)',
+                    minHeight: 16,
+                  }}
+                >
+                  {attention.length > 0 &&
+                    `${t('Needs attention:')} ${attention.map((z) => t(ZONE_META[z].label)).join(', ')} · `}
                   {fresh ? (
-                    <span style={{ color: fresh === 'stale' || fresh === 'no_data' ? 'var(--orange-ink)' : undefined }}>{FRESHNESS_LABEL[fresh]}</span>
+                    <span
+                      style={{
+                        color: fresh === 'stale' || fresh === 'no_data' ? 'var(--orange-ink)' : undefined,
+                      }}
+                    >
+                      {t(FRESHNESS_LABEL[fresh])}
+                    </span>
                   ) : (
-                    'loading'
+                    t('Loading…')
                   )}
                 </p>
               </div>
-            </button>
+            </Link>
           );
         })}
       </div>
 
+      <ScienceSources />
       {crew.length === 0 && (
         <Panel>
-          <p style={{ color: 'var(--text-faint)' }}>Loading the crew…</p>
+          <p style={{ color: 'var(--text-faint)' }}>{t('Loading the crew…')}</p>
         </Panel>
       )}
-
-      {expanded != null && statuses[expanded] && (
-        <div ref={detail} style={{ scrollMarginBottom: 'var(--space-4)' }}>
-        <Panel elevated title={`${crew.find((c) => c.id === expanded)?.name} · body status`}>
-          <div style={{ display: 'grid', gridTemplateColumns: '400px minmax(0, 1fr)', gap: 28 }}>
-            <div style={{ display: 'grid', justifyItems: 'center', alignContent: 'start', gap: 8 }}>
-              <SilhouetteBody status={statuses[expanded]} width={400} showLabels selectedZone={selectedZone} onSelectZone={setSelectedZone} />
-              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>Click a zone or its label</p>
-            </div>
-            {selectedZone && (
-              <ZoneDetailPanel zone={selectedZone} status={statuses[expanded]} thresholds={thresholds} contextType={context?.type} />
-            )}
-          </div>
-        </Panel>
-        </div>
-      )}
-      {expanded != null && <ReactionHistory api={api} crewId={expanded} />}
     </div>
   );
 }

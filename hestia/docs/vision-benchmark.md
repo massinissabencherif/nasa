@@ -6,6 +6,19 @@ Test image: `server/vision/fixtures/shelf_full.png` (AI-generated, 12 slots,
 29 units) and `shelf_after_removal.png` (same image with the three A1 cans
 removed). Ground truth is in `server/data/food_catalogue.json`.
 
+## 15 Nov verification update
+
+Real Ollama pipeline runs reproduced 11/12 (full) and 10/12 (empty A1) for
+whole-image mode; row mode gave 11/12 for both. The initial temporary scoring
+of empty A1 as 2 was wrong; the image shows zero. Raw outputs, corrected scores,
+API/manual-correction evidence and cache/timing limits are in the
+[15 Nov review](sources/2026-11-15-interactions-and-evidence.md).
+No model improvement is claimed. Reproduce with
+`server/.venv/bin/python scripts/verify_vision_fixtures.py` from `hestia/`.
+The UI calls row mode “three-pass scan” and unconfirmed counts “not checked by
+a person”; an unflagged plausible error occurred. Every slot needs human review.
+The older measurements below are historical and not a substitute for a real shelf.
+
 ## What a call costs
 
 Two numbers explain every result below:

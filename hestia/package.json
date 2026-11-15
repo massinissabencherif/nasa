@@ -6,9 +6,17 @@
     "dev:station": "pnpm --filter station dev",
     "dev:crew": "pnpm --filter crew dev",
     "build:station": "pnpm --filter station build",
-    "build:crew": "pnpm --filter crew build"
+    "build:crew": "pnpm --filter crew build",
+    "lint": "oxlint -c .oxlintrc.json apps/crew/src apps/station/src packages/ui/src packages/api-client/src",
+    "format:check": "prettier --check \"apps/*/src/**/*.{ts,tsx,css}\" \"packages/*/src/**/*.{ts,tsx,css}\"",
+    "format": "prettier --write \"apps/*/src/**/*.{ts,tsx,css}\" \"packages/*/src/**/*.{ts,tsx,css}\"",
+    "test:frontend": "pnpm --filter crew test && pnpm --filter station test"
   },
   "engines": {
     "node": ">=22"
+  },
+  "devDependencies": {
+    "oxlint": "1.93.0",
+    "prettier": "3.9.10"
   }
 }

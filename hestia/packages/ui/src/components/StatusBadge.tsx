@@ -1,16 +1,58 @@
+import { t } from '../i18n';
 import type { ZoneLevel } from '@hestia/api-client';
 import { IconCaution, IconCheck, IconCritical, IconUnknown } from '../icons';
 
 // `color` fills shapes and icons; `ink` is the colour of small text on `dim`
 // (lighter for green and red so it reaches 4.5:1; see tokens.css).
-export const LEVEL_META: Record<ZoneLevel, { icon: typeof IconCheck; color: string; ink: string; dim: string; word: string }> = {
-  green: { icon: IconCheck, color: 'var(--green)', ink: 'var(--green-ink)', dim: 'var(--green-dim)', word: 'nominal' },
-  orange: { icon: IconCaution, color: 'var(--orange)', ink: 'var(--orange-ink)', dim: 'var(--orange-dim)', word: 'caution' },
-  red: { icon: IconCritical, color: 'var(--red)', ink: 'var(--red-ink)', dim: 'var(--red-dim)', word: 'critical' },
-  unknown: { icon: IconUnknown, color: 'var(--text-muted)', ink: 'var(--text-muted)', dim: 'var(--panel-raised)', word: 'no data' },
+export const LEVEL_META: Record<
+  ZoneLevel,
+  {
+    icon: typeof IconCheck;
+    color: string;
+    ink: string;
+    dim: string;
+    word: string;
+  }
+> = {
+  green: {
+    icon: IconCheck,
+    color: 'var(--green)',
+    ink: 'var(--green-ink)',
+    dim: 'var(--green-dim)',
+    word: 'nominal',
+  },
+  orange: {
+    icon: IconCaution,
+    color: 'var(--orange)',
+    ink: 'var(--orange-ink)',
+    dim: 'var(--orange-dim)',
+    word: 'caution',
+  },
+  red: {
+    icon: IconCritical,
+    color: 'var(--red)',
+    ink: 'var(--red-ink)',
+    dim: 'var(--red-dim)',
+    word: 'critical',
+  },
+  unknown: {
+    icon: IconUnknown,
+    color: 'var(--text-muted)',
+    ink: 'var(--text-muted)',
+    dim: 'var(--panel-raised)',
+    word: 'no data',
+  },
 };
 
-export function StatusBadge({ level, label, size = 'md' }: { level: ZoneLevel; label?: string; size?: 'sm' | 'md' }) {
+export function StatusBadge({
+  level,
+  label,
+  size = 'md',
+}: {
+  level: ZoneLevel;
+  label?: string;
+  size?: 'sm' | 'md';
+}) {
   const meta = LEVEL_META[level];
   const Icon = meta.icon;
   const pad = size === 'sm' ? '2px 8px 2px 6px' : '3px 10px 3px 7px';
@@ -30,7 +72,7 @@ export function StatusBadge({ level, label, size = 'md' }: { level: ZoneLevel; l
       }}
     >
       <Icon size={size === 'sm' ? 12 : 13} />
-      {label ?? meta.word}
+      {t(label ?? meta.word)}
     </span>
   );
 }

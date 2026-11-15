@@ -1,10 +1,22 @@
 {
-  "current": "reaction-15-v1",
+  "current": "reaction-5-v1",
   "protocols": {
     "reaction-15-v1": {
       "version": "reaction-15-v1",
       "practice_trials": 3,
       "measured_trials": 15,
+      "wait_min_ms": 2000,
+      "wait_max_ms": 5000,
+      "response_timeout_ms": 3000,
+      "feedback_ms": 900,
+      "max_attempts": 128,
+      "reference_sessions": 5,
+      "note": "User-defined performance task, not a validated PVT or a medical assessment. Device latency and distraction affect results. No automatic health colour or alert."
+    },
+    "reaction-5-v1": {
+      "version": "reaction-5-v1",
+      "practice_trials": 1,
+      "measured_trials": 5,
       "wait_min_ms": 2000,
       "wait_max_ms": 5000,
       "response_timeout_ms": 3000,

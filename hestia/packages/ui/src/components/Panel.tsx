@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import type { CSSProperties, ReactNode } from 'react';
 
 export function Panel({
@@ -6,6 +7,7 @@ export function Panel({
   children,
   style,
   bodyStyle,
+  className = '',
   elevated = false,
 }: {
   title?: string;
@@ -15,38 +17,19 @@ export function Panel({
   children: ReactNode;
   style?: CSSProperties;
   bodyStyle?: CSSProperties;
+  className?: string;
 }) {
   return (
-    <section
-      style={{
-        background: 'var(--panel)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-md)',
-        display: 'flex',
-        flexDirection: 'column',
-        minWidth: 0,
-        boxShadow: 'var(--shadow-panel)',
-        ...(elevated ? { background: 'var(--panel-raised)', borderColor: 'var(--text-faint)', boxShadow: 'var(--shadow-detail)' } : {}),
-        ...style,
-      }}
-    >
+    <section className={`hz-panel ${className}`} data-elevated={elevated || undefined} style={style}>
       {title && (
-        <header
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: 'var(--space-3) var(--space-4)',
-            borderBottom: '1px solid var(--border-soft)',
-          }}
-        >
-          <h2 style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--text)' }}>
-            {title}
-          </h2>
+        <header className="hz-panel-header">
+          <h2>{t(title)}</h2>
           {action}
         </header>
       )}
-      <div style={{ padding: 16, flex: 1, minHeight: 0, ...bodyStyle }}>{children}</div>
+      <div className="hz-panel-body" style={bodyStyle}>
+        {children}
+      </div>
     </section>
   );
 }

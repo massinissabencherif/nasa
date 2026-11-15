@@ -68,7 +68,7 @@ export function IconSettings(props: IconProps) {
   return (
     <svg {...base(props)}>
       <circle cx="10" cy="10" r="2.6" />
-      <path d="M10 3.6v1.6M10 14.8v1.6M16.4 10h-1.6M5.2 10H3.6M14.5 5.5l-1.1 1.1M6.6 13.4l-1.1 1.1M14.5 14.5l-1.1-1.1M6.6 6.6L5.5 5.5" />
+      <path d="m8.3 2.4 3.4 0 .5 2.1 1.4.8 2.1-.6 1.7 2.9-1.6 1.5v1.8l1.6 1.5-1.7 2.9-2.1-.6-1.4.8-.5 2.1H8.3l-.5-2.1-1.4-.8-2.1.6-1.7-2.9 1.6-1.5V9.1L2.6 7.6l1.7-2.9 2.1.6 1.4-.8z" />
     </svg>
   );
 }
@@ -115,6 +115,24 @@ export function IconScan(props: IconProps) {
     <svg {...base(props)}>
       <path d="M3 7V4.5A1.5 1.5 0 014.5 3H7M13 3h2.5A1.5 1.5 0 0117 4.5V7M17 13v2.5a1.5 1.5 0 01-1.5 1.5H13M7 17H4.5A1.5 1.5 0 013 15.5V13" />
       <circle cx="10" cy="10" r="2.6" />
+    </svg>
+  );
+}
+
+/** Image import and supply capsule, drawn in HESTIA's instrument family. */
+export function IconPhoto(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <rect x="2.5" y="3" width="15" height="14" rx="2" />
+      <circle cx="7" cy="7.5" r="1.3" />
+      <path d="m3 14 4-4 3 3 3-5 4 6" />
+    </svg>
+  );
+}
+export function IconCargo(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="m6 5 4-3 4 3v10l-4 3-4-3zM6 8h8M6 12h8M3 7v6m14-6v6M2 10h4m8 0h4" />
     </svg>
   );
 }
@@ -221,12 +239,12 @@ export function IconPulse(props: IconProps) {
 }
 
 export function IconGlucose(props: IconProps) {
-  // meter with its screen and button
+  // test strip, meter and separate sample drop remain distinct at small sizes
   return (
     <svg {...base(props)}>
-      <rect x="5.4" y="2.8" width="9.2" height="14.4" rx="2.2" />
-      <rect x="7.6" y="5.2" width="4.8" height="3.4" rx="0.7" />
-      <circle cx="10" cy="12.8" r="1.4" />
+      <rect x="3" y="5" width="9" height="12" rx="2" />
+      <path d="M6 5V2h3v3M5.5 8h4M5.5 10.5h4" />
+      <path d="M16 6c-1.2 1.7-2 2.8-2 3.8a2 2 0 0 0 4 0C18 8.8 17.2 7.7 16 6Z" />
     </svg>
   );
 }
@@ -258,6 +276,35 @@ export function IconSleep(props: IconProps) {
   );
 }
 
+export function IconMood(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M10 2.8c4.1 0 6.4 2.8 6.4 6.7v1c0 3.9-2.3 6.7-6.4 6.7s-6.4-2.8-6.4-6.7v-1c0-3.9 2.3-6.7 6.4-6.7z" />
+      <circle cx="7.2" cy="8.5" r=".8" fill="currentColor" stroke="none" />
+      <circle cx="12.8" cy="8.5" r=".8" fill="currentColor" stroke="none" />
+      <path d="M7.5 12.6h5" />
+    </svg>
+  );
+}
+
+export function IconReaction(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="10" cy="11.4" r="5.9" />
+      <path d="M8 2.7h4M10 2.7v2.8M14.5 6.8l1.8-1.8M15.5 4.2l1.6 1.6M10 8v3.4l-1.9 1.9" />
+    </svg>
+  );
+}
+
+export function IconSymptoms(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <rect x="4.5" y="3" width="11.5" height="14" rx="1.8" />
+      <path d="M3 6h3M3 10h3M3 14h3M8.5 7h4.5M8.5 10h4.5M8.5 13h2.5" />
+    </svg>
+  );
+}
+
 export function IconExercise(props: IconProps) {
   // dumbbell
   return (
@@ -267,20 +314,30 @@ export function IconExercise(props: IconProps) {
   );
 }
 
-/** The icon of a check-in measure, by its key; undefined when it has none. */
+/** Shared measure icons for check-in fields and zone readings. */
+const MEASURE_ICONS: Record<string, ComponentType<IconProps>> = {
+  systolic_bp: IconPressure,
+  diastolic_bp: IconPressure,
+  heart_rate: IconPulse,
+  glucose: IconGlucose,
+  temperature: IconThermometer,
+  weight: IconScale,
+  weight_change_pct: IconScale,
+  mood: IconMood,
+  sleep_h: IconSleep,
+  exercise_min: IconExercise,
+  exercise_streak: IconExercise,
+  reaction_ms: IconReaction,
+  reaction_change_pct: IconReaction,
+  symptom: IconSymptoms,
+  radiation_pct_of_career_limit: IconRadiation,
+};
 export function measureIcon(key: string): ComponentType<IconProps> | undefined {
-  const icons: Record<string, ComponentType<IconProps>> = {
-    systolic_bp: IconPressure,
-    diastolic_bp: IconPressure,
-    heart_rate: IconPulse,
-    glucose: IconGlucose,
-    temperature: IconThermometer,
-    weight: IconScale,
-    sleep_h: IconSleep,
-    exercise_min: IconExercise,
-    reaction_ms: IconClock,
-  };
-  return icons[key];
+  return MEASURE_ICONS[key];
+}
+export function MeasurementIcon({ name, ...props }: IconProps & { name: string }) {
+  const Icon = MEASURE_ICONS[name];
+  return Icon ? <Icon {...props} /> : null;
 }
 
 /* Body-zone icons, same family: 20 x 20 grid, 1.6 stroke, round ends. They
@@ -338,23 +395,55 @@ export function IconRadiation(props: IconProps) {
 export function HestiaMark({ size = 24 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M3.5 19.5V12a8.5 8.5 0 0 1 17 0v7.5z" stroke="var(--accent)" strokeWidth="1.8" strokeLinejoin="round" />
-      <path d="M6.5 14.5h3l1.5-3.5 2 6 1.5-2.5h3" stroke="var(--text)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M3.5 19.5V12a8.5 8.5 0 0 1 17 0v7.5z"
+        stroke="var(--accent)"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6.5 14.5h3l1.5-3.5 2 6 1.5-2.5h3"
+        stroke="var(--text)"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
 
 /** The icon of a body zone, by its key. */
+const ZONE_ICONS: Record<string, ComponentType<IconProps>> = {
+  brain_morale: IconBrain,
+  eyes_sans: IconEye,
+  heart: IconPulse,
+  bones: IconBone,
+  muscles: IconExercise,
+  immunity: IconImmunity,
+  skin: IconRadiation,
+  digestive_nutrition: IconMeal,
+};
 export function zoneIcon(zone: string): ComponentType<IconProps> | undefined {
-  const icons: Record<string, ComponentType<IconProps>> = {
-    brain_morale: IconBrain,
-    eyes_sans: IconEye,
-    heart: IconPulse,
-    bones: IconBone,
-    muscles: IconExercise,
-    immunity: IconImmunity,
-    skin: IconRadiation,
-    digestive_nutrition: IconMeal,
-  };
-  return icons[zone];
+  return ZONE_ICONS[zone];
+}
+export function ZoneIcon({ zone, ...props }: IconProps & { zone: string }) {
+  const Icon = ZONE_ICONS[zone];
+  return Icon ? <Icon {...props} /> : null;
+}
+
+export function IconPhone(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <rect x="5" y="2" width="10" height="16" rx="2" />
+      <path d="M8 4h4M9 15h2" />
+    </svg>
+  );
+}
+export function IconReplay(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M4 6a7 7 0 1 1-1 7M4 2v4h4" />
+      <path d="m8 7 5 3-5 3z" />
+    </svg>
+  );
 }

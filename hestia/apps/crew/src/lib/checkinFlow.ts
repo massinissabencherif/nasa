@@ -54,7 +54,10 @@ export function reviewRows(
   rows.push({
     key: 'mood',
     label: 'Mood',
-    value: draft.mood != null ? `${draft.mood} of 5, ${moods[draft.mood - 1] ?? ''}`.replace(/, $/, '') : 'Not answered',
+    value:
+      draft.mood != null
+        ? `${draft.mood} of 5, ${moods[draft.mood - 1] ?? ''}`.replace(/, $/, '')
+        : 'Not answered',
   });
   rows.push({
     key: 'symptoms',
@@ -63,7 +66,11 @@ export function reviewRows(
   });
   for (const key of filledMeasures(draft, keys)) {
     const info = meta[key];
-    rows.push({ key, label: info?.label ?? key, value: `${draft.values[key]}${info?.unit ? ` ${info.unit}` : ''}` });
+    rows.push({
+      key,
+      label: info?.label ?? key,
+      value: `${draft.values[key]}${info?.unit ? ` ${info.unit}` : ''}`,
+    });
   }
   return rows;
 }

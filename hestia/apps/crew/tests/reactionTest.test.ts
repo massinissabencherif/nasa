@@ -34,7 +34,7 @@ function setup(random = 0.5) {
   function respond(ms = 250) { signal(); advance(ms); runner.tap(); }
   function practice() {
     runner.start();
-    for (let i = 0; i < 3; i++) { respond(); advance(protocol.feedback_ms); }
+    for (let i = 0; i < protocol.practice_trials; i++) { respond(); advance(protocol.feedback_ms); }
     assert.equal(runner.state.phase, 'ready');
     assert.deepEqual(runner.state.trials, []);
     runner.startMeasured();
@@ -42,18 +42,18 @@ function setup(random = 0.5) {
   return { runner, advance, signal, respond, practice, events };
 }
 
-test('three practice responses are discarded; fifteen measured responses finish exactly once', () => {
+test('one practice response is discarded; five measured responses finish exactly once', () => {
   const { runner, practice, respond, advance } = setup();
   practice();
-  for (let i = 0; i < 15; i++) {
+  for (let i = 0; i < protocol.measured_trials; i++) {
     respond(200 + i * 10);
     runner.tap(); // pointer/click or two fingers in the same frame
     advance(protocol.feedback_ms);
   }
   assert.equal(runner.state.phase, 'done');
-  assert.equal(runner.state.result?.practice_completed, 3);
-  assert.equal(runner.state.trials.length, 15);
-  assert.equal(previewReaction(runner.state.trials).median, 270);
+  assert.equal(runner.state.result?.practice_completed, 1);
+  assert.equal(runner.state.trials.length, 5);
+  assert.equal(previewReaction(runner.state.trials).median, 220);
   const result = runner.state.result;
   runner.interrupt(); runner.abandon(); runner.tap();
   assert.equal(runner.state.result, result);

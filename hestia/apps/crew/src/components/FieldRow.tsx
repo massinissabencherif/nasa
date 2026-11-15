@@ -1,23 +1,25 @@
-import { useState } from 'react';
-import { IconInfo, measureIcon } from '@hestia/ui';
+import { t } from '@hestia/ui';
+import { HelpButton, MeasurementInput, MeasurementIcon, MonitorReadingGuide, dateLocale } from '@hestia/ui';
 import { EXPLANATIONS } from '../lib/explanations';
 
 export function ExplainSheet({ field }: { field: string }) {
   const info = EXPLANATIONS[field];
   return (
-    <div style={{ padding: '0 14px 14px', display: 'grid', gap: 6, fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-      <p>
-        <strong style={{ color: 'var(--text)' }}>How: </strong>
-        {info.how}
-      </p>
-      <p>
-        <strong style={{ color: 'var(--text)' }}>Why: </strong>
-        {info.why}
-      </p>
-      <p>
-        <strong style={{ color: 'var(--text)' }}>Risk: </strong>
-        {info.risk}
-      </p>
+    <div className="assessment-stack">
+      <MonitorReadingGuide field={field} />
+      <section>
+        <h3>{t('How to measure')}</h3>
+        <p>{t(info.how)}</p>
+      </section>
+      <section>
+        <h3>{t('Why it matters')}</h3>
+        <p>{t(info.why)}</p>
+      </section>
+      <section>
+        <h3>{t('What to watch for')}</h3>
+        <p>{t(info.risk)}</p>
+      </section>
+      <p className="assessment-muted">{t('Indicative information, not a diagnosis.')}</p>
     </div>
   );
 }
@@ -28,62 +30,47 @@ export function FieldRow({
   onChange,
   step = 1,
   last,
+  lastTs,
 }: {
   field: string;
   value: number | '';
   onChange: (v: number | '') => void;
   step?: number;
-  /** last recorded value, shown as a hint */
   last?: number;
+  lastTs?: string;
 }) {
-  const [open, setOpen] = useState(false);
   const info = EXPLANATIONS[field];
   const inputId = `field-${field}`;
-  const MeasureIcon = measureIcon(field);
-
+  const historyId = `${inputId}-history`;
+  const unitId = `${inputId}-unit`;
   return (
-    <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--panel)', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 8px 10px 14px' }}>
-        {MeasureIcon && (
-          <span aria-hidden="true" style={{ color: 'var(--text-muted)', display: 'inline-flex', flexShrink: 0 }}>
-            <MeasureIcon size={20} />
-          </span>
-        )}
-        <label htmlFor={inputId} style={{ flex: 1, minWidth: 0 }}>
-          <span style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 500 }}>{info.label}</span>
-          {last != null && <span style={{ display: 'block', fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>last: {last} {info.unit}</span>}
-        </label>
-        <input
-          id={inputId}
-          type="number"
-          inputMode="decimal"
-          step={step}
-          value={value}
-          placeholder="–"
-          onChange={(e) => onChange(e.target.value === '' ? '' : Number(e.target.value))}
-          style={{
-            width: 84,
-            background: 'var(--panel-raised)',
-            color: 'var(--text)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-sm)',
-            padding: '10px',
-            fontSize: 16,
-            textAlign: 'right',
-            fontFamily: 'var(--font-mono)',
-          }}
-        />
-        <span style={{ width: 40, fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>{info.unit}</span>
-        <button
-          onClick={() => setOpen((o) => !o)}
-          aria-label={`How, why and risk: ${info.label}`}
-          aria-expanded={open}
-          style={{ background: 'none', border: 'none', color: open ? 'var(--accent)' : 'var(--text-faint)', cursor: 'pointer', padding: 10 }}
-        >
-          <IconInfo size={20} />
-        </button>
+    <div className="hz-measure-field">
+      <div className="hz-measure-heading">
+        <MeasurementIcon name={field} size={20} />
+        <label htmlFor={inputId}>{t(info.label)}</label>
+        <HelpButton label={t(info.label)}>
+          <ExplainSheet field={field} />
+        </HelpButton>
       </div>
-      {open && <ExplainSheet field={field} />}
+      <MeasurementInput
+        id={inputId}
+        unit={info.unit}
+        step={step}
+        value={value}
+        placeholder={t('Not entered')}
+        aria-describedby={`${unitId}${last != null ? ` ${historyId}` : ''}`}
+        onChange={(event) => onChange(event.target.value === '' ? '' : event.target.valueAsNumber)}
+      />
+      <span id={unitId} className="sr-only">
+        {t('Unit:')} {info.unit}
+      </span>
+      {last != null && (
+        <p id={historyId} className="hz-field-history">
+          {t('Previous:')} {last} {info.unit}
+          {lastTs &&
+            ` · ${new Date(lastTs).toLocaleString(dateLocale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
+        </p>
+      )}
     </div>
   );
 }

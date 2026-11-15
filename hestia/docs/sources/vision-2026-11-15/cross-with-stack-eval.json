@@ -1,0 +1,149 @@
+{
+ "strategy": "cross",
+ "split": "all",
+ "photos": 2,
+ "runs": 2,
+ "slots": 24,
+ "exact": 24,
+ "silent_errors": 0,
+ "phantom_items_in_empty_slots": 0,
+ "undercounts": 0,
+ "slots_sent_to_a_person": 3,
+ "seconds_per_scan": [
+  10.5,
+  12.1
+ ],
+ "details": [
+  {
+   "photo": "shelf_after_removal.png",
+   "split": "tune",
+   "attempt": 1,
+   "seconds": 12.1,
+   "slots": 12,
+   "exact": 12,
+   "wrong": {},
+   "flagged": [
+    "A1",
+    "A3"
+   ],
+   "silent": [],
+   "phantom": [],
+   "missed": [],
+   "warnings": [],
+   "raw": {
+    "counts": {
+     "A1": 0,
+     "A2": 2,
+     "A3": 4,
+     "A4": 0,
+     "B1": 5,
+     "B2": 2,
+     "B3": 3,
+     "B4": 1,
+     "C1": 4,
+     "C2": 0,
+     "C3": 3,
+     "C4": 2
+    },
+    "full": {
+     "A1": 1,
+     "A2": 2,
+     "A3": 2,
+     "A4": 0,
+     "B1": 5,
+     "B2": 2,
+     "B3": 3,
+     "B4": 1,
+     "C1": 4,
+     "C2": 0,
+     "C3": 3,
+     "C4": 2
+    },
+    "rows": {
+     "A1": 0,
+     "A2": 2,
+     "A3": 4,
+     "A4": 0,
+     "B1": 5,
+     "B2": 2,
+     "B3": 3,
+     "B4": 1,
+     "C1": 4,
+     "C2": 0,
+     "C3": 3,
+     "C4": 2
+    },
+    "stacks": {
+     "A3": 4
+    },
+    "disagreements": [
+     "A1"
+    ]
+   }
+  },
+  {
+   "photo": "shelf_full.png",
+   "split": "tune",
+   "attempt": 1,
+   "seconds": 10.5,
+   "slots": 12,
+   "exact": 12,
+   "wrong": {},
+   "flagged": [
+    "A3"
+   ],
+   "silent": [],
+   "phantom": [],
+   "missed": [],
+   "warnings": [],
+   "raw": {
+    "counts": {
+     "A1": 3,
+     "A2": 2,
+     "A3": 4,
+     "A4": 0,
+     "B1": 5,
+     "B2": 2,
+     "B3": 3,
+     "B4": 1,
+     "C1": 4,
+     "C2": 0,
+     "C3": 3,
+     "C4": 2
+    },
+    "full": {
+     "A1": 3,
+     "A2": 2,
+     "A3": 2,
+     "A4": 0,
+     "B1": 5,
+     "B2": 2,
+     "B3": 3,
+     "B4": 1,
+     "C1": 4,
+     "C2": 0,
+     "C3": 3,
+     "C4": 2
+    },
+    "rows": {
+     "A1": 3,
+     "A2": 2,
+     "A3": 4,
+     "A4": 0,
+     "B1": 5,
+     "B2": 2,
+     "B3": 3,
+     "B4": 1,
+     "C1": 4,
+     "C2": 0,
+     "C3": 3,
+     "C4": 2
+    },
+    "stacks": {
+     "A3": 4
+    },
+    "disagreements": []
+   }
+  }
+ ]
+}

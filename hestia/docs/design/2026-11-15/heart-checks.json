@@ -1,0 +1,59 @@
+{
+  "checks": [
+    "heart is 29 units, filled, one finite 680 ms transform animation; no pointer selection frame",
+    "three measurements in one row at 1024, 1280 and 1440; no document overflow",
+    "keyboard focus stays visible and Enter selects the heart",
+    "reduced motion disables the heart animation",
+    "mobile heart detail opens, keeps three readings and closes"
+  ],
+  "motion": {
+    "duration": "0.68s",
+    "iterations": "1",
+    "size": "29",
+    "frames": [
+      {
+        "offset": 0,
+        "easing": "ease-in-out",
+        "composite": "auto",
+        "transform": "scale(1)",
+        "computedOffset": 0
+      },
+      {
+        "offset": 0.18,
+        "easing": "ease-in-out",
+        "composite": "auto",
+        "transform": "scale(1.06)",
+        "computedOffset": 0.18
+      },
+      {
+        "offset": 0.35,
+        "easing": "ease-in-out",
+        "composite": "auto",
+        "transform": "scale(1)",
+        "computedOffset": 0.35
+      },
+      {
+        "offset": 0.52,
+        "easing": "ease-in-out",
+        "composite": "auto",
+        "transform": "scale(1.06)",
+        "computedOffset": 0.52
+      },
+      {
+        "offset": 0.7,
+        "easing": "ease-in-out",
+        "composite": "auto",
+        "transform": "scale(1)",
+        "computedOffset": 0.7
+      },
+      {
+        "offset": 1,
+        "easing": "ease-in-out",
+        "composite": "auto",
+        "transform": "scale(1)",
+        "computedOffset": 1
+      }
+    ]
+  },
+  "errors": []
+}

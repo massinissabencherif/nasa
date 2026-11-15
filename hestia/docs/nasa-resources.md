@@ -57,3 +57,26 @@ to Earth, the 72-hour freshness rule, the reaction-test bands, the energy
 need formula (Mifflin-St Jeor), 7,700 kcal per kg, the effect of exercise on
 bone loss, the solar-storm dose, the resupply dates, all food values and the
 demo scale of the shelf.
+
+## Primary-source verification, 14–15 Nov
+
+These checks supersede the corresponding search-summary status above.
+
+- [NASA-STD-3001, 4.8.2 / V1 4030](https://www.nasa.gov/reference/4-0-human-performance/):
+  career effective spaceflight dose below 600 mSv; not a general vital-sign
+  alert threshold or a certification of HESTIA's radiation calculation.
+- [NASA Curiosity results](https://www.nasa.gov/news-release/nasa-rover-results-include-first-age-measurement-on-mars-and-help-for-human-exploration/):
+  environmental average 0.67 mSv/day at Gale Crater, Aug 2012–Jun 2013,
+  without major solar storms in that period. This supports our historical
+  scenario reference, not a current personal dose.
+- [NASA RAD figure](https://science.nasa.gov/resource/radiation-measurements-on-mars/):
+  actual historical measurements plotted in **micrograys/day** (absorbed dose).
+  The downloaded figure is preserved under `sources/assets/`; no numerical
+  series was extracted/ingested. Do not silently convert micrograys into mSv
+  or compare this plot directly to an effective career dose.
+
+Crew measurements, Earth replies, thresholds and simplified extrapolations
+remain simulated/team choices. No clinical NASA dataset or live feed is loaded.
+The [community discussion 2133](https://github.com/nasa/spaceapps/discussions/2133)
+points toward OSDR/HRP resources; it is a research lead, not scientific validation
+or a new challenge requirement. Other previously unverified figures remain so.

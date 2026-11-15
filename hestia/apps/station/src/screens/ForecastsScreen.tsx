@@ -1,5 +1,15 @@
+import { t } from '@hestia/ui';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import type { ForecastParams, ForecastPoint, ForecastResponse } from '@hestia/api-client';
 import { Button, Panel, StatusBadge } from '@hestia/ui';
 import { api } from '../lib/api';
@@ -85,7 +95,9 @@ function Curve({
   return (
     <Panel title={title} action={badge}>
       <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xl)' }}>{headline}</p>
-      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', minHeight: 17, marginBottom: 6 }}>{detail}</p>
+      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', minHeight: 17, marginBottom: 6 }}>
+        {detail}
+      </p>
       <div style={{ width: '100%', height: 170 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 14, right: 12, bottom: 0, left: 0 }}>
@@ -108,7 +120,12 @@ function Curve({
               width={44}
             />
             <Tooltip
-              contentStyle={{ background: 'var(--panel-raised)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12 }}
+              contentStyle={{
+                background: 'var(--panel-raised)',
+                border: '1px solid var(--border)',
+                borderRadius: 6,
+                fontSize: 12,
+              }}
               labelStyle={{ color: 'var(--text-muted)' }}
               labelFormatter={(d) => `Day ${d}`}
               formatter={(value) => [`${value} ${unit}`, title]}
@@ -132,7 +149,14 @@ function Curve({
                 />
               ),
             )}
-            <Line type="linear" dataKey={dataKey} stroke={color} strokeWidth={2} dot={false} isAnimationActive={false} />
+            <Line
+              type="linear"
+              dataKey={dataKey}
+              stroke={color}
+              strokeWidth={2}
+              dot={false}
+              isAnimationActive={false}
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -149,7 +173,9 @@ export function ForecastsScreen() {
   const [tick, setTick] = useState(0);
   const requestId = useRef(0);
 
-  useRefreshOn(['scan_complete', 'slot_confirmed', 'meal_logged', 'reset', 'context_changed'], () => setTick((t) => t + 1));
+  useRefreshOn(['scan_complete', 'slot_confirmed', 'meal_logged', 'reset', 'context_changed'], () =>
+    setTick((t) => t + 1),
+  );
 
   useEffect(() => {
     const id = ++requestId.current;
@@ -162,12 +188,15 @@ export function ForecastsScreen() {
             setError(null);
           }
         })
-        .catch((err) => id === requestId.current && setError(err instanceof Error ? err.message : String(err)));
+        .catch(
+          (err) => id === requestId.current && setError(err instanceof Error ? err.message : String(err)),
+        );
     }, 120);
     return () => clearTimeout(timer);
   }, [params, tick, context?.type]);
 
-  const set = <K extends keyof ForecastParams>(key: K, value: ForecastParams[K]) => setParams((p) => ({ ...p, [key]: value }));
+  const set = <K extends keyof ForecastParams>(key: K, value: ForecastParams[K]) =>
+    setParams((p) => ({ ...p, [key]: value }));
 
   const summary = result?.summary;
   const series = result?.series ?? [];
@@ -178,15 +207,41 @@ export function ForecastsScreen() {
       : [];
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '300px minmax(0, 1fr)', gap: 16, alignItems: 'start' }}>
+    <div
+      style={{ display: 'grid', gridTemplateColumns: '300px minmax(0, 1fr)', gap: 16, alignItems: 'start' }}
+    >
       <div style={{ display: 'grid', gap: 16 }}>
-        <Panel title="What if…">
+        <Panel title={t('What if…')}>
           <div style={{ display: 'grid', gap: 16 }}>
-            <Slider label="Mission horizon" value={params.mission_days} min={30} max={1000} step={10} unit="days" onChange={(v) => set('mission_days', v)} />
-            <Slider label="Ration" value={params.ration_pct} min={50} max={110} step={1} unit="% of need" onChange={(v) => set('ration_pct', v)} />
-            <Slider label="Exercise" value={params.exercise_h_per_day} min={0} max={3} step={0.25} unit="h/day" onChange={(v) => set('exercise_h_per_day', v)} />
             <Slider
-              label="Resupply delay"
+              label={t('Mission horizon')}
+              value={params.mission_days}
+              min={30}
+              max={1000}
+              step={10}
+              unit="days"
+              onChange={(v) => set('mission_days', v)}
+            />
+            <Slider
+              label={t('Ration')}
+              value={params.ration_pct}
+              min={50}
+              max={110}
+              step={1}
+              unit="% of need"
+              onChange={(v) => set('ration_pct', v)}
+            />
+            <Slider
+              label={t('Exercise')}
+              value={params.exercise_h_per_day}
+              min={0}
+              max={3}
+              step={0.25}
+              unit="h/day"
+              onChange={(v) => set('exercise_h_per_day', v)}
+            />
+            <Slider
+              label={t('Resupply delay')}
               value={params.resupply_delay_days}
               min={0}
               max={180}
@@ -196,11 +251,15 @@ export function ForecastsScreen() {
               onChange={(v) => set('resupply_delay_days', v)}
             />
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--text-sm)' }}>
-              <input type="checkbox" checked={params.solar_storm} onChange={(e) => set('solar_storm', e.target.checked)} />
-              Solar storm on day {params.storm_day}
+              <input
+                type="checkbox"
+                checked={params.solar_storm}
+                onChange={(e) => set('solar_storm', e.target.checked)}
+              />
+              {t('Solar storm on day')} {params.storm_day}
             </label>
             <Slider
-              label="Storm dose"
+              label={t('Storm dose')}
               value={params.storm_dose_msv}
               min={10}
               max={500}
@@ -211,12 +270,17 @@ export function ForecastsScreen() {
             />
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {summary && (
-                <Button size="sm" variant="primary" onClick={() => set('ration_pct', Math.max(50, Math.floor(summary.required_ration_pct)))}>
-                  Ration to last ({Math.floor(summary.required_ration_pct)} %)
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={() => set('ration_pct', Math.max(50, Math.floor(summary.required_ration_pct)))}
+                >
+                  {t('Ration to last (')}
+                  {Math.floor(summary.required_ration_pct)} %)
                 </Button>
               )}
               <Button size="sm" onClick={() => setParams(DEFAULTS)}>
-                Reset
+                {t('Reset')}
               </Button>
             </div>
           </div>
@@ -225,14 +289,20 @@ export function ForecastsScreen() {
         <Panel title={`Context: ${result?.context.label ?? '…'}`}>
           {result && (
             <div style={{ display: 'grid', gap: 4, fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-              <p>Radiation {result.context.radiation_msv_day} mSv/day</p>
+              <p>
+                {t('Radiation')} {result.context.radiation_msv_day} {t('mSv/day')}
+              </p>
               <p>
                 {result.context.next_resupply_in_days != null
                   ? `Next cargo scheduled in ${result.context.next_resupply_in_days} days (assumption)`
                   : 'No resupply in this context'}
               </p>
-              <p>Crew need {summary?.crew_need_kcal_day.toLocaleString('en-US')} kcal/day</p>
-              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginTop: 4 }}>Change the context in Mission settings.</p>
+              <p>
+                {t('Crew need')} {summary?.crew_need_kcal_day.toLocaleString('en-US')} {t('kcal/day')}
+              </p>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginTop: 4 }}>
+                {t('Change the context in Mission settings.')}
+              </p>
             </div>
           )}
         </Panel>
@@ -252,8 +322,10 @@ export function ForecastsScreen() {
           }}
         >
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-            <strong style={{ color: 'var(--text)' }}>Simulator, not a trained model.</strong> Day-by-day arithmetic on NASA reference values
-            and flagged assumptions, to anticipate the effect of a decision.
+            <strong style={{ color: 'var(--text)' }}>{t('Simulator, not a trained model.')}</strong>
+            {t(
+              'Day-by-day arithmetic on NASA reference values and flagged assumptions, to anticipate the effect of a decision.',
+            )}
           </p>
           <Button size="sm" onClick={() => setShowAssumptions((s) => !s)}>
             {showAssumptions ? 'Hide' : 'Assumptions & sources'}
@@ -261,10 +333,18 @@ export function ForecastsScreen() {
         </div>
 
         {showAssumptions && result && (
-          <Panel title="Assumptions & sources">
+          <Panel title={t('Assumptions & sources')}>
             <div style={{ display: 'grid', gap: 10 }}>
               {result.assumptions.map((a) => (
-                <div key={a.label} style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: 10, fontSize: 'var(--text-sm)' }}>
+                <div
+                  key={a.label}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '110px 1fr',
+                    gap: 10,
+                    fontSize: 'var(--text-sm)',
+                  }}
+                >
                   <span>
                     <span
                       style={{
@@ -272,7 +352,12 @@ export function ForecastsScreen() {
                         padding: '2px 7px',
                         borderRadius: 3,
                         border: '1px solid var(--border)',
-                        color: a.kind === 'assumption' ? 'var(--orange)' : a.kind === 'nasa' ? 'var(--accent)' : 'var(--text-muted)',
+                        color:
+                          a.kind === 'assumption'
+                            ? 'var(--orange)'
+                            : a.kind === 'nasa'
+                              ? 'var(--accent)'
+                              : 'var(--text-muted)',
                       }}
                     >
                       {a.kind === 'assumption' ? 'ASSUMPTION' : a.kind === 'nasa' ? 'NASA VALUE' : 'METHOD'}
@@ -299,7 +384,7 @@ export function ForecastsScreen() {
         {summary && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
             <Curve
-              title="Food stock"
+              title={t('Food stock')}
               headline={
                 summary.stockout_day != null
                   ? `runs out on day ${summary.stockout_day}`
@@ -307,11 +392,15 @@ export function ForecastsScreen() {
               }
               badge={
                 summary.stockout_day != null ? (
-                  <StatusBadge level="red" label={`${summary.days_without_food} days without food`} size="sm" />
+                  <StatusBadge
+                    level="red"
+                    label={`${summary.days_without_food} days without food`}
+                    size="sm"
+                  />
                 ) : summary.ration_below_floor ? (
                   <StatusBadge level="red" label={`ration under ${summary.safety_floor_pct} %`} size="sm" />
                 ) : (
-                  <StatusBadge level="green" label="stock holds" size="sm" />
+                  <StatusBadge level="green" label={t('stock holds')} size="sm" />
                 )
               }
               detail={
@@ -327,13 +416,27 @@ export function ForecastsScreen() {
               domain={[0, 'auto']}
             />
             <Curve
-              title="Crew weight"
+              title={t('Crew weight')}
               headline={`${summary.weight_change_pct_final > 0 ? '+' : ''}${summary.weight_change_pct_final.toFixed(1)} % on average`}
-              detail={summary.weight_per_crew.map((c) => `${c.name.split(' ')[0]} ${c.change_kg > 0 ? '+' : ''}${c.change_kg} kg`).join(' · ')}
+              detail={summary.weight_per_crew
+                .map((c) => `${c.name.split(' ')[0]} ${c.change_kg > 0 ? '+' : ''}${c.change_kg} kg`)
+                .join(' · ')}
               badge={
                 <StatusBadge
-                  level={summary.weight_change_pct_final <= -5 ? 'red' : summary.weight_change_pct_final <= -2 ? 'orange' : 'green'}
-                  label={summary.weight_change_pct_final <= -5 ? 'severe loss' : summary.weight_change_pct_final <= -2 ? 'weight loss' : 'stable'}
+                  level={
+                    summary.weight_change_pct_final <= -5
+                      ? 'red'
+                      : summary.weight_change_pct_final <= -2
+                        ? 'orange'
+                        : 'green'
+                  }
+                  label={
+                    summary.weight_change_pct_final <= -5
+                      ? 'severe loss'
+                      : summary.weight_change_pct_final <= -2
+                        ? 'weight loss'
+                        : 'stable'
+                  }
                   size="sm"
                 />
               }
@@ -345,10 +448,15 @@ export function ForecastsScreen() {
                 { y: -2, label: 'orange −2 %', color: 'var(--orange)' },
                 { y: -5, label: 'red −5 %', color: 'var(--red-ink)' },
               ]}
-              domain={[(min: number) => Math.min(-6, Math.floor(min)), (max: number) => Math.max(1, Math.ceil(max))] as never}
+              domain={
+                [
+                  (min: number) => Math.min(-6, Math.floor(min)),
+                  (max: number) => Math.max(1, Math.ceil(max)),
+                ] as never
+              }
             />
             <Curve
-              title="Bone mass"
+              title={t('Bone mass')}
               headline={`${summary.bone_pct_final.toFixed(1)} % of today`}
               detail={`−${summary.bone_loss_pct_per_month} % per month at ${params.exercise_h_per_day} h/day of exercise (assumption)`}
               data={series}
@@ -359,13 +467,21 @@ export function ForecastsScreen() {
               domain={[(min: number) => Math.floor(min - 1), 100] as never}
             />
             <Curve
-              title="Cumulative radiation"
+              title={t('Cumulative radiation')}
               headline={`${summary.radiation_msv_final.toFixed(0)} mSv · ${summary.radiation_pct_of_limit.toFixed(0)} % of limit`}
               badge={
                 summary.radiation_limit_day != null ? (
-                  <StatusBadge level="red" label={`limit crossed day ${summary.radiation_limit_day}`} size="sm" />
+                  <StatusBadge
+                    level="red"
+                    label={`limit crossed day ${summary.radiation_limit_day}`}
+                    size="sm"
+                  />
                 ) : (
-                  <StatusBadge level={summary.radiation_pct_of_limit >= 70 ? 'orange' : 'green'} label="under the career limit" size="sm" />
+                  <StatusBadge
+                    level={summary.radiation_pct_of_limit >= 70 ? 'orange' : 'green'}
+                    label={t('under the career limit')}
+                    size="sm"
+                  />
                 )
               }
               detail={`${result?.context.radiation_msv_day} mSv/day${params.solar_storm ? ` + ${params.storm_dose_msv} mSv storm on day ${params.storm_day}` : ''}`}
@@ -373,19 +489,29 @@ export function ForecastsScreen() {
               dataKey="radiation_msv"
               unit="mSv"
               color="var(--chart-series-2)"
-              markers={[{ y: summary.radiation_limit_msv, label: `career limit ${summary.radiation_limit_msv} mSv`, color: 'var(--red-ink)' }]}
+              markers={[
+                {
+                  y: summary.radiation_limit_msv,
+                  label: `career limit ${summary.radiation_limit_msv} mSv`,
+                  color: 'var(--red-ink)',
+                },
+              ]}
               domain={[0, (max: number) => Math.max(summary.radiation_limit_msv * 1.08, max)] as never}
             />
           </div>
         )}
 
         {summary && summary.required_ration_pct < 100 && (
-          <Panel title="Decision support">
+          <Panel title={t('Decision support')}>
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-              To reach {summary.resupply_day != null ? `the cargo on day ${summary.resupply_day}` : `day ${params.mission_days}`} without
-              running out, the crew has to go down to{' '}
+              {t('To reach')}{' '}
+              {summary.resupply_day != null
+                ? `the cargo on day ${summary.resupply_day}`
+                : `day ${params.mission_days}`}{' '}
+              {t('without running out, the crew has to go down to')}{' '}
               <strong style={{ color: summary.required_ration_below_floor ? 'var(--red)' : 'var(--text)' }}>
-                {summary.required_ration_pct.toFixed(0)} % rations
+                {summary.required_ration_pct.toFixed(0)}
+                {t('% rations')}
               </strong>
               {summary.required_ration_below_floor
                 ? `. That is below the ${summary.safety_floor_pct} % safety floor: not sustainable, ask Earth for options now.`

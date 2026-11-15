@@ -1,0 +1,9 @@
+{
+  "kind": "real Ollama through HTTP, unrelated logo",
+  "status": 400,
+  "detail": {
+    "detail": "This photo cannot be identified as food storage. Retake a clear photo of the shelf; stock is unchanged."
+  },
+  "elapsed_s": 11.56,
+  "stock_unchanged": true
+}

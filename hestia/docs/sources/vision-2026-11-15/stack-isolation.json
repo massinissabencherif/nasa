@@ -1,0 +1,15 @@
+{
+ "regular_rows": {
+  "rows": 2,
+  "per_row": 2,
+  "count": 4
+ },
+ "tight_old": {
+  "count": 2
+ },
+ "tight_rows": {
+  "rows": 2,
+  "per_row": 2,
+  "count": 4
+ }
+}

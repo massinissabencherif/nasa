@@ -1,0 +1,9 @@
+{
+  "checks": [
+    "1280px: preparation and Earth clock have a 16px gap; scenarios alongside; no overflow",
+    "Unused catalogue entries and multi-slot assignments shown; same product allowed in A3; backend write stubbed; labels translated; keyboard selection",
+    "390px: settings blocks stack; products fit sheet, reduced motion, keyboard focus kept and restored; station shell itself still overflows, recorded separately"
+  ],
+  "errors": [],
+  "stationShellOverflow": true
+}

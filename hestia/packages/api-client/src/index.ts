@@ -71,11 +71,15 @@ export type PantrySlot = {
 };
 
 export type PantryState = {
+  has_photo?: boolean;
+  boxes?: ShelfBoxes;
   snapshot_ts: string | null;
   slots: PantrySlot[];
   autonomy_days: number;
   daily_need_kcal: number;
   stock_kcal: number;
+  counted_package_kcal: number;
+  default_units_per_lot: number;
   expiry_warning: boolean;
   min_expiry_days: number | null;
   units_per_lot: number;
@@ -87,13 +91,26 @@ export type PantryState = {
 export type ScanSlotResult = { slot: string; count: number; confidence: number; needs_confirmation: boolean };
 
 export type ScanResponse = {
-  snapshot_ts: string;
+  proposal_id?: string;
+  boxes?: ShelfBoxes;
+  warnings?: string[];
+  snapshot_ts: string | null;
   mode: string;
   strategy?: string;
   elapsed_s?: number;
   autonomy_days?: number;
   slots?: ScanSlotResult[];
 };
+
+export type ShelfFrame = {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+  rows?: number;
+  columns?: number;
+};
+export type ShelfBoxes = Record<string, [number, number, number, number]>;
 
 export type ConsumptionEvent = {
   id: number;
@@ -270,7 +287,13 @@ export type ForecastSummary = {
   ration_below_floor: boolean;
   safety_floor_pct: number;
   weight_change_pct_final: number;
-  weight_per_crew: { crew_member_id: number; name: string; weight_kg: number; change_kg: number; change_pct: number }[];
+  weight_per_crew: {
+    crew_member_id: number;
+    name: string;
+    weight_kg: number;
+    change_kg: number;
+    change_pct: number;
+  }[];
   bone_pct_final: number;
   bone_loss_pct_per_month: number;
   radiation_msv_final: number;
@@ -289,13 +312,15 @@ export type ForecastResponse = {
   assumptions: ForecastAssumption[];
 };
 
+export type VisionStrategy = 'full' | 'row' | 'cross';
+
 export type ScanOptions = {
   mode?: 'mock' | 'image' | 'camera';
   image_path?: string;
   camera_index?: number;
   variant?: 'full' | 'after_removal';
-  /** full = one call on the whole shelf (~20 s); row = three row crops (~50 s, more accurate) */
-  strategy?: 'full' | 'row';
+  /** cross compares whole-shelf, row and configured stacked-item readings; it is slower, not guaranteed correct. */
+  strategy?: VisionStrategy;
 };
 
 export type ReactionProtocol = {
@@ -399,7 +424,10 @@ export function createApiClient(baseUrl: string) {
     setContext: (type: string) =>
       request<MissionContext>('/api/context', { method: 'PUT', body: JSON.stringify({ type }) }),
     setTimeScale: (timeScale: number) =>
-      request<MissionContext>('/api/context', { method: 'PUT', body: JSON.stringify({ time_scale: timeScale }) }),
+      request<MissionContext>('/api/context', {
+        method: 'PUT',
+        body: JSON.stringify({ time_scale: timeScale }),
+      }),
     setUseLlmAdvice: (useLlmAdvice: boolean) =>
       request<MissionContext>('/api/context', {
         method: 'PUT',
@@ -407,12 +435,18 @@ export function createApiClient(baseUrl: string) {
       }),
 
     listCrew: () => request<CrewMember[]>('/api/crew'),
-    getReactionProtocol: () => request<ReactionProtocol>('/api/reaction/protocol', { signal: AbortSignal.timeout(5000) }),
+    getReactionProtocol: () =>
+      request<ReactionProtocol>('/api/reaction/protocol', { signal: AbortSignal.timeout(5000) }),
     saveReactionSession: (crewId: number, body: ReactionSessionInput) =>
       request<ReactionSessionDetail>(`/api/crew/${crewId}/reaction-sessions`, {
-        method: 'POST', body: JSON.stringify(body), signal: AbortSignal.timeout(10000),
+        method: 'POST',
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(10000),
       }),
-    getReactionSessions: (crewId: number, opts?: { device_id?: string; protocol_version?: string; limit?: number; offset?: number }) => {
+    getReactionSessions: (
+      crewId: number,
+      opts?: { device_id?: string; protocol_version?: string; limit?: number; offset?: number },
+    ) => {
       const params = new URLSearchParams();
       for (const [key, value] of Object.entries(opts ?? {})) {
         if (value != null) params.set(key, String(value));
@@ -445,6 +479,7 @@ export function createApiClient(baseUrl: string) {
     scanPantry: (opts?: ScanOptions) => {
       const params = new URLSearchParams();
       params.set('mode', opts?.mode ?? 'mock');
+      params.set('review', 'true');
       if (opts?.image_path) params.set('image_path', opts.image_path);
       if (opts?.variant) params.set('variant', opts.variant);
       if (opts?.strategy) params.set('strategy', opts.strategy);
@@ -452,12 +487,16 @@ export function createApiClient(baseUrl: string) {
       return request<ScanResponse>(`/api/pantry/scan?${params.toString()}`, { method: 'POST' });
     },
     /** Upload a photo taken by any camera (phone, file). scan=false: reference image only. */
-    uploadShelfPhoto: async (file: Blob, opts?: { scan?: boolean; strategy?: 'full' | 'row' }): Promise<ScanResponse> => {
+    uploadShelfPhoto: async (
+      file: Blob,
+      opts?: { scan?: boolean; strategy?: VisionStrategy; frame?: ShelfFrame },
+    ): Promise<ScanResponse> => {
       const params = new URLSearchParams();
       params.set('scan', String(opts?.scan ?? true));
       if (opts?.strategy) params.set('strategy', opts.strategy);
       const form = new FormData();
       form.append('file', file, 'shelf.jpg');
+      if (opts?.frame) form.append('frame', JSON.stringify(opts.frame));
       let res: Response;
       try {
         res = await fetch(`${baseUrl}/api/pantry/photo?${params.toString()}`, { method: 'POST', body: form });
@@ -477,12 +516,31 @@ export function createApiClient(baseUrl: string) {
       }),
     confirmSlot: (slot: string, count: number) =>
       request(`/api/pantry/confirm`, { method: 'POST', body: JSON.stringify({ slot, count }) }),
+    reviewImageUrl: (id: string) => `${baseUrl}/api/pantry/review/${encodeURIComponent(id)}/image`,
+    emptyStock: () =>
+      request('/api/pantry/empty', { method: 'POST', body: JSON.stringify({ confirmed: true }) }),
+    saveScanReview: (id: string, counts: Record<string, number>, replaceStock = false) =>
+      request(`/api/pantry/review/${encodeURIComponent(id)}`, {
+        method: 'POST',
+        body: JSON.stringify({ counts, replace_stock: replaceStock }),
+      }),
+    discardScanReview: (id: string) =>
+      request(`/api/pantry/review/${encodeURIComponent(id)}`, { method: 'DELETE' }),
     getGrid: () => request<ShelfSlot[]>('/api/pantry/grid'),
     updateGridSlot: (label: string, body: { capacity?: number; food_item_id?: number }) =>
       request<ShelfSlot>('/api/pantry/grid', { method: 'PUT', body: JSON.stringify({ label, ...body }) }),
+    setStockScale: (multiplier: number) =>
+      request('/api/pantry/scale', { method: 'PUT', body: JSON.stringify({ multiplier }) }),
+    updateFoodItem: (id: number, item: Pick<FoodItem, 'name' | 'kcal' | 'protein_g' | 'carbs_g' | 'fat_g'>) =>
+      request<FoodItem>(`/api/pantry/items/${id}`, { method: 'PUT', body: JSON.stringify(item) }),
     listFoodItems: () => request<FoodItem[]>('/api/pantry/items'),
-    addFoodItem: (item: { name: string; kcal: number; protein_g?: number; carbs_g?: number; fat_g?: number }) =>
-      request<FoodItem>('/api/pantry/items', { method: 'POST', body: JSON.stringify(item) }),
+    addFoodItem: (item: {
+      name: string;
+      kcal: number;
+      protein_g?: number;
+      carbs_g?: number;
+      fat_g?: number;
+    }) => request<FoodItem>('/api/pantry/items', { method: 'POST', body: JSON.stringify(item) }),
     getGridBoxes: () => request<Record<string, [number, number, number, number]>>('/api/pantry/grid-boxes'),
     updateGridBox: (label: string, box: [number, number, number, number]) =>
       request('/api/pantry/grid-boxes', { method: 'PUT', body: JSON.stringify({ label, box }) }),

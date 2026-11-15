@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import type { ComponentType } from 'react';
 
 export type TabItem = {
@@ -11,7 +12,7 @@ export type TabItem = {
 export function TabBar({ items }: { items: TabItem[] }) {
   return (
     <nav
-      aria-label="Main"
+      aria-label={t('Main')}
       style={{
         display: 'flex',
         borderTop: '1px solid var(--border)',

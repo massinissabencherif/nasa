@@ -1,4 +1,8 @@
-import type { KeyboardEvent } from 'react';
+import { ZoneIllustration } from './ZoneIllustration';
+import { t } from '../i18n';
+import { useRef, useState, type KeyboardEvent } from 'react';
+import { useVisibleMotion } from '../useVisibleMotion';
+import { Button } from './Button';
 import type { CrewStatus, ZoneLevel } from '@hestia/api-client';
 import { ZONE_META, type ZoneKey } from '../zones';
 
@@ -10,7 +14,12 @@ const LEVEL_COLOR: Record<ZoneLevel, string> = {
 };
 // nominal zones stay quiet so that an orange or red zone is what the eye finds first
 const LEVEL_FILL_OPACITY: Record<ZoneLevel, number> = { green: 0.14, orange: 0.8, red: 0.88, unknown: 0.12 };
-const LEVEL_WORD: Record<ZoneLevel, string> = { green: 'nominal', orange: 'caution', red: 'critical', unknown: 'no data' };
+const LEVEL_WORD: Record<ZoneLevel, string> = {
+  green: 'nominal',
+  orange: 'caution',
+  red: 'critical',
+  unknown: 'no data',
+};
 const LEVEL_INK: Record<ZoneLevel, string> = {
   // nominal is said in words and with a tick, in a quiet tone: colour is kept for what needs attention
   green: 'var(--text-faint)',
@@ -33,7 +42,9 @@ const ZONE_PATHS: Record<ZoneKey, string[]> = {
   // abdomen
   digestive_nutrition: ['M73,150 L127,150 C125,166 125,182 127,196 L73,196 C75,182 75,166 73,150 Z'],
   // pelvis and hips
-  bones: ['M73,198 L127,198 C130,208 132,218 132,228 L101,228 L100,222 L99,228 L68,228 C68,218 70,208 73,198 Z'],
+  bones: [
+    'M73,198 L127,198 C130,208 132,218 132,228 L101,228 L100,222 L99,228 L68,228 C68,218 70,208 73,198 Z',
+  ],
   // both arms
   skin: [
     'M66,88 C56,89 50,95 49,106 L42,214 C41,224 43,236 50,238 C57,239 59,230 60,220 L68,128 C68,114 67,100 66,88 Z',
@@ -66,7 +77,7 @@ const BADGES: Record<ZoneKey, [number, number]> = {
   brain_morale: [100, 26],
   eyes_sans: [100, 49],
   immunity: [100, 80],
-  heart: [100, 118],
+  heart: [82, 118],
   digestive_nutrition: [100, 173],
   bones: [100, 211],
   skin: [51, 160],
@@ -100,6 +111,7 @@ export function SilhouetteBody({
   interactive = true,
   showLabels = false,
   width = 200,
+  motionSuppressed = false,
 }: {
   status: CrewStatus | null;
   onSelectZone?: (zone: ZoneKey) => void;
@@ -108,12 +120,18 @@ export function SilhouetteBody({
   /** side labels with the zone name and its status word (never colour alone) */
   showLabels?: boolean;
   width?: number;
+  /** A modal can cover an otherwise intersecting body on mobile. */
+  motionSuppressed?: boolean;
 }) {
+  const [focused, setFocused] = useState<ZoneKey | null>(null);
+  const [motionPaused, setMotionPaused] = useState(false);
+  const body = useRef<SVGSVGElement>(null);
+  const motionVisible = useVisibleMotion(body, selectedZone === 'heart' && !motionSuppressed);
   // nothing loaded yet is "unknown", never green
   const levelFor = (zone: ZoneKey): ZoneLevel => status?.[zone]?.level ?? 'unknown';
   const clickable = interactive && Boolean(onSelectZone);
 
-  function handlers(zone: ZoneKey) {
+  function handlers(zone: ZoneKey, label = false) {
     if (!clickable) return {};
     return {
       onClick: () => onSelectZone!(zone),
@@ -123,11 +141,14 @@ export function SilhouetteBody({
           onSelectZone!(zone);
         }
       },
-      tabIndex: 0,
+      tabIndex: showLabels && !label ? -1 : 0,
+      onFocus: () => setFocused(zone),
+      onBlur: () => setFocused(null),
+      className: 'hz-zone-target',
       role: 'button' as const,
-      'aria-label': `${ZONE_META[zone].label}: ${LEVEL_WORD[levelFor(zone)]}`,
+      'aria-label': `${t(ZONE_META[zone].label)}: ${t(LEVEL_WORD[levelFor(zone)])}`,
       'aria-pressed': selectedZone === zone,
-      style: { cursor: 'pointer', outlineOffset: 3 },
+      style: { cursor: 'pointer' },
     };
   }
 
@@ -136,89 +157,154 @@ export function SilhouetteBody({
   const zones = Object.keys(ZONE_PATHS) as ZoneKey[];
 
   return (
-    <svg
-      viewBox={viewBox}
-      width={width}
-      height={(width / vbWidth) * 440}
-      role="img"
-      aria-label="Body status by zone"
-      style={{ maxWidth: '100%', height: 'auto', overflow: 'visible' }}
-    >
-      <style>{`
+    <div className="hz-body-view" style={{ width }}>
+      <svg
+        ref={body}
+        data-motion={motionVisible && !motionPaused ? 'running' : 'paused'}
+        viewBox={viewBox}
+        width={width}
+        height={(width / vbWidth) * 440}
+        role={clickable ? 'group' : 'img'}
+        aria-label={t('Body status by zone')}
+        style={{ maxWidth: '100%', height: 'auto', overflow: 'visible' }}
+      >
+        <style>{`
+        .hz-zone-target:focus { outline: none; }
+        .hz-zone-target:focus-visible text { fill: var(--accent); }
         .hz-zone { transition: fill 500ms ease, fill-opacity 500ms ease, stroke 500ms ease; }
         @keyframes hz-pulse { 0%, 100% { fill-opacity: 0.88; } 50% { fill-opacity: 0.55; } }
         .hz-red { animation: hz-pulse 1.8s ease-in-out infinite; }
         @media (prefers-reduced-motion: reduce) { .hz-red { animation: none; } .hz-zone { transition: none; } }
       `}</style>
 
-      <path d={FACE_PATH} fill="var(--panel-raised)" stroke="var(--border)" strokeWidth={1} />
+        <path d={FACE_PATH} fill="var(--panel-raised)" stroke="var(--border)" strokeWidth={1} />
 
-      {zones.map((zone) => {
-        const level = levelFor(zone);
-        const selected = selectedZone === zone;
-        return (
-          <g key={zone} {...handlers(zone)}>
-            {ZONE_PATHS[zone].map((d) => (
-              <path
-                key={d}
-                d={d}
-                className={`hz-zone${level === 'red' ? ' hz-red' : ''}`}
-                fill={LEVEL_COLOR[level]}
-                fillOpacity={LEVEL_FILL_OPACITY[level]}
-                stroke={selected ? 'var(--text)' : LEVEL_COLOR[level]}
-                strokeDasharray={level === 'unknown' ? '3 3' : undefined}
-                strokeWidth={selected ? 2.4 : 1.2}
-                strokeLinejoin="round"
-              />
-            ))}
-          </g>
-        );
-      })}
-
-      {/* pupils, purely decorative */}
-      <circle cx={90} cy={49} r={2.4} fill="var(--bg)" pointerEvents="none" />
-      <circle cx={110} cy={49} r={2.4} fill="var(--bg)" pointerEvents="none" />
-
-      {zones.map((zone) => (
-        <Badge key={`badge-${zone}`} x={BADGES[zone][0]} y={BADGES[zone][1]} level={levelFor(zone)} />
-      ))}
-      <Badge x={149} y={160} level={levelFor('skin')} />
-      <Badge x={116} y={320} level={levelFor('muscles')} />
-
-      {showLabels &&
-        LABELS.map(({ zone, side, y, anchorX }) => {
+        {zones.map((zone) => {
           const level = levelFor(zone);
-          const selected = selectedZone === zone;
-          const textX = side === 'right' ? 176 : 24;
-          const lineEnd = side === 'right' ? 170 : 30;
+          const selected = selectedZone === zone || focused === zone;
           return (
-            <g key={`label-${zone}`} {...handlers(zone)}>
-              <line x1={anchorX} y1={y} x2={lineEnd} y2={y} stroke="var(--decor)" strokeWidth={0.8} strokeDasharray="2 3" pointerEvents="none" />
-              <circle cx={anchorX} cy={y} r={2} fill="var(--text-muted)" pointerEvents="none" />
-              <text
-                x={textX}
-                y={y - 1}
-                textAnchor={side === 'right' ? 'start' : 'end'}
-                fontSize={13}
-                fontWeight={selected ? 700 : 500}
-                fill={selected ? 'var(--text)' : 'var(--text-muted)'}
-                fontFamily="var(--font-sans)"
-              >
-                {ZONE_META[zone].label}
-              </text>
-              <text
-                x={textX}
-                y={y + 13}
-                textAnchor={side === 'right' ? 'start' : 'end'}
-                fontSize={11}
-                fill={LEVEL_INK[level]}
-                fontFamily="var(--font-sans)"
-              >
-                {LEVEL_MARK[level]} {LEVEL_WORD[level]}
-              </text>
+            <g key={zone} {...handlers(zone)}>
+              {ZONE_PATHS[zone].map((d) => (
+                <path
+                  key={d}
+                  d={d}
+                  className={`hz-zone${level === 'red' ? ' hz-red' : ''}`}
+                  fill={LEVEL_COLOR[level]}
+                  fillOpacity={LEVEL_FILL_OPACITY[level]}
+                  stroke={selected ? 'var(--accent)' : LEVEL_COLOR[level]}
+                  strokeDasharray={level === 'unknown' ? '3 3' : undefined}
+                  strokeWidth={selected ? 2.4 : 1.2}
+                  strokeLinejoin="round"
+                />
+              ))}
             </g>
           );
         })}
-    </svg>
+
+        {selectedZone && (
+          <g data-zone-context={selectedZone}>
+            <ZoneIllustration zone={selectedZone} />
+          </g>
+        )}
+
+        {/* pupils, purely decorative */}
+        {selectedZone !== 'eyes_sans' && (
+          <>
+            <circle cx={90} cy={49} r={2.4} fill="var(--bg)" pointerEvents="none" />
+            <circle cx={110} cy={49} r={2.4} fill="var(--bg)" pointerEvents="none" />
+          </>
+        )}
+
+        {zones.map((zone) => (
+          <Badge key={`badge-${zone}`} x={BADGES[zone][0]} y={BADGES[zone][1]} level={levelFor(zone)} />
+        ))}
+        <Badge x={149} y={160} level={levelFor('skin')} />
+        <Badge x={116} y={320} level={levelFor('muscles')} />
+
+        {showLabels &&
+          LABELS.map(({ zone, side, y, anchorX }) => {
+            const level = levelFor(zone);
+            const selected = selectedZone === zone || focused === zone;
+            const textX = side === 'right' ? 176 : 24;
+            const lineEnd = side === 'right' ? 170 : 30;
+            return (
+              <g key={`label-${zone}`} {...handlers(zone, true)}>
+                <rect
+                  className="hz-zone-label-hit"
+                  x={side === 'right' ? 166 : -116}
+                  y={y - 17}
+                  width={148}
+                  height={40}
+                  rx={5}
+                  fill={selected ? 'var(--accent-dim)' : 'transparent'}
+                  stroke={selected ? 'var(--accent)' : 'transparent'}
+                  strokeWidth={focused === zone ? 2 : 1}
+                />
+                <line
+                  x1={anchorX}
+                  y1={y}
+                  x2={lineEnd}
+                  y2={y}
+                  stroke="var(--decor)"
+                  strokeWidth={0.8}
+                  strokeDasharray="2 3"
+                  pointerEvents="none"
+                />
+                <circle cx={anchorX} cy={y} r={2} fill="var(--text-muted)" pointerEvents="none" />
+                <text
+                  x={textX}
+                  y={y - 1}
+                  textAnchor={side === 'right' ? 'start' : 'end'}
+                  fontSize={13}
+                  fontWeight={selected ? 700 : 500}
+                  fill={selected ? 'var(--text)' : 'var(--text-muted)'}
+                  fontFamily="var(--font-sans)"
+                >
+                  {zone === 'skin' ? (
+                    <>
+                      <tspan x={textX} dy={-5}>
+                        {t('Radiation')}
+                      </tspan>
+                      <tspan x={textX} dy={13}>
+                        {t('exposure')}
+                      </tspan>
+                    </>
+                  ) : zone === 'digestive_nutrition' ? (
+                    'Nutrition'
+                  ) : (
+                    t(ZONE_META[zone].label)
+                  )}
+                </text>
+                <text
+                  x={textX}
+                  y={y + (zone === 'skin' ? 22 : 13)}
+                  textAnchor={side === 'right' ? 'start' : 'end'}
+                  fontSize={11}
+                  fill={LEVEL_INK[level]}
+                  fontFamily="var(--font-sans)"
+                >
+                  {LEVEL_MARK[level]} {t(LEVEL_WORD[level])}
+                </text>
+              </g>
+            );
+          })}
+      </svg>
+      {selectedZone === 'heart' && !motionSuppressed && (
+        <div className="hz-body-motion">
+          <span>{t('Illustrative beat', 'Battement illustratif')}</span>
+          <Button
+            size="sm"
+            variant="ghost"
+            aria-label={t(
+              motionPaused ? 'Resume heart animation' : 'Pause heart animation',
+              motionPaused ? 'Reprendre l’animation du cœur' : 'Mettre l’animation du cœur en pause',
+            )}
+            onClick={() => setMotionPaused((value) => !value)}
+          >
+            {t(motionPaused ? 'Resume' : 'Pause', motionPaused ? 'Reprendre' : 'Pause')}
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }

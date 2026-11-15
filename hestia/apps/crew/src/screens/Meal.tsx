@@ -1,126 +1,196 @@
-import { useState } from 'react';
-import { Button, Panel } from '@hestia/ui';
+import { useRef, useState } from 'react';
+import { Button, FoodIcon, IconCheck, LoadingState, LoadError, Panel, t } from '@hestia/ui';
 import { useApi } from '../lib/ApiProvider';
 import { useMealProposal, useSelectedCrewId } from '../lib/hooks';
 
 export function Meal() {
   const api = useApi();
   const crewId = useSelectedCrewId();
-  const { proposal, refresh } = useMealProposal(crewId);
+  const { proposal, error: loadError, refresh } = useMealProposal(crewId);
+  const saving = useRef(false);
   const [eating, setEating] = useState<number | 'suggestion' | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+  const [receipt, setReceipt] = useState<string[]>([]);
 
-  async function eat(foodItemIds: number[], marker: number | 'suggestion') {
-    if (crewId == null) return;
+  async function eat(items: { food_item_id: number; name: string }[], marker: number | 'suggestion') {
+    if (crewId == null || saving.current) return;
+    saving.current = true;
     setEating(marker);
-    setError(null);
+    setError(false);
+    setReceipt([]);
+    const confirmed: string[] = [];
     try {
-      for (const id of foodItemIds) await api.eatMeal(crewId, id, 1);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      for (const item of items) {
+        await api.eatMeal(crewId, item.food_item_id, 1);
+        confirmed.push(item.name);
+        setReceipt([...confirmed]);
+      }
+    } catch {
+      setError(true);
     } finally {
       refresh();
       setEating(null);
+      saving.current = false;
     }
   }
 
-  if (!proposal) {
+  if (!proposal)
     return (
-      <div style={{ padding: 16 }}>
-        <p style={{ color: 'var(--text-faint)' }}>Loading the stock…</p>
+      <div className="hz-home">
+        {loadError ? (
+          <LoadError
+            label={t('Stock could not load.', 'Impossible de charger le stock.')}
+            onRetry={refresh}
+          />
+        ) : (
+          <LoadingState label={t('Loading the stock…')} />
+        )}
       </div>
     );
-  }
 
-  const progress = proposal.daily_need_kcal ? Math.min(100, (proposal.kcal_eaten_today / proposal.daily_need_kcal) * 100) : 0;
+  const progress = proposal.daily_need_kcal
+    ? Math.min(100, (proposal.kcal_eaten_today / proposal.daily_need_kcal) * 100)
+    : 0;
   const suggestionKcal = proposal.suggestion.reduce((sum, item) => sum + item.kcal, 0);
 
   return (
-    <div style={{ padding: 16, display: 'grid', gap: 14 }}>
-      <h1 style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>Meal of the day</h1>
-
-      <Panel>
-        <div style={{ display: 'grid', gap: 'var(--space-1)', marginBottom: 'var(--space-2)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>Meals you logged today</span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)' }}>{Math.round(proposal.kcal_eaten_today)} kcal</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>Estimated daily need</span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)' }}>{Math.round(proposal.daily_need_kcal)} kcal</span>
-          </div>
+    <div className="hz-home">
+      <h1>{t('Meals', 'Repas')}</h1>
+      <section className="hz-meal-progress" aria-label={t('Today', 'Aujourd’hui')}>
+        <div>
+          <span>{t('Logged today', 'Enregistré aujourd’hui')}</span>
+          <strong>
+            {Math.round(proposal.kcal_eaten_today)} <small>kcal</small>
+          </strong>
         </div>
-        <div style={{ height: 8, borderRadius: 4, background: 'var(--panel-raised)', overflow: 'hidden' }}>
-          <div style={{ width: `${progress}%`, height: '100%', background: 'var(--accent)', transition: 'width 400ms ease' }} />
-        </div>
-        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginTop: 8 }}>
-          The need is an estimate (Mifflin-St Jeor × activity factor, a ground formula). Only meals you log here count as eaten.
+        <p>
+          {t('Estimated need:', 'Besoin estimé :')} {Math.round(proposal.daily_need_kcal)} kcal
         </p>
-      </Panel>
+        <progress
+          max="100"
+          value={progress}
+          aria-label={t(
+            'Logged energy against estimated need',
+            'Énergie enregistrée par rapport au besoin estimé',
+          )}
+        />
+        <details className="hz-help-answer">
+          <summary>{t('How is this estimated?', 'Comment est-ce estimé ?')}</summary>
+          <p>
+            {t(
+              'The need is an estimate (Mifflin-St Jeor × activity factor, a ground formula). Only meals you log here count as eaten.',
+            )}
+          </p>
+        </details>
+      </section>
+
+      <div aria-live="polite" aria-atomic="true">
+        {receipt.length > 0 && (
+          <div className="hz-meal-receipt">
+            <IconCheck size={18} aria-hidden="true" />
+            <p>
+              <strong>{t('Recorded:', 'Enregistré :')}</strong> {receipt.map((name) => t(name)).join(' + ')}.{' '}
+              {t('One portion of each.', 'Une portion de chaque.')}
+            </p>
+          </div>
+        )}
+      </div>
+      {error && (
+        <p role="alert" className="assessment-notice">
+          {t(
+            'Recording was interrupted. Confirmed portions are listed above. Refresh and check before trying again.',
+            'L’enregistrement a été interrompu. Les portions confirmées sont indiquées ci-dessus. Actualisez et vérifiez avant de réessayer.',
+          )}
+        </p>
+      )}
+      {loadError && (
+        <LoadError
+          label={t(
+            'Stock could not refresh. Displayed quantities may be outdated.',
+            'Actualisation du stock impossible. Les quantités affichées peuvent être anciennes.',
+          )}
+          onRetry={refresh}
+        />
+      )}
 
       {proposal.suggestion.length > 0 && (
-        <Panel title="Suggested from the real stock">
-          <p style={{ fontSize: 'var(--text-sm)' }}>{proposal.suggestion.map((item) => item.name).join(' + ')}</p>
-          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', margin: '4px 0 12px' }}>
-            {Math.round(suggestionKcal)} kcal, about a third of your day, protein first.
+        <Panel title={t('Meal suggestion', 'Suggestion de repas')}>
+          <div className="hz-meal-suggestion">
+            {proposal.suggestion.map((item) => (
+              <div key={item.food_item_id}>
+                <FoodIcon name={item.name} />
+                <span>{t(item.name)}</span>
+              </div>
+            ))}
+          </div>
+          <p className="hz-meal-caption">
+            {Math.round(suggestionKcal)} kcal ·{' '}
+            {t('1 portion of each · from recorded stock', '1 portion de chaque · selon le stock enregistré')}
           </p>
           <Button
             variant="primary"
             size="lg"
-            style={{ width: '100%' }}
             disabled={eating != null}
-            onClick={() => eat(proposal.suggestion.map((item) => item.food_item_id), 'suggestion')}
+            onClick={() => eat(proposal.suggestion, 'suggestion')}
           >
-            {eating === 'suggestion' ? 'Logging…' : 'I ate this'}
+            {eating === 'suggestion'
+              ? t('Recording…', 'Enregistrement…')
+              : t('Log this meal', 'Enregistrer ce repas')}
           </Button>
         </Panel>
       )}
 
-      {error && (
-        <p role="alert" style={{ color: 'var(--red-ink)', fontSize: 'var(--text-sm)' }}>
-          {error}
+      <section className="hz-food-section">
+        <h2>{t('Choose from the reserve', 'Choisir dans la réserve')}</h2>
+        <p className="hz-meal-caption">
+          {t(
+            'Based on the latest recorded inventory: scan, correction or simulation. Counts are estimates until checked.',
+            'D’après le dernier inventaire : scan, correction ou simulation. Les quantités restent des estimations avant vérification.',
+          )}
         </p>
-      )}
-
-      {proposal.available.length === 0 ? (
-        <Panel>
-          <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
-            The shelf shows no stock. Ask the station to run a pantry scan.
+        {proposal.available.length === 0 ? (
+          <p>
+            {t(
+              'No stock recorded. Ask the station to check the reserve.',
+              'Aucun stock enregistré. Demandez une vérification de la réserve à la station.',
+            )}
           </p>
-        </Panel>
-      ) : (
-        <>
-          <h2 style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', fontWeight: 600 }}>Or pick what you ate</h2>
-          <div style={{ display: 'grid', gap: 10 }}>
+        ) : (
+          <div className="hz-food-list">
             {proposal.available.map((item) => (
-              <div
-                key={item.food_item_id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: 14,
-                  borderRadius: 'var(--radius-md)',
-                  border: '1px solid var(--border)',
-                  background: 'var(--panel)',
-                }}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{item.name}</p>
-                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>
-                    {item.kcal} kcal · P {item.protein_g} g · C {item.carbs_g} g · F {item.fat_g} g · {item.available_portions} portions in stock
+              <article className="hz-food-card" key={item.food_item_id}>
+                <FoodIcon name={item.name} />
+                <div className="hz-food-description">
+                  <h3>{t(item.name)}</h3>
+                  <p>
+                    <strong>{item.kcal} kcal</strong> · {t('per demo portion', 'par portion de démo')}
+                  </p>
+                  <p>
+                    {item.available_portions} {t('portions remaining', 'portions restantes')}
                   </p>
                 </div>
-                <Button onClick={() => eat([item.food_item_id], item.food_item_id)} disabled={eating != null} style={{ padding: '10px 14px' }}>
-                  {eating === item.food_item_id ? '…' : 'I ate this'}
+                <details className="hz-food-macros">
+                  <summary>{t('Nutritional details', 'Détail nutritionnel')}</summary>
+                  <p>
+                    {t('Protein', 'Protéines')} {item.protein_g} g · {t('Carbs', 'Glucides')} {item.carbs_g} g
+                    · {t('Fat', 'Lipides')} {item.fat_g} g
+                  </p>
+                </details>
+                <Button disabled={eating != null} onClick={() => eat([item], item.food_item_id)}>
+                  {eating === item.food_item_id
+                    ? t('Recording…', 'Enregistrement…')
+                    : t('Log 1 portion', 'Enregistrer 1 portion')}
                 </Button>
-              </div>
+              </article>
             ))}
           </div>
-        </>
-      )}
-      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>
-        A logged meal lowers the expected stock by the portions you ate, at once. A camera scan counts boxes on the shelf and does not change who ate what.
+        )}
+      </section>
+      <p className="hz-meal-caption">
+        {t(
+          'Demo catalogue: nutrition values and the conversion from boxes to portions are simulated. Logging a meal deducts its portions from the expected stock; scanning the shelf does not log a meal.',
+          'Catalogue de démo : valeurs nutritionnelles et conversion des boîtes en portions simulées. Enregistrer un repas déduit ses portions du stock prévu ; scanner la réserve n’enregistre pas un repas.',
+        )}
       </p>
     </div>
   );

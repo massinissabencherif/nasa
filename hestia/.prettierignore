@@ -1,0 +1,11 @@
+node_modules/
+**/dist/
+**/build/
+**/.venv/
+**/ios/
+**/android/
+**/src-tauri/
+server/captures/
+server/certs/
+pnpm-lock.yaml
+docs/design/

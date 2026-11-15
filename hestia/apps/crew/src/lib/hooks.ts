@@ -23,18 +23,31 @@ export function useSelectedCrewId(): number | null {
 }
 
 /** Fetch now, then again every POLL_MS; `refresh` forces an immediate refetch. */
-function usePolled<T>(fetcher: (() => Promise<T>) | null, deps: unknown[]): { data: T | null; refresh: () => void } {
+function usePolled<T>(
+  fetcher: (() => Promise<T>) | null,
+  deps: unknown[],
+): { data: T | null; error: boolean; refresh: () => void } {
   const [data, setData] = useState<T | null>(null);
+  const [error, setError] = useState(false);
   const [tick, setTick] = useState(0);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const run = useCallback(fetcher ?? (() => Promise.resolve(null as T)), deps);
   useEffect(() => {
     if (!fetcher) return;
     let cancelled = false;
-    const load = () =>
-      run()
-        .then((value) => !cancelled && setData(value))
-        .catch(() => {});
+    let sequence = 0;
+    const load = async () => {
+      const request = ++sequence;
+      try {
+        const value = await run();
+        if (!cancelled && request === sequence) {
+          setData(value);
+          setError(false);
+        }
+      } catch {
+        if (!cancelled && request === sequence) setError(true);
+      }
+    };
     load();
     const id = setInterval(load, POLL_MS);
     return () => {
@@ -44,7 +57,7 @@ function usePolled<T>(fetcher: (() => Promise<T>) | null, deps: unknown[]): { da
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [run, tick]);
   const refresh = useCallback(() => setTick((t) => t + 1), []);
-  return { data, refresh };
+  return { data, error, refresh };
 }
 
 export function useConnection(): boolean | null {
@@ -69,8 +82,12 @@ export function useConnection(): boolean | null {
 }
 
 export function useCrewList(): CrewMember[] {
+  return useCrewListState().data ?? [];
+}
+
+export function useCrewListState() {
   const api = useApi();
-  return usePolled(() => api.listCrew(), [api]).data ?? [];
+  return usePolled(() => api.listCrew(), [api]);
 }
 
 export function useCrewMember(id: number | null): CrewMember | null {
@@ -80,8 +97,12 @@ export function useCrewMember(id: number | null): CrewMember | null {
 }
 
 export function useCrewStatus(id: number | null): CrewStatus | null {
+  return useCrewStatusState(id).data;
+}
+
+export function useCrewStatusState(id: number | null) {
   const api = useApi();
-  return usePolled(id == null ? null : () => api.getCrewStatus(id), [api, id]).data;
+  return usePolled(id == null ? null : () => api.getCrewStatus(id), [api, id]);
 }
 
 export function useMissionContext(): MissionContext | null {
@@ -127,7 +148,10 @@ export function useThresholds(): Thresholds | null {
   const api = useApi();
   const [thresholds, setThresholds] = useState<Thresholds | null>(null);
   useEffect(() => {
-    api.getThresholds().then(setThresholds).catch(() => {});
+    api
+      .getThresholds()
+      .then(setThresholds)
+      .catch(() => {});
   }, [api]);
   return thresholds;
 }
@@ -135,7 +159,9 @@ export function useThresholds(): Thresholds | null {
 export function useMyAlerts(id: number | null) {
   const api = useApi();
   const { data, refresh } = usePolled(
-    id == null ? null : () => api.getAlerts().then((all) => all.filter((a: Alert) => a.crew_member_id === id && !a.resolved)),
+    id == null
+      ? null
+      : () => api.getAlerts().then((all) => all.filter((a: Alert) => a.crew_member_id === id && !a.resolved)),
     [api, id],
   );
   return { alerts: data ?? [], refresh };
@@ -153,6 +179,9 @@ export function useReminders(id: number | null): Reminder[] {
 
 export function useMealProposal(id: number | null) {
   const api = useApi();
-  const { data, refresh } = usePolled<MealProposal>(id == null ? null : () => api.getMealProposal(id), [api, id]);
-  return { proposal: data, refresh };
+  const { data, error, refresh } = usePolled<MealProposal>(
+    id == null ? null : () => api.getMealProposal(id),
+    [api, id],
+  );
+  return { proposal: data, error, refresh };
 }

@@ -1,0 +1,10 @@
+{
+  "checks": [
+    "SYS: one complete illustration, matching highlight, no image toggle, no top border",
+    "DIA: one complete illustration, matching highlight, no image toggle, no top border",
+    "PULSE: one complete illustration, matching highlight, no image toggle, no top border",
+    "360 px: natural aspect ratio, no horizontal overflow",
+    "1280 px: natural aspect ratio, no horizontal overflow"
+  ],
+  "errors": []
+}

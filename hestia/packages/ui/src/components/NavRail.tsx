@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import type { ComponentType } from 'react';
 import { HestiaMark } from '../icons';
 
@@ -12,7 +13,7 @@ export type NavItem = {
 export function NavRail({ items }: { items: NavItem[] }) {
   return (
     <nav
-      aria-label="Main"
+      aria-label={t('Main')}
       style={{
         width: 190,
         flexShrink: 0,
@@ -24,7 +25,10 @@ export function NavRail({ items }: { items: NavItem[] }) {
         gap: 2,
       }}
     >
-      <div
+      <a
+        href="#/crew"
+        className="hz-home-link"
+        aria-label={t('HESTIA · Crew', 'HESTIA · Équipage')}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -32,16 +36,17 @@ export function NavRail({ items }: { items: NavItem[] }) {
           padding: '2px 10px 22px',
         }}
       >
-        <HestiaMark size={22} />
+        <HestiaMark size={22} aria-hidden="true" />
         <span style={{ fontWeight: 700, fontSize: 'var(--text-lg)', letterSpacing: '-0.01em' }}>
-          HESTIA
+          {t('HESTIA')}
         </span>
-      </div>
+      </a>
       {items.map((item) => {
         const Icon = item.icon;
         return (
           <button
             key={item.key}
+            className="hz-nav-item"
             onClick={item.onClick}
             aria-current={item.active ? 'page' : undefined}
             style={{

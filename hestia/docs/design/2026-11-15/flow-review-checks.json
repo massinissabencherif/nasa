@@ -1,0 +1,16 @@
+{
+  "checks": [
+    "No horizontal overflow at 1024/1280/1440; packages shown before mission projection",
+    "Fake Mac camera previews and captures; all tracks stop after capture",
+    "2×2 frame selected; moving entire frame preserves grid; corners still adjustable",
+    "Frame corner moves with keyboard; actual photo remains visible",
+    "Inline product assignment shows only the four photographed slots and returns to the same photo/frame; no inventory writes in browser test",
+    "Keyboard focus stays inside the capture sheet and wraps in both directions",
+    "Upload includes per-photo frame; save is blocked until explicit review; one save only (API stubbed)",
+    "Escape releases camera tracks",
+    "Phone 390px: shared photo flow, no overflow, no sheet top border, reduced motion respected",
+    "Guide topics replace accordions; settings separate mission/phones, demo and AI; reset requires confirmation without invoking it",
+    "Camera denial shows a useful error and alternative photo import"
+  ],
+  "errors": []
+}

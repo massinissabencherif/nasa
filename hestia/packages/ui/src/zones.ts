@@ -1,12 +1,10 @@
 export type ZoneKey =
-  | 'brain_morale'
-  | 'eyes_sans'
-  | 'heart'
-  | 'bones'
-  | 'muscles'
-  | 'immunity'
-  | 'skin'
-  | 'digestive_nutrition';
+  'brain_morale' | 'eyes_sans' | 'heart' | 'bones' | 'muscles' | 'immunity' | 'skin' | 'digestive_nutrition';
+
+/** Zones with detailed anatomy, so the panel does not repeat an organ icon. */
+export function showsDetailedAnatomy(zone: ZoneKey) {
+  return zone === 'heart' || zone === 'brain_morale' || zone === 'eyes_sans' || zone === 'muscles';
+}
 
 export type ZoneMeta = {
   label: string;
@@ -33,7 +31,8 @@ export const ZONE_META: Record<ZoneKey, ZoneMeta> = {
     label: 'Brain / morale',
     bodyPart: 'head',
     indicators: ['mood', 'sleep_h', 'reaction_change_pct', 'symptom'],
-    function: 'Mood, sleep, legacy reaction readings and declared symptoms. The new 15-trial reaction sessions are separate information and do not change this zone’s colour.',
+    function:
+      'Mood, sleep, legacy reaction readings and declared symptoms. The separately recorded reaction sessions are separate information and do not change this zone’s colour.',
     why: 'Isolation and confinement wear on morale and decision-making over a long mission; catching a dip early keeps it from compounding.',
     action: "Talk to a crewmate, stick to your sleep schedule, and flag it in today's check-in.",
   },
@@ -41,9 +40,11 @@ export const ZONE_META: Record<ZoneKey, ZoneMeta> = {
     label: 'Eyes (SANS)',
     bodyPart: 'eyes',
     indicators: ['symptom'],
-    function: 'Reported vision changes. Spaceflight-Associated Neuro-ocular Syndrome (SANS) is detected by eye imaging (OCT), not by symptoms: this zone cannot rule it out.',
+    function:
+      'Reported vision changes. Spaceflight-Associated Neuro-ocular Syndrome (SANS) is detected by eye imaging (OCT), not by symptoms: this zone cannot rule it out.',
     why: 'Fluid shifts in microgravity can swell the optic disc. Most long-duration crew members show some sign of it on imaging, often without noticing a change.',
-    action: 'Log any blurred vision as a symptom, and keep the scheduled eye imaging sessions even when you see well.',
+    action:
+      'Log any blurred vision as a symptom, and keep the scheduled eye imaging sessions even when you see well.',
   },
   heart: {
     label: 'Heart',
@@ -51,13 +52,15 @@ export const ZONE_META: Record<ZoneKey, ZoneMeta> = {
     indicators: ['systolic_bp', 'diastolic_bp', 'heart_rate'],
     function: 'Blood pressure and resting heart rate — your cardiovascular baseline.',
     why: 'Microgravity shifts fluid toward the chest, changing how the heart and vessels regulate pressure.',
-    action: 'Rest, hydrate, and recheck in a few hours. Repeated out-of-range readings should go to the crew lead.',
+    action:
+      'Rest, hydrate, and recheck in a few hours. Repeated out-of-range readings should go to the crew lead.',
   },
   bones: {
     label: 'Bones',
     bodyPart: 'pelvis',
     indicators: ['exercise_streak'],
-    function: 'Adherence to resistive exercise, the main countermeasure against bone density loss. This is not a bone measurement: bone density cannot be measured with this app.',
+    function:
+      'Adherence to resistive exercise, the main countermeasure against bone density loss. This is not a bone measurement: bone density cannot be measured with this app.',
     why: 'Altered gravity removes the mechanical load bones need; hip and spine density are the most-studied losses in spaceflight.',
     action: 'Log a resistive exercise session today — see Procedure: resistive exercise routine.',
   },
@@ -81,9 +84,11 @@ export const ZONE_META: Record<ZoneKey, ZoneMeta> = {
     label: 'Radiation exposure',
     bodyPart: 'arms',
     indicators: ['radiation_pct_of_career_limit'],
-    function: 'Cumulative whole-body radiation dose versus the 600 mSv career limit (NASA-STD-3001). Shown on the arms for lack of a better place: the dose concerns the whole body.',
+    function:
+      'Cumulative whole-body radiation dose versus the 600 mSv career limit (NASA-STD-3001). Shown on the arms for lack of a better place: the dose concerns the whole body.',
     why: 'Space radiation is one of the five HRP hazards. The career limit exists to cap the added risk of cancer; radiation can also affect the central nervous system.',
-    action: 'No same-day action — this accumulates over the mission. Track it and plan shelter time during solar events.',
+    action:
+      'No same-day action — this accumulates over the mission. Track it and plan shelter time during solar events.',
   },
   digestive_nutrition: {
     label: 'Digestive / nutrition',

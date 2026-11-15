@@ -10,15 +10,23 @@ const number = (text: string | undefined): string | null => {
 };
 
 const worst = (...levels: (Level | null | undefined)[]): Level | null =>
-  levels.includes('red') ? 'red' : levels.includes('orange') ? 'orange' : levels.includes('green') ? 'green' : null;
+  levels.includes('red')
+    ? 'red'
+    : levels.includes('orange')
+      ? 'orange'
+      : levels.includes('green')
+        ? 'green'
+        : null;
 
 /** The five readings a crew lead looks at first. Pure: built from the zone
  * status the server already returns, no extra request. A missing reading is
  * shown as missing, never as a default. */
 export function crewVitals(status: CrewStatus): Vital[] {
   // a reading that is too old to stand for today keeps its number but loses its colour
-  const current = <T extends { reason?: unknown } | undefined>(zone: T, level: Level | null | undefined): Level | null =>
-    zone && zone.reason ? null : (level ?? null);
+  const current = <T extends { reason?: unknown } | undefined>(
+    zone: T,
+    level: Level | null | undefined,
+  ): Level | null => (zone && zone.reason ? null : (level ?? null));
   const heart = status.heart;
   const brain = status.brain_morale;
   const immunity = status.immunity;
@@ -29,16 +37,39 @@ export function crewVitals(status: CrewStatus): Vital[] {
   const sleep = number(brain?.display.sleep_h);
   const reaction = number(brain?.display.reaction_change_pct);
   return [
-    { key: 'heart_rate', label: 'Heart rate', value: pulse ? `${Math.round(Number(pulse))} bpm` : 'no data', level: current(heart, heart?.indicators.heart_rate) },
+    {
+      key: 'heart_rate',
+      label: 'Heart rate',
+      value: pulse ? `${Math.round(Number(pulse))} bpm` : 'no data',
+      level: current(heart, heart?.indicators.heart_rate),
+    },
     {
       key: 'systolic_bp',
       label: 'Blood pressure',
-      value: systolic && diastolic ? `${Math.round(Number(systolic))}/${Math.round(Number(diastolic))} mmHg` : 'no data',
+      value:
+        systolic && diastolic
+          ? `${Math.round(Number(systolic))}/${Math.round(Number(diastolic))} mmHg`
+          : 'no data',
       level: current(heart, worst(heart?.indicators.systolic_bp, heart?.indicators.diastolic_bp)),
     },
-    { key: 'temperature', label: 'Temperature', value: temperature ? `${temperature} °C` : 'no data', level: current(immunity, immunity?.indicators.temperature) },
-    { key: 'sleep_h', label: 'Sleep', value: sleep ? `${sleep} h` : 'no data', level: current(brain, brain?.indicators.sleep_h) },
-    { key: 'reaction_ms', label: 'Legacy reaction', value: reaction ? `${Math.round(Number(reaction))} ms` : 'no test', level: current(brain, brain?.indicators.reaction_change_pct) },
+    {
+      key: 'temperature',
+      label: 'Temperature',
+      value: temperature ? `${temperature} °C` : 'no data',
+      level: current(immunity, immunity?.indicators.temperature),
+    },
+    {
+      key: 'sleep_h',
+      label: 'Sleep',
+      value: sleep ? `${sleep} h` : 'no data',
+      level: current(brain, brain?.indicators.sleep_h),
+    },
+    {
+      key: 'reaction_ms',
+      label: 'Legacy reaction',
+      value: reaction ? `${Math.round(Number(reaction))} ms` : 'no test',
+      level: current(brain, brain?.indicators.reaction_change_pct),
+    },
   ];
 }
 
@@ -68,7 +99,10 @@ export function freshness(
   zones: { reason: 'no_data' | 'stale' | null; last_ts: string | null }[],
   now: number = Date.now(),
 ): Freshness {
-  const stamps = zones.map((zone) => zone.last_ts).filter((ts): ts is string => Boolean(ts)).map(asUtc);
+  const stamps = zones
+    .map((zone) => zone.last_ts)
+    .filter((ts): ts is string => Boolean(ts))
+    .map(asUtc);
   if (stamps.length === 0) return 'no_data';
   if (zones.some((zone) => zone.reason === 'stale')) return 'stale';
   const newest = new Date(Math.max(...stamps));

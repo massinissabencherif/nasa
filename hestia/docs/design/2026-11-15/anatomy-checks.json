@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "real pending request uses one spinner with text",
+    "brain/eyes/muscles retain frames and fade; all eight labels have padding and keyboard focus",
+    "arm/radiation selection retains its useful outline",
+    "brain explanation has sections, French risk/context and exact threshold boundaries",
+    "continuous heart: manual pause/resume, offscreen pause, simulated hidden-tab pause, reduced motion",
+    "station API failure shows retry, recovers; unknown profile never spins forever",
+    "compact language control preserves draft and persists into a fresh page",
+    "mobile: covered heart paused, structured FAQ, 44 px language target and no overflow at 360/390"
+  ],
+  "errors": []
+}

@@ -1,12 +1,32 @@
-import { useState } from 'react';
+import { ScienceSources } from '@hestia/ui';
+import { LoadingState, LoadError } from '@hestia/ui';
+import { t, dateLocale } from '@hestia/ui';
+import { useCallback, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AdviceText, Button, formatAge, IconCaution, IconCheck, IconCheckin, IconClock, IconCritical, IconExercise, IconMeal, indicatorLabel, Panel, SilhouetteBody, StatusBadge, unknownCount, worstLevel, ZoneDetailPanel } from '@hestia/ui';
+import {
+  AdviceText,
+  Button,
+  DetailSheet,
+  ZONE_META,
+  formatAge,
+  IconCaution,
+  IconCheckin,
+  IconReaction,
+  IconHistory,
+  IconCritical,
+  indicatorLabel,
+  Panel,
+  SilhouetteBody,
+  StatusBadge,
+  unknownCount,
+  worstLevel,
+  ZoneDetailPanel,
+} from '@hestia/ui';
 import type { ZoneKey } from '@hestia/ui';
 import { useApi } from '../lib/ApiProvider';
 import {
   useCrewMember,
-  useCrewStatus,
-  useGamification,
+  useCrewStatusState,
   useMissionContext,
   useMyAlerts,
   useReminders,
@@ -14,17 +34,15 @@ import {
   useThresholds,
 } from '../lib/hooks';
 import { clearSelectedCrewId } from '../lib/profile';
-import { ReactionAssessmentCard } from '../components/ReactionAssessmentCard';
 
 export function Home() {
   const navigate = useNavigate();
   const api = useApi();
   const crewId = useSelectedCrewId();
   const crew = useCrewMember(crewId);
-  const status = useCrewStatus(crewId);
+  const { data: status, error: statusError, refresh: refreshStatus } = useCrewStatusState(crewId);
   const context = useMissionContext();
   const thresholds = useThresholds();
-  const gamification = useGamification(crewId);
   const reminders = useReminders(crewId);
   const [selectedZone, setSelectedZone] = useState<ZoneKey | null>(null);
   const { alerts, refresh: refreshAlerts } = useMyAlerts(crewId);
@@ -35,64 +53,28 @@ export function Home() {
   const overall = status ? worstLevel(Object.values(status).map((z) => z.level)) : null;
   const missing = status ? unknownCount(Object.values(status).map((z) => z.level)) : 0;
   const checkinDone = reminders.find((r) => r.key === 'measurements')?.done ?? false;
-  const byKey = Object.fromEntries(reminders.map((r) => [r.key, r]));
-  const routine: { key: string; label: string; detail: string; icon: typeof IconCheckin; to: string; done: boolean; optional?: boolean }[] = [
-    {
-      key: 'checkin',
-      label: 'Daily check-in',
-      detail: checkinDone ? 'Recorded today. Tap to update it.' : 'How you feel and what you measured',
-      icon: IconCheckin,
-      to: '/checkin',
-      done: checkinDone,
-    },
-    {
-      key: 'exercise',
-      label: byKey.exercise?.label ?? 'Resistive exercise, 30 min or more',
-      detail: byKey.exercise?.detail ?? 'Logged in your check-in',
-      icon: IconExercise,
-      to: '/checkin',
-      done: byKey.exercise?.done ?? false,
-    },
-    {
-      key: 'meal',
-      label: byKey.meal?.label ?? 'Log your meals',
-      detail: byKey.meal?.detail ?? 'From the real stock',
-      icon: IconMeal,
-      to: '/meal',
-      done: byKey.meal?.done ?? false,
-    },
-    {
-      key: 'reaction',
-      label: 'Reaction time test',
-      detail: 'Measured by this phone, 1 to 2 minutes',
-      icon: IconClock,
-      to: '/assessments',
-      done: false,
-      optional: true,
-    },
-  ];
-  const required = routine.filter((row) => !row.optional);
-  const routineCount = required.length;
-  const routineDone = required.filter((row) => row.done).length;
-  // reminders that are advice, not tasks to tick
-  const notes = reminders.filter((r) => r.key === 'hydration' || r.key === 'context');
+  const bodyView = useRef<HTMLDivElement>(null);
+  const getContextAnchor = useCallback(
+    () => bodyView.current?.querySelector(`[data-zone-context="${selectedZone}"]`) ?? null,
+    [selectedZone],
+  );
   // the newest reading behind any zone, so the person sees how fresh the body view is
   const newestTs = status
-    ? Object.values(status)
+    ? (Object.values(status)
         .map((zone) => zone.last_ts)
         .filter((ts): ts is string => Boolean(ts))
         .sort()
-        .pop() ?? null
+        .pop() ?? null)
     : null;
 
   return (
-    <div style={{ padding: 16, display: 'grid', gap: 14 }}>
+    <div className="hz-home" data-context-open={selectedZone !== null}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
         <div style={{ minWidth: 0 }}>
           <h1 style={{ fontSize: 'var(--text-xl)', fontWeight: 700 }}>{crew?.name ?? '…'}</h1>
           <p style={{ color: 'var(--text-faint)', fontSize: 'var(--text-sm)' }}>
-            {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' })}
-            {context ? ` · ${context.label}, Earth replies in ${Math.max(1, Math.round((context.delay_s * 2) / 60))} min` : ''}
+            {new Date().toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'short' })}
+            {context ? ` · ${t(context.label)}` : ''}
           </p>
         </div>
         <Button
@@ -103,7 +85,7 @@ export function Home() {
             navigate('/profile');
           }}
         >
-          Switch profile
+          {t('Switch profile')}
         </Button>
       </div>
 
@@ -111,15 +93,24 @@ export function Home() {
         <div
           key={alert.id}
           role="alert"
-          style={{ padding: 14, borderRadius: 'var(--radius-md)', background: 'var(--red-dim)', border: '1px solid var(--red)', display: 'grid', gap: 8 }}
+          style={{
+            padding: 14,
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--red-dim)',
+            border: '1px solid var(--red)',
+            display: 'grid',
+            gap: 8,
+          }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--red)' }}>
             <IconCritical size={18} />
-            <span style={{ fontWeight: 700, color: 'var(--text)' }}>Red alert: {indicatorLabel(alert.indicator)}</span>
+            <span style={{ fontWeight: 700, color: 'var(--text)' }}>
+              {t('Red alert:')} {indicatorLabel(alert.indicator)}
+            </span>
           </div>
           <AdviceText message={alert.message} />
           <Button onClick={() => api.ackAlert(alert.id).then(refreshAlerts)} style={{ justifySelf: 'start' }}>
-            I have read this
+            {t('I have read this')}
           </Button>
         </div>
       ))}
@@ -127,108 +118,109 @@ export function Home() {
       {oranges.map((alert) => (
         <div
           key={alert.id}
-          style={{ padding: 14, borderRadius: 'var(--radius-md)', background: 'var(--orange-dim)', border: '1px solid var(--orange)', display: 'grid', gap: 8 }}
+          style={{
+            padding: 14,
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--orange-dim)',
+            border: '1px solid var(--orange)',
+            display: 'grid',
+            gap: 8,
+          }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--orange)' }}>
             <IconCaution size={18} />
-            <span style={{ fontWeight: 700, color: 'var(--text)' }}>Advice: {indicatorLabel(alert.indicator)}</span>
+            <span style={{ fontWeight: 700, color: 'var(--text)' }}>
+              {t('Advice:')} {indicatorLabel(alert.indicator)}
+            </span>
           </div>
           <AdviceText message={alert.message} />
           <Button onClick={() => api.ackAlert(alert.id).then(refreshAlerts)} style={{ justifySelf: 'start' }}>
-            Got it
+            {t('Got it')}
           </Button>
         </div>
       ))}
 
-      <Panel title="Today's routine" action={<span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>{routineDone} of {routineCount} done</span>}>
-        <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-            Once a day, record how you feel and what you measured. HESTIA turns it into your body status below and tells you what to
-            do. Far from Earth, you are the first to notice a change.
-          </p>
-          {!checkinDone && (
-            <Button variant="primary" size="lg" icon={<IconCheckin size={20} />} onClick={() => navigate('/checkin')}>
-              Start my check-in · about 2 min
-            </Button>
-          )}
-          <div style={{ display: 'grid' }}>
-            {/* while the check-in is still to do, the big button above is its row */}
-            {routine.filter((row) => row.key !== 'checkin' || checkinDone).map((row, index) => {
-              const RowIcon = row.icon;
-              return (
-                <button
-                  key={row.key}
-                  onClick={() => navigate(row.to)}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '24px minmax(0, 1fr) auto',
-                    alignItems: 'center',
-                    gap: 'var(--space-3)',
-                    padding: 'var(--space-3) 0',
-                    minHeight: 56,
-                    background: 'none',
-                    border: 'none',
-                    borderTop: index === 0 ? 'none' : '1px solid var(--border-soft)',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    color: 'var(--text)',
-                  }}
-                >
-                  <span aria-hidden="true" style={{ display: 'inline-flex', color: row.done ? 'var(--text-faint)' : 'var(--accent)' }}>
-                    <RowIcon size={22} />
-                  </span>
-                  <span style={{ minWidth: 0 }}>
-                    <span style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 500 }}>{row.label}</span>
-                    <span style={{ display: 'block', fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>{row.detail}</span>
-                  </span>
-                  <span
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 'var(--space-1)',
-                      fontSize: 'var(--text-xs)',
-                      color: row.done ? 'var(--green-ink)' : 'var(--text-faint)',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {row.done && <IconCheck size={14} />}
-                    {row.done ? 'done' : row.optional ? 'optional' : 'to do'}
-                    <span aria-hidden="true" style={{ color: 'var(--decor)', marginLeft: 'var(--space-1)' }}>›</span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          {notes.map((note) => (
-            <p key={note.key} style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>
-              {note.label}: {note.detail}
-            </p>
-          ))}
+      <nav className="hz-daily-actions" aria-label={t('Daily actions', 'Actions du jour')}>
+        <Button
+          variant="primary"
+          size="lg"
+          icon={<IconCheckin size={20} />}
+          onClick={() => navigate('/checkin')}
+        >
+          {t(checkinDone ? 'Update my check-in' : 'Start my check-in')}
+        </Button>
+        <p>{t(checkinDone ? 'Recorded today' : 'How you feel and what you measured · about 2 min')}</p>
+        <div className="hz-daily-secondary">
+          <Button
+            size="lg"
+            style={{ paddingInline: 'var(--space-2)' }}
+            icon={<IconReaction size={18} />}
+            onClick={() => navigate('/assessments')}
+          >
+            {t('Reaction test', 'Test de réaction')}
+          </Button>
+          <Button
+            size="lg"
+            style={{ paddingInline: 'var(--space-2)' }}
+            icon={<IconHistory size={18} />}
+            onClick={() => navigate('/assessments/history')}
+          >
+            {t('Results', 'Résultats')}
+          </Button>
         </div>
-      </Panel>
+        <p>{t('Reaction test: optional', 'Test de réaction : facultatif')}</p>
+      </nav>
 
-      <Panel title="Your body" action={newestTs ? <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>last reading {formatAge(newestTs)}</span> : undefined}>
+      <Panel
+        title={t('Your body')}
+        action={
+          newestTs ? (
+            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>
+              {t('last reading')} {formatAge(newestTs)}
+            </span>
+          ) : undefined
+        }
+      >
         {status ? (
           <div style={{ display: 'grid', gap: 6 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
               <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
                 {overall === 'unknown'
-                  ? 'No recent data: do a check-in'
+                  ? t('No recent data: do a check-in')
                   : overall === 'green'
                     ? missing === 0
-                      ? 'All zones nominal'
-                      : `Nominal where measured, ${missing} zone${missing > 1 ? 's' : ''} without recent data`
-                    : 'Some zones need attention'}
+                      ? t('All zones nominal')
+                      : t(
+                          `Nominal where measured; ${missing} zones without recent data`,
+                          `Normal pour les zones mesurées ; ${missing} zones sans donnée récente`,
+                        )
+                    : t('Some zones need attention')}
               </span>
               {overall && <StatusBadge level={overall} />}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <SilhouetteBody status={status} width={340} showLabels selectedZone={selectedZone} onSelectZone={setSelectedZone} />
+            <div ref={bodyView} style={{ display: 'flex', justifyContent: 'center' }}>
+              <SilhouetteBody
+                status={status}
+                width={340}
+                showLabels
+                selectedZone={selectedZone}
+                motionSuppressed={selectedZone !== null}
+                onSelectZone={setSelectedZone}
+              />
             </div>
             <p style={{ textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-              Tap a zone to see what was measured, why it matters and what to do.
+              {t('Tap a zone to see what was measured, why it matters and what to do.')}
             </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 'var(--space-2) var(--space-4)', fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                gap: 'var(--space-2) var(--space-4)',
+                fontSize: 'var(--text-xs)',
+                color: 'var(--text-faint)',
+              }}
+            >
               {(
                 [
                   ['var(--green)', 'nominal'],
@@ -236,76 +228,62 @@ export function Home() {
                   ['var(--red)', 'alert for the crew'],
                 ] as const
               ).map(([colour, word]) => (
-                <span key={word} style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' }}>
-                  <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '50%', background: colour }} />
-                  {word}
+                <span
+                  key={t(word)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' }}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{ width: 8, height: 8, borderRadius: '50%', background: colour }}
+                  />
+                  {t(word)}
                 </span>
               ))}
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' }}>
-                <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '50%', border: '1.5px dashed var(--text-faint)' }} />
-                no recent data
+                <span
+                  aria-hidden="true"
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    border: '1.5px dashed var(--text-faint)',
+                  }}
+                />
+                {t('no recent data')}
               </span>
             </div>
           </div>
         ) : (
-          <p style={{ color: 'var(--text-faint)', fontSize: 'var(--text-sm)' }}>Loading your status…</p>
+          !statusError && <LoadingState label={t('Loading your status…')} />
+        )}
+        {statusError && (
+          <LoadError
+            label={t(
+              'Status could not refresh. Any displayed readings may be outdated.',
+              'Actualisation impossible. Les mesures affichées peuvent être anciennes.',
+            )}
+            onRetry={refreshStatus}
+          />
         )}
       </Panel>
 
       {selectedZone && status && (
-        <Panel elevated>
-          <ZoneDetailPanel zone={selectedZone} status={status} thresholds={thresholds} contextType={context?.type} onClose={() => setSelectedZone(null)} />
-          {selectedZone === 'brain_morale' && <Button onClick={() => navigate('/assessments')}>Open reaction time assessment</Button>}
-        </Panel>
+        <DetailSheet
+          title={t(ZONE_META[selectedZone].label)}
+          onClose={() => setSelectedZone(null)}
+          getContextAnchor={getContextAnchor}
+        >
+          <ZoneDetailPanel
+            zone={selectedZone}
+            status={status}
+            thresholds={thresholds}
+            contextType={context?.type}
+            hideHeading
+          />
+        </DetailSheet>
       )}
 
-      {crewId != null && <ReactionAssessmentCard key={crewId} crewId={crewId} onOpen={() => navigate('/assessments')} />}
-
-      {gamification && (
-        <details>
-          <summary style={{ cursor: 'pointer', fontSize: 'var(--text-sm)', color: 'var(--text-muted)', padding: '6px 2px' }}>
-            Routine and badges: {gamification.streak}-day check-in streak
-          </summary>
-        <Panel title="Crew routine">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
-            {(
-              [
-                [`${gamification.streak} d`, 'check-in streak'],
-                [`${gamification.score}`, 'your points'],
-                [gamification.rank ? `#${gamification.rank} of ${gamification.crew_size}` : 'n/a', `crew total ${gamification.crew_score}`],
-              ] as const
-            ).map(([value, label]) => (
-              <div key={label} style={{ background: 'var(--panel-raised)', borderRadius: 'var(--radius-sm)', padding: '8px 10px' }}>
-                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-lg)' }}>{value}</p>
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>{label}</p>
-              </div>
-            ))}
-          </div>
-          <div style={{ display: 'grid', gap: 8 }}>
-            {gamification.badges.map((badge) => (
-              <div key={badge.key} style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: badge.earned ? 1 : 0.55 }}>
-                <span
-                  style={{
-                    fontSize: 'var(--text-xs)',
-                    fontWeight: 600,
-                    padding: '3px 9px',
-                    borderRadius: 999,
-                    whiteSpace: 'nowrap',
-                    border: `1px solid ${badge.earned ? 'var(--accent)' : 'var(--border)'}`,
-                    color: badge.earned ? 'var(--accent)' : 'var(--text-muted)',
-                    background: badge.earned ? 'var(--accent-dim)' : 'transparent',
-                  }}
-                >
-                  {badge.earned ? '★ ' : ''}
-                  {badge.label}
-                </span>
-                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>{badge.earned ? 'Earned' : badge.rule}</span>
-              </div>
-            ))}
-          </div>
-        </Panel>
-        </details>
-      )}
+      <ScienceSources />
     </div>
   );
 }

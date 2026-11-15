@@ -1,0 +1,20 @@
+{
+  "checks": [
+    "Desktop brain: four distinct measurement pictograms before labels; four named status icons next to values",
+    "Desktop heart: all three readings retain one compact row",
+    "Mobile 360/390: neutral 1 px sheet border, four measure icons, no horizontal overflow or overlapping columns",
+    "Desktop sheet also uses neutral border; Tab stays inside; Escape closes and focus returns to the opener"
+  ],
+  "errors": [],
+  "border": {
+    "top": "rgb(42, 53, 66)",
+    "right": "rgb(42, 53, 66)",
+    "left": "rgb(42, 53, 66)",
+    "width": "1px"
+  },
+  "desktopBorder": {
+    "top": "rgb(42, 53, 66)",
+    "left": "rgb(42, 53, 66)",
+    "width": "1px"
+  }
+}

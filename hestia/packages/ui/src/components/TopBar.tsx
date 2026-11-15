@@ -1,3 +1,7 @@
+import { MissionIllustration } from './MissionIllustration';
+import { t } from '../i18n';
+import { QuickHelp } from './QuickHelp';
+import { LanguageSwitch } from './LanguageSwitch';
 import { useEffect, useState } from 'react';
 import { IconClock, IconConnection } from '../icons';
 
@@ -28,10 +32,12 @@ function Tag({ children }: { children: string }) {
 
 export function TopBar({
   contextLabel,
+  contextType,
   earthDelayLabel,
   connected,
 }: {
   contextLabel: string;
+  contextType?: string;
   earthDelayLabel?: string;
   connected: boolean;
 }) {
@@ -52,27 +58,30 @@ export function TopBar({
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
-        <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600 }}>{contextLabel}</span>
+        {contextType && <MissionIllustration context={contextType} size={32} />}
+        <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600 }}>{t(contextLabel)}</span>
         {earthDelayLabel && (
           <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-            Earth reply in {earthDelayLabel} (round trip)
+            {t('Earth reply in')} {t(earthDelayLabel)} {t('(round trip)')}
           </span>
         )}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
-        <Tag>SIMULATED</Tag>
-        <Tag>Not a medical device</Tag>
+        <QuickHelp />
+        <LanguageSwitch />
+        <Tag>{t('SIMULATED')}</Tag>
+        <Tag>{t('Not a medical device')}</Tag>
         <span
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: 5,
-            color: connected ? 'var(--green)' : 'var(--red)',
+            color: connected ? 'var(--green-ink)' : 'var(--red-ink)',
             fontSize: 'var(--text-sm)',
           }}
         >
           <IconConnection size={15} />
-          {connected ? 'Connected' : 'Offline'}
+          {t(connected ? 'Local server ready' : 'Local server unavailable')}
         </span>
         <span
           style={{

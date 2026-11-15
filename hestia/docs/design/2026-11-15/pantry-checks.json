@@ -1,0 +1,12 @@
+{
+  "checks": [
+    "Réserve: 12 cases, scan visible et aucune case débordante à 1024/1280/1440 px",
+    "La case A3 ouvre sa photo et le compte dans la même fiche, utilisable au clavier",
+    "Comptage: échec conserve le brouillon, un seul envoi pendant attente, nouvelle tentative confirmée; requêtes interceptées sans écriture serveur",
+    "Rejeu explicitement sans IA, requête correcte et pas de scan doublé; aucun appel Ollama",
+    "Lecture croisée envoyée dans la requête; avertissement de photo floue traduit et visible (réponse contrôlée, pas une mesure Ollama)",
+    "Crédits: vrais fichiers locaux, fermeture animée, retour du focus clavier",
+    "Téléphone 390 px: crédits sans débordement, sheet sans trait supérieur, entrée/sortie désactivées en mouvement réduit"
+  ],
+  "errors": []
+}

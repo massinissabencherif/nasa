@@ -1,0 +1,20 @@
+{
+  "checks": [
+    "body is visible before daily tools",
+    "bottom sheet, Escape and focus return",
+    "keyboard activation and modal focus containment",
+    "home reaction/results shortcuts visible and practice launch above fold",
+    "help and language switching preserve draft",
+    "review/back, zero value, failed save, retry succeeds",
+    "language persists after reload",
+    "all phone routes at 360 and 390: no document overflow",
+    "reduced motion disables page transition",
+    "anatomical heart visible, native SVG focus removed, explanation optional",
+    "desktop profile is a full page with visible detail, direct URL, reload and return",
+    "local network FAQ opens by keyboard/touch and closes",
+    "measurement keyboard focus has one outline and no halo",
+    "desktop routes fit 1024,1280,1440 px"
+  ],
+  "errors": [],
+  "external": []
+}

@@ -23,14 +23,21 @@ export type ReactionClock = {
 };
 
 const initialState = (): ReactionState => ({
-  phase: 'intro', mode: 'practice', trialNumber: 1, practiceCompleted: 0,
-  feedback: '', trials: [], result: null,
+  phase: 'intro',
+  mode: 'practice',
+  trialNumber: 1,
+  practiceCompleted: 0,
+  feedback: '',
+  trials: [],
+  result: null,
 });
 
 /** Offline preview only; the station recomputes these from the raw attempts. */
 export function previewReaction(trials: ReactionTrialInput[]) {
-  const valid = trials.filter((trial) => trial.outcome === 'valid' && trial.reaction_ms != null)
-    .map((trial) => trial.reaction_ms!).sort((a, b) => a - b);
+  const valid = trials
+    .filter((trial) => trial.outcome === 'valid' && trial.reaction_ms != null)
+    .map((trial) => trial.reaction_ms!)
+    .sort((a, b) => a - b);
   const middle = Math.floor(valid.length / 2);
   return {
     median: valid.length ? (valid[middle] + valid[Math.floor((valid.length - 1) / 2)]) / 2 : null,
@@ -53,8 +60,12 @@ export class ReactionRunner {
   private clock: ReactionClock;
   private publish: (state: ReactionState, signal?: boolean) => void;
 
-  constructor(protocol: ReactionProtocol, deviceId: string | null, clock: ReactionClock,
-    publish: (state: ReactionState, signal?: boolean) => void) {
+  constructor(
+    protocol: ReactionProtocol,
+    deviceId: string | null,
+    clock: ReactionClock,
+    publish: (state: ReactionState, signal?: boolean) => void,
+  ) {
     this.protocol = protocol;
     this.deviceId = deviceId;
     this.clock = clock;
@@ -93,7 +104,9 @@ export class ReactionRunner {
       return;
     }
     this.update({ phase: 'wait', feedback: '' });
-    const wait = this.protocol.wait_min_ms + this.clock.random() * (this.protocol.wait_max_ms - this.protocol.wait_min_ms);
+    const wait =
+      this.protocol.wait_min_ms +
+      this.clock.random() * (this.protocol.wait_max_ms - this.protocol.wait_min_ms);
     this.timer = this.clock.later(() => {
       this.frameId = this.clock.frame(() => {
         if (this.state.phase !== 'wait') return;
@@ -119,13 +132,20 @@ export class ReactionRunner {
     const attempt: ReactionTrialInput = { trial_number: this.state.trialNumber, outcome };
     if (reactionMs != null) attempt.reaction_ms = reactionMs;
     const trials = this.state.mode === 'measured' ? [...this.state.trials, attempt] : this.state.trials;
-    const feedback = outcome === 'false_start' ? 'Too early. Wait for the signal.'
-      : outcome === 'no_response' ? 'No response. This trial has no reaction time.'
-        : `${Math.round(reactionMs!)} ms`;
+    const feedback =
+      outcome === 'false_start'
+        ? 'Too early. Wait for the signal.'
+        : outcome === 'no_response'
+          ? 'No response. This trial has no reaction time.'
+          : `${Math.round(reactionMs!)} ms`;
     const completed = outcome !== 'false_start';
     const number = this.state.trialNumber;
-    this.update({ phase: 'feedback', feedback, trials,
-      practiceCompleted: this.state.mode === 'practice' && completed ? number : this.state.practiceCompleted });
+    this.update({
+      phase: 'feedback',
+      feedback,
+      trials,
+      practiceCompleted: this.state.mode === 'practice' && completed ? number : this.state.practiceCompleted,
+    });
     if (this.state.mode === 'measured' && completed && number === this.protocol.measured_trials) {
       this.finish('complete');
       return;
@@ -143,9 +163,14 @@ export class ReactionRunner {
   interrupt() {
     if (!['wait', 'go', 'feedback', 'ready'].includes(this.state.phase)) return;
     if (this.state.mode === 'measured' && ['wait', 'go'].includes(this.state.phase)) {
-      this.update({ trials: [...this.state.trials, { trial_number: this.state.trialNumber, outcome: 'interrupted' }] });
+      this.update({
+        trials: [...this.state.trials, { trial_number: this.state.trialNumber, outcome: 'interrupted' }],
+      });
     }
-    this.finish('interrupted', 'The test was interrupted when the app lost focus. This session is not complete.');
+    this.finish(
+      'interrupted',
+      'The test was interrupted when the app lost focus. This session is not complete.',
+    );
   }
 
   abandon() {
@@ -156,9 +181,15 @@ export class ReactionRunner {
   private finish(status: ReactionSessionInput['status'], feedback = '') {
     this.dispose();
     const result: ReactionSessionInput = {
-      id: this.sessionId, protocol_version: this.protocol.version, device_id: this.deviceId,
-      started_at: this.startedAt, ended_at: this.clock.date(), status, source: 'manual',
-      practice_completed: this.state.practiceCompleted, trials: this.state.trials,
+      id: this.sessionId,
+      protocol_version: this.protocol.version,
+      device_id: this.deviceId,
+      started_at: this.startedAt,
+      ended_at: this.clock.date(),
+      status,
+      source: 'manual',
+      practice_completed: this.state.practiceCompleted,
+      trials: this.state.trials,
     };
     this.update({ phase: status === 'complete' ? 'done' : 'paused', feedback, result });
   }

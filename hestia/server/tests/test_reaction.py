@@ -195,3 +195,24 @@ def test_demo_sessions_are_explicitly_simulated_and_incomplete_session_is_exclud
     assert len(rows) == 7 and all(row["source"] == "simulated" for row in rows)
     assert rows[0]["reference"]["count"] == 5
     assert rows[1]["status"] == "interrupted" and rows[1]["reference"]["median_ms"] is None
+
+
+def test_short_protocol_accepts_five_trials_without_mixing_old_reference(client):
+    device = str(uuid4())
+    endpoint = path(client)
+    for days in range(6, 0, -1):
+        assert client.post(endpoint, json=payload(device=device, days_ago=days)).status_code == 201
+    protocol = client.get('/api/reaction/protocol').json()
+    assert protocol['version'] == 'reaction-5-v1'
+    assert (protocol['practice_trials'], protocol['measured_trials']) == (1, 5)
+    body = payload(device=device, times=[220, 230, 240, 250, 260])
+    body.update(protocol_version='reaction-5-v1', practice_completed=1)
+    response = client.post(endpoint, json=body)
+    assert response.status_code == 201, response.text
+    assert response.json()['median_ms'] == 240
+    assert response.json()['valid_responses'] == 5
+    assert response.json()['reference']['count'] == 0
+    incomplete = deepcopy(body)
+    incomplete['id'] = str(uuid4())
+    incomplete['trials'].pop()
+    assert client.post(endpoint, json=incomplete).status_code == 422

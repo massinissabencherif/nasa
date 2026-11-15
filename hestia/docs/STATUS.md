@@ -1,8 +1,281 @@
 # HESTIA — status
 
-Last update: 14 Nov 2026 (first day of the event). This file says what
+Last update: 15 Nov 2026. This file says what
 works, how it was checked, and what is still open. Decisions are in
 [decisions.md](decisions.md).
+
+## Current handover — 15 Nov, before David's sleep
+
+David approved consolidating and pushing the night's work onto `main`, with the
+exact message `feat: consolidate HESTIA demo flows and team handoff`. This section
+travels with the delivery. Check the actual remote commit before starting; earlier
+"uncommitted", branch and process statements below are historical snapshots.
+
+- **Open task list, no reserved ownership:** David and Massi can each choose UI
+  finishing, hardware rehearsal, Earth link, presentation or another useful task.
+  Record the selected scope/branch before starting to avoid simultaneous edits.
+- The handover includes the outstanding UI requests, starting with the dense
+  reaction result and untranslated personal-reference text. No final UI approval
+  is implied; frontend work is not reserved to one contributor.
+- **Fable has no assigned implementation task.** The optional message only loads
+  current context; choose a concrete subject later. The earlier broad brief was
+  withdrawn following David's correction.
+
+The [morning restart](reprise-2026-11-15-fr.md) contains launch instructions,
+an open finishing list and a rehearsal checklist. The [optional Fable context message](prompt/2026-11-15-fable-final-readiness-fr.md)
+is prepared but unsent; nothing is scheduled.
+The full open-request register stays [here](sources/2026-11-15-interactions-and-evidence.md#next-work-in-order).
+
+Only handover documentation changed in this delivery preparation. Earlier test
+results below remain dated evidence; no redundant full suite was rerun. Git had
+no remote divergence when checked. Actual main publication is established by
+Git, not by the presence of these prepared documents. The NASA draft, pitch and
+risk table must be reconciled before use; hardware rehearsal is still outstanding.
+
+## Latest clarification and remaining-work register
+
+The Guide → Pantry now discreetly separates today's manual capture from a future
+fixed camera taking periodic images; no automatic capture was added. David reports
+mostly good results in thorough mode on recent attempts, without a recorded sample
+count. Keep that positive feedback distinct from measured reliability.
+[Current prioritised remaining-work list](sources/2026-11-15-interactions-and-evidence.md#next-work-in-order)
+covers real rehearsal, Massi's proposed Earth-link check, unfinished pages/components,
+optional onboarding, deferred features and delivery. No new full test run for this
+copy-only change; frontends rebuilt to expose it.
+
+## 15 Nov — latest: catalogue editing, explicit scale and companion motion
+
+**D41–D43 implemented, uncommitted.** Settings → Presentation tools → Prepare
+my products → Products & values → Edit opens a centred modal. Name, package kcal
+and macros are editable; the form announces recalculation of already logged
+meals. In the same settings section, Adjust multiplier offers ×1, demo ×212 or
+an integer value; selection alone does not save. Counts remain unchanged.
+
+Pantry shows package kcal separately from the mission projection. Three seeded
+bean packages and two water packages are 750 catalogue kcal, or 159000 simulated
+kcal at ×212, before later meals. Same-product slots aggregate before subtracting
+meals once. Pending photo proposals reject a changed catalogue/scale.
+
+The companion floats during analysis with pause, visibility guards and reduced
+motion. Its AI provenance is in credits, without repeated captions. On station
+viewports below 768px a clear orientation screen replaces the admin shell and
+links to crew. This replaces the previously recorded narrow-screen overflow.
+
+**Verified:** 92 existing backend tests plus four new regression tests pass;
+both web builds pass. Five focused Chrome checks cover modal failure/retry,
+keyboard containment, multiplier save, calorie separation, animation/pause/reduced
+motion and the 390px gate/link. Browser writes/vision were intercepted. Lint has
+no errors and 10 existing warnings; formatting/offline checks pass. Larger JS
+bundles remain (~852kB station / 824kB crew). Physical hardware and model accuracy
+were not retested. [Evidence](design/2026-11-15/README.md#catalogue-scale-and-companion-motion).
+
+**Preview:** API8011 restarted as PID44957, SAME disposable DB; no reset or
+actual catalogue/scale mutation by the checks. All latest server changes loaded,
+including the previous float-boundary fix. Still localhost-only; real phone/LAN
+needs rehearsal. Reload crew for rebuilt assets. No commit/push/publication.
+Remaining vision, Massi Earth-link rehearsal, jury onboarding and submission work
+stay open; older entries below are historical.
+
+## 15 Nov — latest: framing, stock preparation and short reaction test
+
+**D37–D40 implemented, uncommitted.** Product preparation and confirmed stock-only
+emptying are in Settings → Presentation tools. The short preparation panel and
+Earth clock stack beside scenarios. Unused products and multiple slot assignments
+are explicit; repeated products are allowed. No quantities were reset automatically.
+Review distinguishes a partial update from the whole new reserve (zero unseen
+slots only after saving). Frame sides/corners resize, centre moves, previews crop
+to selected boxes. Rejections are focused near Analyse; waiting uses the existing
+mascot. Current reaction protocol is 1 practice + 5 measured, with old history kept
+separate. [Current review](sources/2026-11-15-camera-review-and-pantry.md#latest-follow-up--d37d40).
+
+**Verified:** 92 backend / 23 frontend tests, both builds, format/offline/diff checks.
+No lint errors; 10 existing warnings. Nine additional recorded browser checks,
+including keyboard, reduced motion, review scope, stock-only reset confirmation
+and a real-timed five-trial run; writes intercepted. [Evidence](design/2026-11-15/README.md#framing-stock-setup-and-product-usage).
+
+**Limits:** shared sheets fit 390px, but the station header/navigation still
+overflow at phone width. New-user comprehension, screen reader, actual camera,
+physical phone/LAN and Massi's machine are unverified. Qwen still miscounts:
+David showed 1 rice bag predicted where 3 were visible; no new accuracy benchmark.
+Liaison Terre backend scenario passes, full UI rehearsal proposed for Massi.
+Jury onboarding, broader copy/components, video and submission remain open.
+
+**Preview:** station1422 and crew/API8011, API PID30751, unchanged disposable
+`/private/tmp/hestia-interaction-review/demo.db`, localhost only. Frontends rebuilt;
+reload crew. The final tiny crop-boundary float tolerance is tested in source and
+will load at the next API restart; other changes are already in this API process.
+No real DB reset, commit, push, merge, publication or Xcode installation.
+Older entries below describe earlier snapshots.
+
+## 15 Nov — latest: camera, safe stock review and clearer controls
+
+**D34–D36 implemented and browser-checked, uncommitted.** Both apps share camera
+preview/capture, per-photo 1–3 × 1–4 framing, and review before saving live counts.
+Station product assignment stays with the photo. Changing a slot's product makes
+its quantity unknown until recounted. Partial frames preserve unseen stock/meals;
+changing the grid does not reassign products or clear the remaining demo stock.
+The model counts known assigned products; it does not freely recognise food or
+infer nutrition. [Current report and checklist](sources/2026-11-15-camera-review-and-pantry.md).
+
+Pantry is compact, with physical counts first and full-width actions for the
+active mission and a supply delay. Mission illustration is in the header.
+Settings separates mission/phones, presentation controls and local AI. Guide
+uses topics/short steps with the existing mascot. Technical calibration remains
+for custom catalogue/capacity settings; it is not redesigned.
+
+**Verified:** 88 backend tests, 22 frontend tests, both builds, Prettier,
+offline source scan and whitespace checks pass. Oxlint has no errors and 10
+existing warnings. Playwright checks fake camera capture/cleanup/denial, frame
+keyboard controls, inline assignment/photo preservation, review-before-save,
+focus wrapping, reduced motion and mobile/desktop overflow; no JS errors.
+[Current screens](design/2026-11-15/README.md#camera-pantry-and-settings-review).
+
+**Actual Ollama:** scene guard rejected the user's logo, accepted the existing
+synthetic shelf; a separate HTTP logo scan returned 400 with stock unchanged.
+This is not a count-accuracy benchmark. Claude's 24/24 still concerns two tuning
+images. New photos, camera hardware, phone/LAN, video and Massi's machine remain
+unverified. Model training was discussed, not performed or validated.
+
+**Preview:** station `http://127.0.0.1:1422/#/pantry`; crew
+`http://127.0.0.1:8011/crew/`. API PID 15816 retains the same disposable DB at
+`/private/tmp/hestia-interaction-review/demo.db`. It binds localhost only: the QR
+port is correct but this preview is not accessible to a separate phone yet.
+Other servers/real data were not reset. Reload crew to load the rebuilt app.
+
+**Next:** actual products and repeated photos first, then video with Claude;
+optional jury onboarding is requested but not implemented. Broader page/component,
+translation/graph/mascot/performance work and submission remain open in the
+[request register](sources/2026-11-15-interactions-and-evidence.md). No commit,
+push, merge, publication or Xcode installation. Older entries below are historical.
+
+## 15 Nov — current work: interactions, discoverability and evidence
+
+**Latest (D31–D33):** station Pantry now opens a photographed slot beside its
+count for review, separates capture/inventory/autonomy from test tools/scenarios,
+and uses the shared icons and motion. Credits, ESGI/Space Apps marks, web favicon
+and install icons are present; small planet/habitat illustrations identify missions.
+Shared sheets have entry/exit motion and reduced-motion support. This is not a
+finished redesign of every screen. [Screens/checks](design/2026-11-15/README.md#pantry-identity-and-motion-follow-up).
+
+**Claude/Fable vision imported with David's approval:** worktree exists at
+`../hestia-vision-worktree`, branch `fix/vision-reliability`, reviewed at `34c8962`.
+Source/test changes and evidence are now applied here, uncommitted, without a
+branch merge. Station Pantry offers cross-checking and displays photo warnings;
+crew Pantry still offers its older full/row choice. 76 backend tests, 20 frontend
+tests, both builds, formatting/offline checks and focused browser checks pass.
+13 lint warnings and bundle/dependency warnings remain. The 24/24 count result
+belongs to Claude's two tuning fixtures; no fresh real-world accuracy result.
+Preview API on 8011 was restarted with the SAME disposable DB, PID 75038; other
+servers and real data were untouched. Reload the browser for the built crew app.
+
+**New image:** a cleaner [synthetic shelf candidate](sources/assets/shelf-demo-v2-candidate.md)
+is saved for review, not installed as a new fixture. A real demonstration should
+use a calibrated 3×4 layout with known products, not a mixed random bin. Its
+current 212-ration-per-box scale is a demo assumption and must be explained.
+
+**Submission reminder:** Sunday 15 Nov 2026, 23:59 local time. The online demo
+can be a video under 30 seconds OR up to 7 slides; the local 5-min talk/4-min Q&A
+is a separate format. [Official answer](https://github.com/nasa/spaceapps/discussions/1991).
+The NASA-page draft still needs reconciliation with current behaviour (network,
+optional reaction test, removed home badges and actual vision limits) before use.
+Nothing has been submitted or published.
+
+**Parallel work confirmed by David:** Astra owns `packages/ui/` and the web
+interfaces in this checkout. Claude owns the Ollama/photo/video investigation;
+his separate Git worktree is now verified; D32 imports the reviewed snapshot. Use
+separate disposable databases/ports and no branch switching or reset in this
+checkout. Claude reads the current brief here: a worktree created from HEAD
+does not include these uncommitted UI changes or new handoff files. Each agent
+keeps evidence in its own checkout; reconcile shared documentation at integration.
+
+**Component follow-up (D30):** Button and Panel variants/states now live in
+shared CSS, including touch height, focus, busy/disabled and reduced motion.
+Mood, symptoms and history use Button rather than copies of its styling.
+Panel headers tolerate wrapping; connection settings reuses the shared input.
+Custom button classes no longer replace the base class, busy actions keep focus
+but reject further activation, and default buttons cannot submit a form by accident.
+This is a foundation pass, not completion of every page or the design system.
+20 frontend tests, both builds and focused Playwright checks pass; 13 existing
+lint warnings remain. No real-phone, camera or Ollama test in this pass.
+[Screens and checks](design/2026-11-15/README.md#shared-component-follow-up).
+
+**Instrument help (D29):** David approved the generated monitor illustration.
+After David's visual review, the field help shows the complete monitor and cuff
+once, at the width of the sheet, with a SYS, DIA or PULSE overlay and a plain-language
+instruction. The cropped preview and duplicate expandable view were removed;
+the generated/concept caption remains. The PNG is bundled
+locally and requested when this help mounts, not used as live health data.
+Checked in Chrome at 360/390 and 1280 px, on all three fields; both builds and
+formatting pass. No real-phone test; existing lint/bundle warnings remain.
+
+**Latest crew lot (D28):** HESTIA links home, settings uses a cog, the selected
+body area is framed above mobile details with scroll/focus restored on close.
+Home has one compact check-in/reaction/results block; its duplicate card and
+routine/badge accordions are removed. History uses measure icons and translated
+labels/dates/origins. Meals use ten authored food pictograms, translated catalogue
+names, explicit demo portions/stock provenance and a persistent save receipt.
+Zone explanations start with a short reference table, units inline with values,
+touch/keyboard unit help and optional complete rules. All bottom sheets use the
+same style without a top border; desktop side sheets keep their neutral outline.
+Credits name David Meguira and Massinissa Bencherif; logos were added later in D31.
+[Current gallery and checks](design/2026-11-15/README.md#crew-navigation-meals-and-compact-explanations).
+Ollama's count-to-inventory-to-meal chain is explicitly in the Claude/Fable handoff;
+free recognition of unknown foods is a separate proposal, not implemented.
+
+**Latest detail polish (D27):** shared sheets now have a neutral 1 px border,
+without the cyan top/side accent. Authored mood, stopwatch and symptom-notebook
+icons join the existing moon and measurement family. Measure icons precede
+labels; named status symbols sit beside values. Both builds pass; Chrome checks
+cover desktop and 360/390 px mobile, long values, heart layout, Escape and focus
+return. [Screens and checks](design/2026-11-15/README.md#measurement-icons-and-neutral-sheets).
+13 existing lint warnings and the roughly 791–792 kB JS bundle warning remain.
+No phone hardware test or complete component/design-system audit is implied.
+
+**Latest follow-up (D26, supersedes the initial heart treatment below):** single
+spinner with explicit load failures/retry, filled brain, eyes on the pupils,
+muscle fibres on arms/thighs, compact persisted language button, clearer FAQ and
+zone explanations. David restored selection frames/backgrounds on all zones;
+labels now have an 8–10 unit inset so the final letters stay inside the frame.
+The heart now repeats while selected/visible, with pause/resume, reduced-motion
+support and visibility guards. Other new anatomy fades in without bouncing.
+The profile heading spacing is tighter. No mascot added to fill empty space.
+
+Both builds and 20 frontend tests pass. Browser checks cover loading/error/retry,
+missing profiles, language/draft persistence, focus, label padding and motion
+visibility; see [latest evidence](design/2026-11-15/README.md#anatomy-loading-and-language-follow-up).
+13 pre-existing lint warnings remain; no new dependency. Real-phone performance
+and hardware remain unverified. [Fable's proposed vision follow-up](prompt/2026-11-15-fable-vision-followup-fr.md)
+is a local draft, not sent. Ollama accuracy has not improved in this UI pass.
+
+Astra on `fix/mobile-interactions`, based on Fable's local `style/character`
+at `0fb3cd3`. All prior seven Fable commits exist locally; older “not committed”
+statements below describe their historical state. This pass is uncommitted.
+No push, merge or external publication authorised/performed in this pass.
+
+The [request register and review](sources/2026-11-15-interactions-and-evidence.md)
+is the current complete list, including unfinished items. Shared inputs/help,
+EN/FR switch, full desktop profiles, reaction shortcuts/results, focus and
+selected-zone motion are implemented. Prettier now formats frontend sources;
+Oxlint covers both apps and shared packages, with warnings still open.
+Ollama is installed and real scans plus manual correction work through the API,
+but counting is imperfect. Sources are references, not real crew measurements.
+
+69 backend and 20 frontend tests pass; both web builds pass. Browser evidence
+and remaining limits are in the [implementation gallery](design/2026-11-15/README.md).
+No real phone, shelf/camera, Massi-machine or clinical validation. French dynamic
+messages, full component migration, mascot identity, Python lint/CI, broader
+onboarding and final art/motion direction are unfinished. No new wellbeing or
+injury-journal feature. Continue from this register rather than old prompts.
+
+**Initial heart follow-up, superseded by D26 above:** smaller filled
+brick/flesh illustration, no duplicate panel icon or cyan pointer-selection
+frame, keyboard-only focus cue, three desktop readings in one row. Motion is
+in shared CSS/tokens: one 680 ms transform sequence, stopped after completion,
+disabled with reduced motion. [Screens and checks](design/2026-11-15/README.md#heart-follow-up).
+Other organ drawings and the background were left as they were. Visual approval
+of the new heart remains with David before extending the treatment. The next
+requested pass concerns unfinished components/icons/copy/charts/French, then
+useful mascot behavior/help/motion; it has not been implemented by this follow-up.
 
 ## 14 Nov — UI direction and handoff for Fable
 
@@ -317,6 +590,11 @@ date says otherwise.
   ("missing — run: ollama pull …") in that case instead of green "in memory".
 
 ## Known limits (true today)
+
+Historical baseline from the earlier passes. For the current scan timings,
+tool availability and remaining work, use the 15 Nov register at the top of
+this file. In particular, Ollama is now installed on David's Mac and the NASA
+project-page draft has links, but submission placeholders remain.
 
 - **Vision**: 11/12 on the full test photo, 10/12 on the after-removal photo
   in the default 20 s mode (it read the emptied A1 as 1). The 50 s accurate

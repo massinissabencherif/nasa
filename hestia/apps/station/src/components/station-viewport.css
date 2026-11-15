@@ -1,0 +1,38 @@
+.station-phone-gate {
+  min-height: 100dvh;
+  max-width: 480px;
+  margin-inline: auto;
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-4);
+}
+.station-phone-gate header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.station-phone-gate header svg {
+  color: var(--accent);
+}
+.station-phone-gate header strong {
+  flex: 1;
+}
+.station-phone-gate h1 {
+  font-size: var(--text-2xl);
+}
+.station-phone-gate p {
+  color: var(--text-muted);
+}
+.station-phone-gate a {
+  text-decoration: none;
+  text-align: center;
+}
+.station-phone-gate footer {
+  margin-top: var(--space-5);
+  font-size: var(--text-xs);
+  display: grid;
+  gap: var(--space-2);
+}

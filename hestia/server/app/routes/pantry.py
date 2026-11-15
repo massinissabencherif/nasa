@@ -1,17 +1,19 @@
 import json
 import threading
+from uuid import uuid4
 from datetime import datetime, timezone
 from pathlib import Path
 
 import cv2
 import numpy as np
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictInt, field_validator
 from sqlmodel import Session, select
 
 from app.db import engine
-from app.engines.nutrition import autonomy_report, crew_daily_need, is_meal
+from app.engines.nutrition import autonomy_report, crew_daily_need, is_meal, counted_package_kcal
+from app.engines import pantry_review, pantry_setup
 from app.models import (
     ConsumptionEvent,
     CrewMember,
@@ -74,17 +76,18 @@ def get_pantry() -> dict:
         for slot in slots:
             food = session.get(FoodItem, slot.food_item_id) if slot.food_item_id else None
             line = lines_by_slot.get(slot.id)
+            count = line.count if line and line.source != "configuration_changed" else None
             slot_days = 0.0
             if food is not None:
                 units_per_lot = food.units_per_lot
-                if line is not None and need > 0:
-                    slot_days = line.count * food.units_per_lot * food.kcal / need
+                if count is not None and need > 0:
+                    slot_days = count * food.units_per_lot * food.kcal / need
             out.append({
                 "slot": slot.label,
                 "item": food.name if food else None,
                 "food_item_id": slot.food_item_id,
                 "capacity": slot.capacity,
-                "count": line.count if line else None,
+                "count": count,
                 "confidence": line.confidence if line else None,
                 "source": line.source if line else None,
                 "needs_confirmation": bool(line and _needs_confirmation(line, slot)),
@@ -98,11 +101,15 @@ def get_pantry() -> dict:
             return round(stock_g * kcal_per_g / (need * share), 1) if need > 0 else 0.0
 
         return {
+            "has_photo": bool(snapshot and snapshot.image_path),
+            "boxes": json.loads(snapshot.raw_json or "{}").get("boxes", vision_grid.load_boxes()) if snapshot else vision_grid.load_boxes(),
             "snapshot_ts": snapshot.ts if snapshot else None,
             "slots": out,
             "autonomy_days": round(report.autonomy_days, 1),
             "daily_need_kcal": round(report.daily_need_kcal, 1),
             "stock_kcal": round(stock.kcal, 1),
+            "counted_package_kcal": round(counted_package_kcal(session), 1),
+            "default_units_per_lot": json.loads((SERVER_DIR / "data" / "food_catalogue.json").read_text())["units_per_lot"],
             "expiry_warning": report.expiry_warning,
             "min_expiry_days": stock.min_expiry_days,
             "units_per_lot": units_per_lot,
@@ -150,12 +157,24 @@ def scan_pantry(
     camera_index: int = 0,
     variant: str = "full",
     strategy: str | None = None,
+    review: bool = False,
+    boxes: dict | None = None,
 ) -> dict:
     resolved = _resolve_image_path(image_path) if image_path else None
 
     if not _scan_lock.acquire(blocking=False):
         raise HTTPException(409, "a scan is already running — wait for it to finish")
     try:
+        with Session(engine) as session:
+            baseline = pantry_review.revision(session)
+        active_boxes = boxes or vision_grid.load_boxes()
+        known_labels = {f"{row}{col}" for row in "ABC" for col in range(1, 5)}
+        if not set(active_boxes) <= known_labels or any(
+            not isinstance(b, (list, tuple)) or len(b) != 4
+            or not all(type(n) in (int, float) and 0 <= n <= 1 for n in b)
+            or b[2] - b[0] < .02 or b[3] - b[1] < .02 for b in active_boxes.values()
+        ):
+            raise HTTPException(400, "invalid slot boxes")
         publish_event({"type": "scan_started", "mode": mode})
 
         def on_progress(done_labels: list[str]) -> None:
@@ -167,6 +186,7 @@ def scan_pantry(
                 mode=mode, image_path=str(resolved) if resolved else None,
                 camera_index=camera_index, variant=variant, strategy=strategy,
                 on_progress=on_progress, slot_items=slot_items, capacities=capacities,
+                boxes=active_boxes,
             )
         except OllamaUnavailable as exc:
             publish_event({"type": "scan_failed", "detail": str(exc)})
@@ -178,11 +198,26 @@ def scan_pantry(
         snapshot_ts = datetime.now(timezone.utc)
         if result.frame is not None:  # live camera: keep the frame so the overlay matches reality
             CAPTURES_DIR.mkdir(parents=True, exist_ok=True)
-            capture_path = CAPTURES_DIR / f"scan-{snapshot_ts:%Y%m%d-%H%M%S}.jpg"
+            capture_path = CAPTURES_DIR / f"scan-{uuid4().hex}.jpg"
             cv2.imwrite(str(capture_path), result.frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
             stored_image_path = str(capture_path.relative_to(SERVER_DIR))
         else:
             stored_image_path = str(Path(result.image_path).relative_to(SERVER_DIR))
+
+        # Every real image is only a proposal. Legacy mock-only automation can
+        # still replay the demo; both interactive apps request review for replays.
+        if mode != "mock" or review:
+            proposal = pantry_review.stage(baseline=baseline, image_path=stored_image_path,
+                                          boxes=active_boxes, result=result, mode=mode)
+            publish_event({"type": "scan_pending", "proposal_id": proposal.id})
+            return {
+                "proposal_id": proposal.id, "snapshot_ts": None, "mode": mode,
+                "strategy": result.strategy, "elapsed_s": round(result.elapsed_s, 1),
+                "warnings": result.warnings or [], "boxes": active_boxes,
+                "slots": [{"slot": label, "count": reading.count,
+                           "confidence": reading.confidence, "needs_confirmation": True}
+                          for label, reading in result.readings.items()],
+            }
 
         with Session(engine) as session:
             slots = session.exec(select(ShelfSlot)).all()
@@ -230,13 +265,15 @@ def scan_pantry(
 
         publish_event({
             "type": "scan_complete", "snapshot_ts": snapshot_ts.isoformat(),
-            "autonomy_days": autonomy, "slots": out,
+            "autonomy_days": autonomy, "slots": out, "warnings": result.warnings or [],
         })
         return {
             "snapshot_ts": snapshot_ts,
             "mode": mode,
             "strategy": result.strategy,
             "elapsed_s": round(result.elapsed_s, 1),
+            # about the photo itself (blur, light); empty for replay scans
+            "warnings": result.warnings or [],
             "autonomy_days": autonomy,
             "slots": out,
         }
@@ -262,6 +299,7 @@ def scan_photo(
     file: UploadFile = File(...),
     scan: bool = True,
     strategy: str | None = None,
+    frame: str | None = Form(default=None),
 ) -> dict:
     """Use any camera as the shelf camera: a phone (or a file picker on the
     station) uploads a photo. With scan=true it is read by the vision model
@@ -278,12 +316,19 @@ def scan_photo(
         img = cv2.resize(img, (UPLOAD_MAX_WIDTH, int(h * UPLOAD_MAX_WIDTH / w)), interpolation=cv2.INTER_AREA)
     CAPTURES_DIR.mkdir(parents=True, exist_ok=True)
     now = datetime.now(timezone.utc)
-    path = CAPTURES_DIR / f"photo-{now:%Y%m%d-%H%M%S}.jpg"
+    boxes = None
+    if frame is not None:
+        try:
+            bounds = GridFrameBody.model_validate_json(frame)
+            boxes = boxes_from_frame(bounds)
+        except ValueError as exc:
+            raise HTTPException(400, "invalid shelf frame") from exc
+    path = CAPTURES_DIR / f"photo-{uuid4().hex}.jpg"
     cv2.imwrite(str(path), img, [cv2.IMWRITE_JPEG_QUALITY, 88])
     relative = str(path.relative_to(SERVER_DIR))
 
     if scan:
-        return scan_pantry(mode="image", image_path=relative, strategy=strategy)
+        return scan_pantry(mode="image", image_path=relative, strategy=strategy, boxes=boxes)
 
     with Session(engine) as session:
         previous = _latest_snapshot(session)
@@ -309,25 +354,86 @@ class GridFrameBody(BaseModel):
     top: float = Field(ge=0, le=1)
     right: float = Field(ge=0, le=1)
     bottom: float = Field(ge=0, le=1)
+    rows: int = Field(default=3, ge=1, le=3)
+    columns: int = Field(default=4, ge=1, le=4)
 
 
-@router.put("/grid-frame")
-def set_grid_from_frame(body: GridFrameBody) -> dict[str, list[float]]:
+def boxes_from_frame(body: GridFrameBody) -> dict:
     """Fast calibration for a real shelf: give the outer frame, get 3 x 4 equal slots."""
-    if body.right - body.left < 0.2 or body.bottom - body.top < 0.2:
+    if body.right - body.left < 0.2 - 1e-6 or body.bottom - body.top < 0.2 - 1e-6:
         raise HTTPException(400, "frame is too small or inverted")
-    col_w = (body.right - body.left) / 4
-    row_h = (body.bottom - body.top) / 3
+    col_w = (body.right - body.left) / body.columns
+    row_h = (body.bottom - body.top) / body.rows
     boxes = {}
-    for r, row in enumerate("ABC"):
-        for c in range(4):
+    for r, row in enumerate("ABC"[:body.rows]):
+        for c in range(body.columns):
             boxes[f"{row}{c + 1}"] = (
                 round(body.left + c * col_w, 4), round(body.top + r * row_h, 4),
                 round(body.left + (c + 1) * col_w, 4), round(body.top + (r + 1) * row_h, 4),
             )
-    vision_grid.save_boxes(boxes)
+    return boxes
+
+
+@router.put("/grid-frame")
+def set_grid_from_frame(body: GridFrameBody) -> dict[str, list[float]]:
+    vision_grid.save_boxes(boxes_from_frame(body))
     publish_event({"type": "grid_changed"})
     return vision_grid.load_boxes()
+
+
+class ReviewBody(BaseModel):
+    counts: dict[str, StrictInt]
+    replace_stock: bool = False
+
+
+@router.get("/review/{proposal_id}/image")
+def review_image(proposal_id: str):
+    with pantry_review.lock:
+        try:
+            proposal = pantry_review.get(proposal_id)
+        except ValueError as exc:
+            raise HTTPException(410, str(exc)) from exc
+        return FileResponse(SERVER_DIR / proposal.image_path)
+
+
+@router.delete("/review/{proposal_id}")
+def discard_review(proposal_id: str):
+    with pantry_review.lock:
+        pantry_review.discard(proposal_id)
+    return {"discarded": True}
+
+
+@router.post("/review/{proposal_id}")
+def save_review(proposal_id: str, body: ReviewBody):
+    with pantry_review.lock:
+        try:
+            proposal = pantry_review.get(proposal_id)
+        except ValueError as exc:
+            raise HTTPException(410, str(exc)) from exc
+        with Session(engine) as session:
+            try:
+                snapshot = pantry_review.apply(session, proposal, body.counts, replace_stock=body.replace_stock)
+            except ValueError as exc:
+                raise HTTPException(409, str(exc)) from exc
+            ts = snapshot.ts.isoformat()
+        pantry_review.discard(proposal_id)
+    publish_event({"type": "scan_complete", "snapshot_ts": ts})
+    return {"snapshot_ts": ts}
+
+
+class EmptyStockBody(BaseModel):
+    confirmed: bool = False
+
+
+@router.post("/empty")
+def empty_stock(body: EmptyStockBody):
+    if not body.confirmed:
+        raise HTTPException(400, "Confirm before emptying stock.")
+    with Session(engine) as session:
+        snapshot = pantry_setup.empty_stock(session)
+        ts = snapshot.ts.isoformat()
+    publish_event({"type": "stock_emptied", "snapshot_ts": ts})
+    return {"snapshot_ts": ts}
 
 
 class ConfirmBody(BaseModel):
@@ -407,10 +513,23 @@ def update_grid(body: GridUpdateBody) -> ShelfSlot:
             # 0 clears the slot (expected empty)
             if body.food_item_id != 0 and session.get(FoodItem, body.food_item_id) is None:
                 raise HTTPException(404, f"no food item {body.food_item_id}")
-            slot.food_item_id = body.food_item_id or None
+            new_food = body.food_item_id or None
+            if new_food != slot.food_item_id:
+                # Reusing an old quantity for a new product is not a checked count.
+                snapshot = _latest_snapshot(session)
+                if snapshot:
+                    line = session.exec(select(InventoryLine).where(
+                        InventoryLine.snapshot_id == snapshot.id, InventoryLine.slot_id == slot.id
+                    )).first()
+                    if line:
+                        line.confidence = 0
+                        line.source = "configuration_changed"
+                        session.add(line)
+            slot.food_item_id = new_food
         session.add(slot)
         session.commit()
         session.refresh(slot)
+        publish_event({"type": "slot_configuration_changed", "slot": slot.label})
         return slot
 
 
@@ -420,6 +539,13 @@ class FoodItemBody(BaseModel):
     protein_g: float = Field(default=0, ge=0, le=2000)
     carbs_g: float = Field(default=0, ge=0, le=5000)
     fat_g: float = Field(default=0, ge=0, le=2000)
+
+    @field_validator("name")
+    @classmethod
+    def meaningful_name(cls, value: str) -> str:
+        if len(value.strip()) < 2:
+            raise ValueError("Use at least two non-space characters.")
+        return value.strip()
 
 
 @router.get("/items")
@@ -443,6 +569,29 @@ def add_item(body: FoodItemBody) -> FoodItem:
         session.commit()
         session.refresh(item)
         return item
+
+
+@router.put("/items/{food_id}")
+def update_item(food_id: int, body: FoodItemBody) -> FoodItem:
+    with Session(engine) as session:
+        try:
+            item = pantry_setup.update_product(session, food_id, body.model_dump())
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+    publish_event({"type": "catalogue_updated"})
+    return item
+
+
+class ScaleBody(BaseModel):
+    multiplier: StrictInt = Field(ge=1, le=10000)
+
+
+@router.put("/scale")
+def update_scale(body: ScaleBody) -> dict:
+    with Session(engine) as session:
+        pantry_setup.set_scale(session, body.multiplier)
+    publish_event({"type": "catalogue_updated"})
+    return {"multiplier": body.multiplier}
 
 
 @router.get("/consumption")
@@ -470,6 +619,8 @@ def get_consumption(limit: int = 30) -> list[dict]:
 def get_snapshot_image() -> FileResponse:
     with Session(engine) as session:
         snapshot = _latest_snapshot(session)
+    if snapshot and not snapshot.image_path and json.loads(snapshot.raw_json or "{}").get("stock_emptied"):
+        raise HTTPException(404, "No current shelf photo.")
     path = DEFAULT_FIXTURE
     if snapshot and snapshot.image_path:
         candidate = (SERVER_DIR / snapshot.image_path).resolve()

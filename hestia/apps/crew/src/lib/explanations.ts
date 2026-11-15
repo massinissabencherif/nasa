@@ -73,7 +73,7 @@ export const EXPLANATIONS: Record<string, FieldExplanation> = {
   reaction_ms: {
     label: 'Reaction time test',
     unit: 'ms',
-    how: 'Complete three practice trials, then fifteen measured trials. Respond only when the panel says “Tap now”. Results are saved separately from this check-in.',
+    how: 'Complete one practice trial, then five measured trials. Respond only when the panel says “Tap now”. Results are saved separately from this check-in.',
     why: 'View response times and compare complete sessions using the same protocol and installation. The first five comparable sessions build a personal reference.',
     risk: 'Distraction and device latency affect timing. This is not a validated PVT, a fatigue diagnosis or an operational fitness test. It does not change a body-zone colour.',
   },
@@ -86,11 +86,4 @@ export const EXPLANATIONS: Record<string, FieldExplanation> = {
   },
 };
 
-export const SYMPTOM_OPTIONS = [
-  'Headache',
-  'Fatigue',
-  'Nausea',
-  'Vision blur',
-  'Dizziness',
-  'Congestion',
-];
+export const SYMPTOM_OPTIONS = ['Headache', 'Fatigue', 'Nausea', 'Vision blur', 'Dizziness', 'Congestion'];

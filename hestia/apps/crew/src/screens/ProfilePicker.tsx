@@ -1,78 +1,66 @@
+import { LoadingState, LoadError } from '@hestia/ui';
+import { t } from '@hestia/ui';
 import { useNavigate } from 'react-router-dom';
-import { useCrewList } from '../lib/hooks';
+import { StationCompanion } from '@hestia/ui';
+import { useCrewListState } from '../lib/hooks';
 import { setSelectedCrewId } from '../lib/profile';
 
 export function ProfilePicker() {
   const navigate = useNavigate();
-  const crew = useCrewList();
-
-  function choose(id: number) {
-    setSelectedCrewId(id);
-    navigate('/home');
-  }
-
+  const { data: crew, error, refresh } = useCrewListState();
   return (
-    <div
-      style={{
-        minHeight: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        padding: 24,
-        gap: 18,
-      }}
-    >
-      <div style={{ textAlign: 'center', marginBottom: 8 }}>
-        <h1 style={{ fontSize: 'var(--text-xl)', fontWeight: 700 }}>HESTIA</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)', marginTop: 4 }}>
-          Who's checking in? (fictional crew, SIMULATED)
+    <div style={{ padding: 'var(--space-5)', display: 'grid', gap: 'var(--space-5)' }}>
+      <header style={{ display: 'grid', gap: 'var(--space-2)' }}>
+        <StationCompanion />
+        <h1>{t("Who's checking in?")}</h1>
+        <p className="assessment-muted">
+          {t("Choose your profile to see your body status and record today's check-in.")}
         </p>
-      </div>
-      {crew.length === 0 && (
-        <p style={{ color: 'var(--text-faint)', textAlign: 'center' }}>Connecting to the station…</p>
-      )}
-      {crew.map((member) => (
-        <button
-          key={member.id}
-          onClick={() => choose(member.id)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-            padding: 16,
-            borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--border)',
-            background: 'var(--panel)',
-            color: 'var(--text)',
-            cursor: 'pointer',
-            textAlign: 'left',
-          }}
-        >
-          <div
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: '50%',
-              background: 'var(--panel-raised)',
-              border: '1px solid var(--border)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 600,
-              fontSize: 'var(--text-lg)',
-              flexShrink: 0,
+      </header>
+      <div className="hz-profile-list">
+        {error && (
+          <LoadError
+            label={t(
+              'Could not load the crew. Check the station connection.',
+              'Impossible de charger l’équipage. Vérifiez la connexion à la station.',
+            )}
+            onRetry={refresh}
+          />
+        )}
+        {crew === null && !error && <LoadingState label={t('Connecting to the station…')} />}
+        {crew?.length === 0 && !error && (
+          <p>{t('No crew profiles on this station.', 'Aucun profil sur cette station.')}</p>
+        )}
+        {crew?.map((member) => (
+          <button
+            key={member.id}
+            type="button"
+            className="hz-profile"
+            onClick={() => {
+              setSelectedCrewId(member.id);
+              navigate('/home');
             }}
           >
-            {member.name.split(' ').map((p) => p[0]).join('')}
-          </div>
-          <div>
-            <p style={{ fontWeight: 600, fontSize: 'var(--text-lg)' }}>{member.name}</p>
-            <p style={{ color: 'var(--text-faint)', fontSize: 'var(--text-sm)' }}>
-              {member.sex === 'M' ? 'Male' : 'Female'} · {member.age}y
-            </p>
-          </div>
-        </button>
-      ))}
+            <span className="hz-avatar" aria-hidden="true">
+              {member.name
+                .split(' ')
+                .map((part) => part[0])
+                .join('')}
+            </span>
+            <span style={{ flex: 1 }}>
+              <strong>{member.name}</strong>
+              <br />
+              <span className="assessment-muted">
+                {member.age} {t('years · crew member')}
+              </span>
+            </span>
+            <span aria-hidden="true">→</span>
+          </button>
+        ))}
+      </div>
+      <p className="assessment-muted">
+        {t('Fictional crew · SIMULATED data. Profile selection is not authentication.')}
+      </p>
     </div>
   );
 }

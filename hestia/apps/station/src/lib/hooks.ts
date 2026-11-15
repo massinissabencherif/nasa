@@ -45,7 +45,10 @@ export function useStationState(): Station {
   const connected = useConnection();
   const [context, setContext] = useState<MissionContext | null>(null);
   const refreshContext = useCallback(() => {
-    api.getContext().then(setContext).catch(() => {});
+    api
+      .getContext()
+      .then(setContext)
+      .catch(() => {});
   }, []);
   useEffect(() => {
     if (connected) refreshContext();
@@ -58,7 +61,10 @@ export function useCrew(): CrewMember[] {
   const { connected } = useStation();
   const [crew, setCrew] = useState<CrewMember[]>([]);
   const refresh = useCallback(() => {
-    api.listCrew().then(setCrew).catch(() => {});
+    api
+      .listCrew()
+      .then(setCrew)
+      .catch(() => {});
   }, []);
   useEffect(() => {
     if (connected) refresh();
@@ -80,11 +86,50 @@ export function useCrewStatuses(crew: CrewMember[]): Record<number, CrewStatus> 
   return statuses;
 }
 
+type ProfileState =
+  | { id: string; kind: 'loading' | 'missing' | 'error'; member: null; status: null }
+  | { id: string; kind: 'ready'; member: CrewMember; status: CrewStatus };
+
+/** Fetch only the requested member's status and expose failure separately from loading. */
+export function useCrewProfile(id: string) {
+  const [result, setResult] = useState<ProfileState>({ id, kind: 'loading', member: null, status: null });
+  const [revision, setRevision] = useState(0);
+  const refresh = useCallback(() => setRevision((value) => value + 1), []);
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const members = await api.listCrew();
+        const member = members.find((person) => String(person.id) === id);
+        if (!member) {
+          if (active) setResult({ id, kind: 'missing', member: null, status: null });
+          return;
+        }
+        const status = await api.getCrewStatus(member.id);
+        if (active) setResult({ id, kind: 'ready', member, status });
+      } catch {
+        if (active) setResult({ id, kind: 'error', member: null, status: null });
+      }
+    };
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [id, revision]);
+  useRefreshOn(['checkin', 'alert_created', 'reset', 'context_changed'], refresh);
+  const state: ProfileState = result.id === id ? result : { id, kind: 'loading', member: null, status: null };
+  return { ...state, refresh };
+}
+
 export function useThresholds(): Thresholds | null {
   const { connected } = useStation();
   const [thresholds, setThresholds] = useState<Thresholds | null>(null);
   useEffect(() => {
-    if (connected) api.getThresholds().then(setThresholds).catch(() => {});
+    if (connected)
+      api
+        .getThresholds()
+        .then(setThresholds)
+        .catch(() => {});
   }, [connected]);
   return thresholds;
 }
@@ -92,13 +137,20 @@ export function useThresholds(): Thresholds | null {
 export function usePantry() {
   const { connected } = useStation();
   const [pantry, setPantry] = useState<PantryState | null>(null);
+  const [error, setError] = useState(false);
   const refresh = useCallback(() => {
-    api.getPantry().then(setPantry).catch(() => {});
+    api
+      .getPantry()
+      .then((data) => {
+        setPantry(data);
+        setError(false);
+      })
+      .catch(() => setError(true));
   }, []);
   useEffect(() => {
     if (connected) refresh();
   }, [connected, refresh]);
-  return { pantry, refresh };
+  return { pantry, refresh, error };
 }
 
 export function formatDelay(seconds: number): string {

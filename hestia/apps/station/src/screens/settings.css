@@ -1,0 +1,111 @@
+.settings-page {
+  display: grid;
+  gap: var(--space-5);
+}
+.settings-page h1 {
+  font-size: var(--text-2xl);
+}
+.settings-page header p {
+  color: var(--text-muted);
+  margin-top: var(--space-2);
+}
+.settings-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.settings-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--space-4);
+}
+.settings-stack {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.settings-page .hz-panel-body {
+  display: grid;
+  gap: var(--space-4);
+}
+.settings-page .hz-panel-body > p {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+.settings-missions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+.settings-missions button {
+  justify-content: flex-start;
+  text-align: left;
+  gap: var(--space-2);
+}
+.settings-note {
+  display: grid;
+  gap: var(--space-2);
+  background: var(--panel-raised);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+.settings-note p {
+  color: var(--text-muted);
+}
+.settings-qr {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+}
+.settings-qr img {
+  flex-shrink: 0;
+  background: var(--text);
+  border-radius: var(--radius-sm);
+}
+.settings-qr ol {
+  padding-left: var(--space-4);
+  display: grid;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+}
+.settings-address {
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+.settings-scenario {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+}
+.settings-scenario p {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  margin-top: var(--space-1);
+}
+.settings-feedback {
+  color: var(--green-ink);
+  font-size: var(--text-sm);
+}
+@media (max-width: 1000px) {
+  .settings-columns {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 500px) {
+  .settings-qr {
+    flex-wrap: wrap;
+  }
+  .settings-missions {
+    grid-template-columns: 1fr;
+  }
+}
+
+.settings-scale {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+}

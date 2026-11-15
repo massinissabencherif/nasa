@@ -27,8 +27,10 @@ started. They no longer give orders; where they disagree with
 2. **Not a medical device.** No diagnosis, no drug names or doses. The app
    says so on every screen and in every advice text.
 3. **Crew data is fictional** and labelled "SIMULATED" wherever it is shown.
-4. **No NASA logos or marks.** AI-generated images carry a caption or
-   watermark.
+4. **No NASA institutional insignia.** D31 explicitly permits the unchanged
+   Space Apps event mark and ESGI mark in student-project credits, without an
+   endorsement claim. HESTIA retains its own identity. AI-generated images carry
+   a caption or watermark.
 5. **Do not present an uncertain value as confirmed.** Say whether a number
    is measured, declared by the user, estimated, or simulated. "No data" and
    "stale data" are not "all good".

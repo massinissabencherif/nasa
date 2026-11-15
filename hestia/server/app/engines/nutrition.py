@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import json
 
 from sqlmodel import Session, select
 
@@ -54,42 +55,54 @@ def is_meal(event: ConsumptionEvent) -> bool:
 
 def pending_portions(session: Session, snapshot: InventorySnapshot) -> dict[int, int]:
     """Portions eaten per food item since the given snapshot."""
-    eaten: dict[int, int] = {}
+    # A partial shelf photograph must not erase meals from untouched slots.
+    carried = json.loads(snapshot.raw_json or "{}").get("carried_meals", {})
+    eaten: dict[int, int] = {int(food): qty for food, qty in carried.items()}
     for event in session.exec(select(ConsumptionEvent).where(ConsumptionEvent.ts > snapshot.ts)):
         if is_meal(event):
             eaten[event.food_item_id] = eaten.get(event.food_item_id, 0) - event.qty
     return eaten
 
 
+def counted_foods(session: Session, snapshot: InventorySnapshot) -> dict[int, tuple[FoodItem, int]]:
+    """Aggregate distinct shelf locations before subtracting meals once per product."""
+    lines = session.exec(select(InventoryLine).where(InventoryLine.snapshot_id == snapshot.id)).all()
+    slots = {slot.id: slot for slot in session.exec(select(ShelfSlot)).all()}
+    foods: dict[int, tuple[FoodItem, int]] = {}
+    for line in lines:
+        slot = slots.get(line.slot_id)
+        if line.source == "configuration_changed" or slot is None or slot.food_item_id is None:
+            continue
+        food = session.get(FoodItem, slot.food_item_id)
+        if food is not None:
+            previous = foods.get(food.id)
+            foods[food.id] = (food, line.count + (previous[1] if previous else 0))
+    return foods
+
+
+def counted_package_kcal(session: Session) -> float:
+    """Energy of the recorded packages, without demo scaling or later meal deductions."""
+    snapshot = _latest_snapshot(session)
+    if snapshot is None:
+        return 0.0
+    return sum(food.kcal * count for food, count in counted_foods(session, snapshot).values())
+
+
 def current_stock(session: Session) -> StockTotals:
     snapshot = _latest_snapshot(session)
     if snapshot is None:
         return StockTotals(0, 0, 0, 0, None)
-
-    lines = session.exec(
-        select(InventoryLine).where(InventoryLine.snapshot_id == snapshot.id)
-    ).all()
-    slots = {s.id: s for s in session.exec(select(ShelfSlot)).all()}
-
-    # Meals logged since this snapshot are real portions eaten out of the
-    # lots the snapshot counted (demo_rules.json, "meals"). They move the
-    # autonomy number by what was actually eaten, not by a whole lot.
     portions_eaten = pending_portions(session, snapshot)
-
     kcal = protein = carbs = fat = 0.0
     min_expiry: int | None = None
-    for line in lines:
-        slot = slots.get(line.slot_id)
-        if slot is None or slot.food_item_id is None:
+    for food_id, (food, count) in counted_foods(session, snapshot).items():
+        portions = count * food.units_per_lot - portions_eaten.get(food_id, 0)
+        if portions <= 0:
             continue
-        food = session.get(FoodItem, slot.food_item_id)
-        lot_count = line.count * food.units_per_lot - portions_eaten.pop(slot.food_item_id, 0)
-        if lot_count <= 0:
-            continue
-        kcal += lot_count * food.kcal
-        protein += lot_count * food.protein_g
-        carbs += lot_count * food.carbs_g
-        fat += lot_count * food.fat_g
+        kcal += portions * food.kcal
+        protein += portions * food.protein_g
+        carbs += portions * food.carbs_g
+        fat += portions * food.fat_g
         if min_expiry is None or food.expiry_days < min_expiry:
             min_expiry = food.expiry_days
     return StockTotals(kcal, protein, carbs, fat, min_expiry)
@@ -130,34 +143,16 @@ def available_items(session: Session) -> list[AvailableItem]:
     snapshot = _latest_snapshot(session)
     if snapshot is None:
         return []
-    lines = session.exec(
-        select(InventoryLine).where(InventoryLine.snapshot_id == snapshot.id)
-    ).all()
-    slots = {s.id: s for s in session.exec(select(ShelfSlot)).all()}
     portions_eaten = pending_portions(session, snapshot)
-
     out = []
-    for line in lines:
-        slot = slots.get(line.slot_id)
-        if slot is None or slot.food_item_id is None or line.count <= 0:
-            continue
-        food = session.get(FoodItem, slot.food_item_id)
-        portions = line.count * food.units_per_lot - portions_eaten.get(food.id, 0)
+    for food_id, (food, count) in counted_foods(session, snapshot).items():
+        portions = count * food.units_per_lot - portions_eaten.get(food_id, 0)
         if portions <= 0:
             continue
-        count = line.count
-        out.append(
-            AvailableItem(
-                food_item_id=food.id,
-                name=food.name,
-                kcal=food.kcal,
-                protein_g=food.protein_g,
-                carbs_g=food.carbs_g,
-                fat_g=food.fat_g,
-                available_count=count,
-                available_portions=portions,
-            )
-        )
+        out.append(AvailableItem(food_item_id=food_id, name=food.name,
+                                 kcal=food.kcal, protein_g=food.protein_g,
+                                 carbs_g=food.carbs_g, fat_g=food.fat_g,
+                                 available_count=count, available_portions=portions))
     return out
 
 

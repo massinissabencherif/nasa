@@ -10,6 +10,14 @@ Read in this order when you arrive:
 3. [decisions.md](decisions.md) — what was decided and what is still open.
 4. Then only what your task needs, from the table below.
 
+Latest handover: [David and Massi's morning restart](reprise-2026-11-15-fr.md)
+and [optional Fable context restart](prompt/2026-11-15-fable-final-readiness-fr.md).
+The finishing list is open for either contributor; no task is assigned to Fable.
+
+Implementation evidence: [camera, pantry, settings and checklist review](sources/2026-11-15-camera-review-and-pantry.md).
+
+Current implementation and open requests: [15 Nov register](sources/2026-11-15-interactions-and-evidence.md), [screens and checks](design/2026-11-15/README.md).
+
 ## Reference
 
 | Document | What it answers |
@@ -38,8 +46,8 @@ Read in this order when you arrive:
 | Document | State |
 |---|---|
 | [Fable UI handoff](prompt/2026-11-14-fable-ui-handoff-fr.md) and [portable mockup gallery](design/2026-11-14/README.md) | Prepared with David's approval on 14 Nov; visual direction D16, documentation delivery D17; UI implementation still pending |
-| [nasa-project-page.md](nasa-project-page.md) | Draft updated on 14 Nov; fields in brackets are to fill in before submitting |
-| [demo-script.md](demo-script.md) | Five-minute script for the local jury, in French, with fallbacks and likely questions |
+| [nasa-project-page.md](nasa-project-page.md) | Stale draft: reconcile with D37–D44 and verify submission requirements before publishing; Fable's next task |
+| [demo-script.md](demo-script.md) | Five-minute local-jury draft; old protocol/stock figures need reconciliation and hardware rehearsal |
 | [slides-outline.md](slides-outline.md), [video-script.md](video-script.md), [video-subtitles.srt](video-subtitles.srt) | Drafts from 11 Nov |
 
 ## History

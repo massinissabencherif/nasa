@@ -22,11 +22,13 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
+import cv2
 import numpy as np
 
-from . import capture, grid, ollama_client
+from . import capture, grid, ollama_client, quality
 from .catalogue_loader import load_ground_truth, load_removal_slot, load_slot_items
 from .schema import SlotReading
+from .scene import check_shelf
 
 LOW_CONFIDENCE_THRESHOLD = 0.6
 FULL_IMAGE_WIDTH = 768
@@ -45,6 +47,8 @@ class ScanResult:
     raw_json: dict
     image_path: str | None = None  # file the scan was read from (fixture / still image)
     frame: np.ndarray | None = None  # webcam frame of a live scan (not yet on disk)
+    # last on purpose: older callers build this result with positional arguments
+    warnings: list[str] | None = None  # about the photo itself (blur, light), see quality.py
 
 
 def _describe(labels: list[str], slot_items: dict[str, dict | None]) -> str:
@@ -63,10 +67,12 @@ _COUNTING_RULES = (
 
 
 def _prompt(labels: list[str], slot_items: dict[str, dict | None], full: bool) -> str:
+    rows = len({label[0] for label in labels})
+    columns = len({label[1:] for label in labels})
     where = (
-        "a 3x4 shelf with 12 compartments, rows A (top) to C (bottom), columns 1 (left) to 4 (right)"
+        f"a {rows}x{columns} storage layout with {len(labels)} compartments, labelled in row-major order from top-left: {', '.join(labels)}"
         if full
-        else "FOUR shelf compartments side by side, left to right"
+        else f"{len(labels)} shelf compartments side by side, left to right"
     )
     return f"This image shows {where}: {_describe(labels, slot_items)}. {_COUNTING_RULES}"
 
@@ -143,6 +149,94 @@ def _crop_to_shelf(image, boxes):
     return grid.crop_box(image, (max(0.0, x0 - m), max(0.0, y0 - m), min(1.0, x1 + m), min(1.0, y1 + m)))
 
 
+def _read_full(image, boxes, slot_items, labels, on_progress) -> dict[str, int | None]:
+    """One call on the whole shelf."""
+    return _call(
+        capture.downscale(_crop_to_shelf(image, boxes), FULL_IMAGE_WIDTH), labels, slot_items, True, on_progress
+    )
+
+
+def _read_rows(image, boxes, slot_items, on_progress) -> dict[str, int | None]:
+    """One call per shelf row, each on its own crop."""
+    counts: dict[str, int | None] = {}
+    for row_labels in grid.ROWS.values():
+        row_labels = [label for label in row_labels if label in boxes]
+        if not row_labels:
+            continue
+        crop = grid.crop_box(image, grid.row_box(boxes, row_labels))
+        done_before = [label for label, value in counts.items() if value is not None]
+        counts.update(_call(
+            crop, row_labels, slot_items, False,
+            (lambda done, base=done_before: on_progress(base + done)) if on_progress else None,
+        ))
+    return counts
+
+
+STACK_WIDTH = 768
+_STACK_SCHEMA = {
+    "type": "object",
+    "properties": {"rows": {"type": "integer"}, "per_row": {"type": "integer"}, "count": {"type": "integer"}},
+    "required": ["rows", "per_row", "count"],
+}
+
+
+def _stack_prompt(name: str) -> str:
+    return (
+        f"This image shows one compartment of a shelf holding {name}. Items can stand side by side and "
+        "can be stacked on top of each other. Count the horizontal rows of items from top to bottom "
+        "(1 if nothing is stacked), then the items in one row, then the total. If the compartment is "
+        "empty, answer 0 for all three. Reply as JSON."
+    )
+
+
+def read_stack(image, box, item: dict) -> int | None:
+    """Second look at one compartment whose product is declared as stacked in
+    the catalogue: the model is asked for rows and items per row, which is the
+    question that made it see a 2 x 2 stack it otherwise read as 2 tall cans.
+    Asked on every compartment, the same question over-counts jars and pouches
+    (measured 15 Nov), so it is only used where the crew says items are stacked.
+    Returns None unless the answer is a valid, self-consistent count."""
+    crop = grid.crop_box(image, box)
+    height, width = crop.shape[:2]
+    scale = STACK_WIDTH / width
+    resized = cv2.resize(crop, (STACK_WIDTH, max(1, round(height * scale))), interpolation=cv2.INTER_CUBIC)
+    name = f"{item['name'].lower()}s"
+    try:
+        answer = ollama_client.generate(
+            _stack_prompt(name), [grid.encode_jpeg_base64(resized)], timeout=120.0, schema=_STACK_SCHEMA
+        )
+        data = json.loads(answer.get("response", ""))
+    except (json.JSONDecodeError, TypeError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    rows, per_row, count = data.get("rows"), data.get("per_row"), data.get("count")
+    if not all(isinstance(v, int) and not isinstance(v, bool) and v >= 0 for v in (rows, per_row, count)):
+        return None
+    return count if rows * per_row == count else None
+
+
+def cross_check(
+    full: dict[str, int | None], rows: dict[str, int | None]
+) -> tuple[dict[str, int | None], dict[str, str]]:
+    """Compare two independent readings of the same shelf.
+
+    The value kept is the row reading (it was the one that did not invent a
+    box in an empty compartment on the two test images: a small sample, not
+    a proof). A slot where the readings differ, or where one of them has no
+    valid answer, is returned in `disagreements` with a plain explanation, so
+    that the person checks it. Two readings that agree prove nothing: they can
+    share the same mistake (a stack read as 2 by both is the known case)."""
+    disagreements: dict[str, str] = {}
+    for label, row_value in rows.items():
+        full_value = full.get(label)
+        if row_value is None or full_value is None:
+            disagreements[label] = "one of the two readings has no valid answer"
+        elif row_value != full_value:
+            disagreements[label] = f"the two readings disagree: whole shelf {full_value}, by rows {row_value}"
+    return rows, disagreements
+
+
 def scan_live(
     image, boxes, slot_items, strategy: str | None = None,
     capacities: dict[str, int] | None = None,
@@ -151,19 +245,24 @@ def scan_live(
     strategy = strategy or DEFAULT_STRATEGY
     labels = list(boxes.keys())
     start = time.perf_counter()
+    disagreements: dict[str, str] = {}
+    raw: dict = {}
     if strategy == "full":
-        counts = _call(
-            capture.downscale(_crop_to_shelf(image, boxes), FULL_IMAGE_WIDTH), labels, slot_items, True, on_progress
-        )
+        counts = _read_full(image, boxes, slot_items, labels, on_progress)
     elif strategy == "row":
-        counts = {}
-        for row_labels in grid.ROWS.values():
-            crop = grid.crop_box(image, grid.row_box(boxes, row_labels))
-            done_before = [label for label, value in counts.items() if value is not None]
-            counts.update(_call(
-                crop, row_labels, slot_items, False,
-                (lambda done, base=done_before: on_progress(base + done)) if on_progress else None,
-            ))
+        counts = _read_rows(image, boxes, slot_items, on_progress)
+    elif strategy == "cross":
+        full = _read_full(image, boxes, slot_items, labels, None)
+        rows = _read_rows(image, boxes, slot_items, on_progress)
+        counts, disagreements = cross_check(full, rows)
+        stacks: dict[str, int | None] = {}
+        for label in labels:
+            item = slot_items.get(label)
+            if item is not None and item.get("stacked"):
+                stacks[label] = read_stack(image, boxes[label], item)
+                if stacks[label] is not None:
+                    counts[label] = stacks[label]
+        raw = {"full": full, "rows": rows, "stacks": stacks, "disagreements": sorted(disagreements)}
     else:
         raise ValueError(f"unknown vision strategy '{strategy}'")
     elapsed = time.perf_counter() - start
@@ -174,10 +273,16 @@ def scan_live(
         confidence, note = _plausibility(
             label, counts[label], slot_items[label], (capacities or {}).get(label)
         )
+        if label in disagreements:
+            # a disagreement caps the plausibility: a person must look at this slot
+            confidence = min(confidence, 0.3)
+            note = disagreements[label] if not note else f"{disagreements[label]}; {note}"
         readings[label] = SlotReading(count=counts[label] or 0, confidence=confidence, note=note)
         if confidence < LOW_CONFIDENCE_THRESHOLD:
             needs_confirmation.add(label)
-    return ScanResult(readings, needs_confirmation, elapsed, strategy, {"counts": counts})
+    return ScanResult(
+        readings, needs_confirmation, elapsed, strategy, {"counts": counts, **raw}, warnings=quality.assess(image)
+    )
 
 
 def scan_mock(variant: str = "full") -> ScanResult:
@@ -201,13 +306,14 @@ def run_scan(
     mode: str, image_path: str | None = None, camera_index: int = 0, variant: str = "full",
     strategy: str | None = None, on_progress: ProgressCallback | None = None,
     slot_items: dict[str, dict | None] | None = None, capacities: dict[str, int] | None = None,
+    boxes: dict | None = None,
 ) -> ScanResult:
     """slot_items / capacities: what each slot is supposed to hold (from the
     database). Defaults to the seeded catalogue when not given."""
     if mode == "mock":
         return scan_mock(variant)
 
-    boxes = grid.load_boxes()
+    boxes = boxes or grid.load_boxes()
     slot_items = slot_items or load_slot_items()
     capacities = capacities or grid.load_capacities()
     if mode == "image":
@@ -219,7 +325,12 @@ def run_scan(
     else:
         raise ValueError(f"unknown scan mode '{mode}'")
 
+    # Check the actual scene before telling the counter what products to expect.
+    started = time.perf_counter()
+    scene = check_shelf(img)
     result = scan_live(img, boxes, slot_items, strategy=strategy, capacities=capacities, on_progress=on_progress)
+    result.raw_json["scene"] = scene
+    result.elapsed_s = time.perf_counter() - started
     if mode == "camera":
         result.frame = img
     else:

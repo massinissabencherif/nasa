@@ -1,3 +1,4 @@
+import { t, useLocale } from '@hestia/ui';
 import { useMemo } from 'react';
 import {
   CartesianGrid,
@@ -63,13 +64,26 @@ type Props = {
   height?: number;
 };
 
-export function IndicatorChart({ data, threshold, color = 'var(--chart-series-1)', unit, height = 200 }: Props) {
+export function IndicatorChart({
+  data,
+  threshold,
+  color = 'var(--chart-series-1)',
+  unit,
+  height = 200,
+}: Props) {
+  const locale = useLocale();
   const points = useMemo(
     () =>
       [...data]
         .sort((a, b) => a.ts.localeCompare(b.ts))
-        .map((m) => ({ date: m.ts.slice(5, 10), value: m.value })),
-    [data],
+        .map((m) => ({
+          date: new Date(m.ts.endsWith('Z') ? m.ts : `${m.ts}Z`).toLocaleDateString(locale, {
+            day: '2-digit',
+            month: '2-digit',
+          }),
+          value: m.value,
+        })),
+    [data, locale],
   );
 
   const { domainMin, domainMax, bands } = useMemo(() => {
@@ -89,7 +103,7 @@ export function IndicatorChart({ data, threshold, color = 'var(--chart-series-1)
   if (points.length === 0) {
     return (
       <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: 'var(--text-faint)', fontSize: 'var(--text-sm)' }}>No data yet.</p>
+        <p style={{ color: 'var(--text-faint)', fontSize: 'var(--text-sm)' }}>{t('No data yet.')}</p>
       </div>
     );
   }

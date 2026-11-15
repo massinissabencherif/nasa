@@ -1,7 +1,20 @@
+import { t } from '@hestia/ui';
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { IconAlert, IconCrew, IconEarthLink, IconForecast, IconPantry, IconSettings, NavRail, TopBar } from '@hestia/ui';
+import {
+  IconAlert,
+  IconCrew,
+  IconEarthLink,
+  IconForecast,
+  IconPantry,
+  IconSettings,
+  NavRail,
+  ProjectCredits,
+  TopBar,
+  useLocale,
+} from '@hestia/ui';
 import { API_BASE } from './lib/api';
 import { formatDelay, StationContext, useStationState } from './lib/hooks';
+import { CrewProfile } from './screens/CrewProfile';
 import { CrewScreen } from './screens/CrewScreen';
 import { PantryScreen } from './screens/PantryScreen';
 import { CalibrationScreen } from './screens/CalibrationScreen';
@@ -9,6 +22,7 @@ import { ForecastsScreen } from './screens/ForecastsScreen';
 import { AlertsScreen } from './screens/AlertsScreen';
 import { EarthScreen } from './screens/EarthScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
+import { StationViewport } from './components/StationViewport';
 
 const NAV = [
   // health first: the crew, what needs attention, what went to Earth; then the resources
@@ -23,9 +37,11 @@ const NAV = [
 function ServerDown() {
   return (
     <div style={{ maxWidth: 560, margin: '80px auto', textAlign: 'center', display: 'grid', gap: 12 }}>
-      <h1 style={{ fontSize: 'var(--text-xl)' }}>Station server unreachable</h1>
+      <h1 style={{ fontSize: 'var(--text-xl)' }}>{t('Station server unreachable')}</h1>
       <p style={{ color: 'var(--text-muted)' }}>
-        The station app cannot reach <span style={{ fontFamily: 'var(--font-mono)' }}>{API_BASE}</span>. Start it with
+        {t('The station app cannot reach')}
+        <span style={{ fontFamily: 'var(--font-mono)' }}>{API_BASE}</span>
+        {t('. Start it with')}
       </p>
       <pre
         style={{
@@ -39,16 +55,17 @@ function ServerDown() {
           textAlign: 'left',
         }}
       >
-        cd server && uv run hestia-server
+        {t('cd server && uv run hestia-server')}
       </pre>
       <p style={{ color: 'var(--text-faint)', fontSize: 'var(--text-sm)' }}>
-        This screen reconnects by itself every few seconds. Nothing is sent outside this machine.
+        {t('This screen reconnects by itself every few seconds. Nothing is sent outside this machine.')}
       </p>
     </div>
   );
 }
 
 function Shell() {
+  useLocale();
   const location = useLocation();
   const navigate = useNavigate();
   const station = useStationState();
@@ -56,7 +73,7 @@ function Shell() {
 
   const items = NAV.map((n) => ({
     key: n.key,
-    label: n.label,
+    label: t(n.label),
     icon: n.icon,
     active: location.pathname.startsWith(n.path),
     onClick: () => navigate(n.path),
@@ -64,10 +81,11 @@ function Shell() {
 
   return (
     <StationContext.Provider value={station}>
-      <div style={{ display: 'flex', height: '100%' }}>
+      <div className="hz-mission-shell" style={{ display: 'flex', height: '100%' }}>
         <NavRail items={items} />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <TopBar
+            contextType={context?.type}
             contextLabel={context?.label ?? (connected === false ? 'No server' : 'Loading context…')}
             earthDelayLabel={context ? formatDelay(context.delay_s * 2) : undefined}
             connected={connected === true}
@@ -76,16 +94,19 @@ function Shell() {
             {connected === false ? (
               <ServerDown />
             ) : (
-              <Routes>
-                <Route path="/" element={<Navigate to="/crew" replace />} />
-                <Route path="/crew" element={<CrewScreen />} />
-                <Route path="/pantry" element={<PantryScreen />} />
-                <Route path="/pantry/calibration" element={<CalibrationScreen />} />
-                <Route path="/forecasts" element={<ForecastsScreen />} />
-                <Route path="/alerts" element={<AlertsScreen />} />
-                <Route path="/earth" element={<EarthScreen />} />
-                <Route path="/settings" element={<SettingsScreen />} />
-              </Routes>
+              <div className="hz-page" key={location.pathname}>
+                <Routes>
+                  <Route path="/" element={<Navigate to="/crew" replace />} />
+                  <Route path="/crew" element={<CrewScreen />} />
+                  <Route path="/crew/:crewId/:section?" element={<CrewProfile />} />
+                  <Route path="/pantry" element={<PantryScreen />} />
+                  <Route path="/pantry/calibration" element={<CalibrationScreen />} />
+                  <Route path="/forecasts" element={<ForecastsScreen />} />
+                  <Route path="/alerts" element={<AlertsScreen />} />
+                  <Route path="/earth" element={<EarthScreen />} />
+                  <Route path="/settings" element={<SettingsScreen />} />
+                </Routes>
+              </div>
             )}
           </main>
           <footer
@@ -100,8 +121,10 @@ function Shell() {
               gap: 16,
             }}
           >
-            <span>Simulated crew and data · indicative thresholds · not a medical device, no diagnosis</span>
-            <span>100 % offline · AI runs locally (Ollama)</span>
+            <span>
+              {t('Simulated crew and data · indicative thresholds · not a medical device, no diagnosis')}
+            </span>
+            <ProjectCredits names />
           </footer>
         </div>
       </div>
@@ -112,7 +135,9 @@ function Shell() {
 function App() {
   return (
     <HashRouter>
-      <Shell />
+      <StationViewport>
+        <Shell />
+      </StationViewport>
     </HashRouter>
   );
 }

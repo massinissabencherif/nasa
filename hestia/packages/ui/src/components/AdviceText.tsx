@@ -6,12 +6,24 @@ export function AdviceText({ message }: { message: string }) {
   const { finding, steps, notes, disclaimer } = parseAdvice(message);
   return (
     <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
-      {finding && <p style={{ fontSize: 'var(--text-base)', fontWeight: 500, color: 'var(--text)' }}>{finding}</p>}
+      {finding && (
+        <p style={{ fontSize: 'var(--text-base)', fontWeight: 500, color: 'var(--text)' }}>{finding}</p>
+      )}
       {steps.length > 0 && (
         <ol style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 'var(--space-1)' }}>
           {steps.map((step, index) => (
-            <li key={step} style={{ display: 'flex', gap: 'var(--space-2)', fontSize: 'var(--text-sm)', color: 'var(--text)' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', flexShrink: 0 }}>{index + 1}</span>
+            <li
+              key={step}
+              style={{
+                display: 'flex',
+                gap: 'var(--space-2)',
+                fontSize: 'var(--text-sm)',
+                color: 'var(--text)',
+              }}
+            >
+              <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', flexShrink: 0 }}>
+                {index + 1}
+              </span>
               <span>{step}</span>
             </li>
           ))}

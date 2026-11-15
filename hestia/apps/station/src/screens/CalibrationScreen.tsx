@@ -1,3 +1,5 @@
+import { Select, Input } from '@hestia/ui';
+import { t } from '@hestia/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { FoodItem, ShelfSlot } from '@hestia/api-client';
@@ -46,8 +48,14 @@ export function CalibrationScreen() {
       setFrame(frameOf(b));
       setSelected((current) => current ?? Object.keys(b)[0] ?? null);
     });
-    api.getGrid().then(setSlots).catch(() => {});
-    api.listFoodItems().then(setItems).catch(() => {});
+    api
+      .getGrid()
+      .then(setSlots)
+      .catch(() => {});
+    api
+      .listFoodItems()
+      .then(setItems)
+      .catch(() => {});
   }, []);
   useEffect(load, [load]);
   useRefreshOn(['reference_photo', 'scan_complete', 'reset'], () => {
@@ -82,13 +90,29 @@ export function CalibrationScreen() {
 
   return (
     <div style={{ display: 'grid', gap: 16 }}>
-      <Button variant="ghost" size="sm" onClick={() => navigate('/pantry')} style={{ justifySelf: 'start', paddingLeft: 0 }}>
-        ← Back to Live pantry
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => navigate('/pantry')}
+        style={{ justifySelf: 'start', paddingLeft: 0 }}
+      >
+        {t('← Back to Live pantry')}
       </Button>
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.3fr) minmax(0, 1fr)', gap: 16, alignItems: 'start' }}>
-        <Panel title="Reference photo and slot grid" bodyStyle={{ padding: 0 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1.3fr) minmax(0, 1fr)',
+          gap: 16,
+          alignItems: 'start',
+        }}
+      >
+        <Panel title={t('Reference photo and slot grid')} bodyStyle={{ padding: 0 }}>
           <div style={{ position: 'relative', width: '100%', background: '#000', lineHeight: 0 }}>
-            <img src={imageUrl} alt="Reference photo of the shelf" style={{ width: '100%', height: 'auto', display: 'block' }} />
+            <img
+              src={imageUrl}
+              alt={t('Reference photo of the shelf')}
+              style={{ width: '100%', height: 'auto', display: 'block' }}
+            />
             {Object.entries(boxes).map(([label, [x0, y0, x1, y1]]) => (
               <div
                 key={label}
@@ -131,22 +155,30 @@ export function CalibrationScreen() {
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 e.target.value = '';
-                if (file) run(() => api.uploadShelfPhoto(file, { scan: false }), 'Reference photo replaced. Counts were not changed.');
+                if (file)
+                  run(
+                    () => api.uploadShelfPhoto(file, { scan: false }),
+                    'Reference photo replaced. Counts were not changed.',
+                  );
               }}
             />
-            <Button onClick={() => fileInput.current?.click()}>Use a photo file as reference…</Button>
+            <Button onClick={() => fileInput.current?.click()}>{t('Use a photo file as reference…')}</Button>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', flex: 1, minWidth: 200 }}>
-              Or send it from a phone: crew app → Pantry tab → Photo options → "Reference photo only". Take it from where the camera will
-              stay, then place the grid on it.
+              {t(
+                'Or send it from a phone: crew app → Pantry tab → Photo options → "Reference photo only". Take it from where the camera will stay, then place the grid on it.',
+              )}
             </p>
           </div>
         </Panel>
 
         <div style={{ display: 'grid', gap: 16 }}>
-          <Panel title="1 · Place the whole grid">
+          <Panel title={t('1 · Place the whole grid')}>
             <div style={{ display: 'grid', gap: 10 }}>
               {(['left', 'top', 'right', 'bottom'] as const).map((side) => (
-                <label key={side} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 'var(--text-sm)' }}>
+                <label
+                  key={side}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 'var(--text-sm)' }}
+                >
                   <span style={{ width: 52, color: 'var(--text-muted)' }}>{side}</span>
                   <input
                     type="range"
@@ -157,7 +189,14 @@ export function CalibrationScreen() {
                     onChange={(e) => setFrame((f) => ({ ...f, [side]: Number(e.target.value) }))}
                     style={{ flex: 1, accentColor: 'var(--accent)' }}
                   />
-                  <span style={{ width: 44, fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', textAlign: 'right' }}>
+                  <span
+                    style={{
+                      width: 44,
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: 'var(--text-xs)',
+                      textAlign: 'right',
+                    }}
+                  >
                     {frame[side].toFixed(3)}
                   </span>
                 </label>
@@ -165,12 +204,19 @@ export function CalibrationScreen() {
               <Button
                 variant="primary"
                 style={{ justifySelf: 'start' }}
-                onClick={() => run(async () => setBoxes(await api.setGridFrame(frame)), '12 equal slots placed inside the frame.')}
+                onClick={() =>
+                  run(
+                    async () => setBoxes(await api.setGridFrame(frame)),
+                    '12 equal slots placed inside the frame.',
+                  )
+                }
               >
-                Split this frame into 3 × 4 slots
+                {t('Split this frame into 3 × 4 slots')}
               </Button>
               <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>
-                Set the outer edges of the shelf, apply, then fine-tune single slots below if the compartments are not equal.
+                {t(
+                  'Set the outer edges of the shelf, apply, then fine-tune single slots below if the compartments are not equal.',
+                )}
               </p>
             </div>
           </Panel>
@@ -179,23 +225,23 @@ export function CalibrationScreen() {
             {selected && boxes[selected] && (
               <div style={{ display: 'grid', gap: 10 }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 'var(--text-sm)' }}>
-                  <span style={{ width: 52, color: 'var(--text-muted)' }}>holds</span>
-                  <select
+                  <span style={{ width: 52, color: 'var(--text-muted)' }}>{t('holds')}</span>
+                  <Select
                     value={slot?.food_item_id ?? 0}
                     onChange={(e) => updateSlot({ food_item_id: Number(e.target.value) })}
                     style={{ ...inputStyle, flex: 1 }}
                   >
-                    <option value={0}>nothing (expected empty)</option>
+                    <option value={0}>{t('nothing (expected empty)')}</option>
                     {items.map((item) => (
                       <option key={item.id} value={item.id}>
-                        {item.name} · {item.kcal} kcal
+                        {item.name} · {item.kcal} {t('kcal')}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 'var(--text-sm)' }}>
-                  <span style={{ width: 52, color: 'var(--text-muted)' }}>capacity</span>
-                  <input
+                  <span style={{ width: 52, color: 'var(--text-muted)' }}>{t('capacity')}</span>
+                  <Input
                     type="number"
                     min={1}
                     max={99}
@@ -203,11 +249,18 @@ export function CalibrationScreen() {
                     onChange={(e) => updateSlot({ capacity: Math.max(1, Number(e.target.value) || 1) })}
                     style={{ ...inputStyle, width: 70, fontFamily: 'var(--font-mono)' }}
                   />
-                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>a count above it asks for confirmation</span>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>
+                    {t('a count above it asks for confirmation')}
+                  </span>
                 </label>
                 {['x0', 'y0', 'x1', 'y1'].map((fieldLabel, i) => (
-                  <label key={fieldLabel} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 'var(--text-sm)' }}>
-                    <span style={{ width: 52, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{fieldLabel}</span>
+                  <label
+                    key={fieldLabel}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 'var(--text-sm)' }}
+                  >
+                    <span style={{ width: 52, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                      {fieldLabel}
+                    </span>
                     <input
                       type="range"
                       min={0}
@@ -217,29 +270,41 @@ export function CalibrationScreen() {
                       onChange={(e) => updateField(i, Number(e.target.value))}
                       style={{ flex: 1, accentColor: 'var(--accent)' }}
                     />
-                    <span style={{ width: 44, fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', textAlign: 'right' }}>
+                    <span
+                      style={{
+                        width: 44,
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: 'var(--text-xs)',
+                        textAlign: 'right',
+                      }}
+                    >
                       {boxes[selected][i].toFixed(3)}
                     </span>
                   </label>
                 ))}
-                <Button style={{ justifySelf: 'start' }} onClick={() => run(() => api.updateGridBox(selected, boxes[selected]), `Box of ${selected} saved.`)}>
-                  Save this box
+                <Button
+                  style={{ justifySelf: 'start' }}
+                  onClick={() =>
+                    run(() => api.updateGridBox(selected, boxes[selected]), `Box of ${selected} saved.`)
+                  }
+                >
+                  {t('Save this box')}
                 </Button>
               </div>
             )}
           </Panel>
 
-          <Panel title="3 · Add a product from the real shelf">
+          <Panel title={t('3 · Add a product from the real shelf')}>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <input
-                placeholder="Name, e.g. Lentil can"
+              <Input
+                placeholder={t('Name, e.g. Lentil can')}
                 value={newItem.name}
                 onChange={(e) => setNewItem((n) => ({ ...n, name: e.target.value }))}
                 style={{ ...inputStyle, flex: 1, minWidth: 140 }}
               />
-              <input
+              <Input
                 type="number"
-                placeholder="kcal / unit"
+                placeholder={t('kcal / unit')}
                 value={newItem.kcal}
                 onChange={(e) => setNewItem((n) => ({ ...n, kcal: e.target.value }))}
                 style={{ ...inputStyle, width: 110, fontFamily: 'var(--font-mono)' }}
@@ -254,12 +319,13 @@ export function CalibrationScreen() {
                   }, 'Product added. Assign it to a slot above.')
                 }
               >
-                Add
+                {t('Add')}
               </Button>
             </div>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginTop: 8 }}>
-              Energy per unit, from the label. The vision model is told the product name of each slot. A demo reset removes added
-              products and slot changes.
+              {t(
+                'Energy per unit, from the label. The vision model is told the product name of each slot. A demo reset removes added products and slot changes.',
+              )}
             </p>
           </Panel>
 

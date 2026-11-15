@@ -14,3 +14,5 @@ certs/
 *.tsbuildinfo
 vite.config.js
 vite.config.d.ts
+# Real shelf photos stay on the local machine.
+server/vision/real-photos/
