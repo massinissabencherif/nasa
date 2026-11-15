@@ -499,4 +499,22 @@ export const french: Record<string, string> = {
   'no test': 'aucun test',
   'Confirmed by a person': 'Vérifié manuellement',
   'Not checked by a person': 'À vérifier',
+  // Earth link: texts written by the server in English
+  'Mission Control: acknowledged. Follow the onboard procedure, reassess in 6h, escalate only if it worsens. No evacuation indicated. — Flight Surgeon (SIMULATED REPLY)':
+    'Contrôle de mission : bien reçu. Suivez la procédure de bord, réévaluez dans 6 h, ne remontez que si l’état s’aggrave. Aucune évacuation indiquée. — Médecin de vol (RÉPONSE SIMULÉE)',
+  'Mission Control: noted, keep monitoring. — Flight Surgeon (SIMULATED REPLY)':
+    'Contrôle de mission : noté, poursuivez la surveillance. — Médecin de vol (RÉPONSE SIMULÉE)',
+  'Cardiovascular rest procedure': 'Procédure de repos cardiovasculaire',
+  'Fever procedure': 'Procédure fièvre',
+  'Nutrition check procedure': 'Procédure de contrôle nutritionnel',
+  'Sleep hygiene procedure': 'Procédure d’hygiène du sommeil',
+  'Crew wellness check-in procedure': 'Procédure de suivi du bien-être de l’équipage',
+  'Resistive exercise routine': 'Routine d’exercice contre résistance',
+  'Radiation shelter procedure': 'Procédure d’abri contre les radiations',
+  'Fatigue management procedure': 'Procédure de gestion de la fatigue',
+  'crew notified on station and mobile': 'équipage prévenu sur la station et le téléphone',
+  'rising': 'en hausse',
+  'falling': 'en baisse',
+  'stable': 'stable',
+  'new onset': 'nouveau',
 };

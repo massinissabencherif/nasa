@@ -45,10 +45,10 @@ function LinkPath({
   const position = returning ? 1 - inbound : outbound;
   const colour = done ? 'var(--green)' : 'var(--accent)';
   const caption = done
-    ? `Reply received at ${time(msg.reply_ts)}`
+    ? `${t('Reply received at', 'Réponse reçue à')} ${time(msg.reply_ts)}`
     : returning
-      ? `Report received on Earth at ${time(msg.deliver_ts)}. Reply on its way back, due at ${time(msg.reply_ts)}`
-      : `Report on its way to Earth, arrives at ${time(msg.deliver_ts)}. Earliest reply at ${time(msg.reply_ts)}`;
+      ? `${t('Report received on Earth at', 'Rapport reçu sur Terre à')} ${time(msg.deliver_ts)}. ${t('Reply on its way back, due at', 'Réponse en route, attendue à')} ${time(msg.reply_ts)}`
+      : `${t('Report on its way to Earth, arrives at', 'Rapport en route vers la Terre, arrive à')} ${time(msg.deliver_ts)}. ${t('Earliest reply at', 'Réponse au plus tôt à')} ${time(msg.reply_ts)}`;
   return (
     <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
       <div
@@ -121,8 +121,7 @@ function LinkPath({
         }}
       >
         <span>
-          {baseLabel}
-          {t('· sent')} <span style={{ fontFamily: 'var(--font-mono)' }}>{time(msg.created_ts)}</span>
+          {t(baseLabel)} {t('· sent')} <span style={{ fontFamily: 'var(--font-mono)' }}>{time(msg.created_ts)}</span>
         </span>
         <span>{t('Earth')}</span>
       </div>
@@ -181,10 +180,10 @@ export function EarthScreen() {
         >
           <div>
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-              {context?.label ?? '…'}
-              {t(': one-way delay')} {context ? formatDelay(context.delay_s) : '…'}
+              {context ? t(context.label) : '…'}
+              {t(': one-way delay', ' : délai à sens unique')} {context ? formatDelay(context.delay_s) : '…'}
               {context && context.time_scale !== 1
-                ? ` (demo clock ×${context.time_scale} for new messages)`
+                ? ` (${t('demo clock', 'horloge de démo')} ×${context.time_scale} ${t('for new messages', 'pour les nouveaux messages')})`
                 : ''}
             </p>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', marginTop: 4 }}>
@@ -231,7 +230,7 @@ export function EarthScreen() {
           Array.isArray(payload.actions_taken) ? (payload.actions_taken as string[]) : []
         ).map((action) => action.replace(/^Procedure: /, ''));
         return (
-          <Panel key={msg.id} title={`Report #${msg.id} · ${String(payload.who ?? 'crew')}`}>
+          <Panel key={msg.id} title={`${t('Report', 'Rapport')} #${msg.id} · ${String(payload.who ?? t('crew', 'équipage'))}`}>
             <div style={{ display: 'grid', gap: 'var(--space-5)' }}>
               <div
                 style={{
@@ -303,7 +302,7 @@ export function EarthScreen() {
                   >
                     {t('Simulated ground reply')}
                   </p>
-                  <p style={{ fontSize: 'var(--text-sm)' }}>{msg.reply_payload}</p>
+                  <p style={{ fontSize: 'var(--text-sm)' }}>{t(msg.reply_payload)}</p>
                 </div>
               )}
 
@@ -333,11 +332,11 @@ export function EarthScreen() {
                       }}
                     >
                       <span>
-                        {indicatorLabel(finding.indicator)}
+                        {t(indicatorLabel(finding.indicator))}
                         {finding.trend_7d && (
                           <span style={{ color: 'var(--text-faint)' }}>
                             {' '}
-                            · {finding.trend_7d} {t('over 7 d')}
+                            · {t(finding.trend_7d)} {t('over 7 d')}
                           </span>
                         )}
                       </span>
@@ -348,7 +347,7 @@ export function EarthScreen() {
                   ))}
                   {actions.length > 0 && (
                     <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                      {t('Crew is applying:')} {actions.join(', ')}.
+                      {t('Crew is applying:')} {actions.map((action) => t(action)).join(', ')}.
                     </p>
                   )}
                 </div>
@@ -360,8 +359,8 @@ export function EarthScreen() {
                       marginBottom: 'var(--space-1)',
                     }}
                   >
-                    {t('Report text,')}
-                    {summary.length} {t('characters (limit 600)')}
+                    {t('Report text,')} {summary.length} {t('characters (limit 600)')} ·{' '}
+                    {t('sent in English', 'envoyé en anglais')}
                   </p>
                   <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>{summary}</p>
                 </div>
