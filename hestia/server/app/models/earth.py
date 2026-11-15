@@ -12,3 +12,15 @@ class EarthMessage(SQLModel, table=True):
     reply_payload: str  # scripted simulated ground reply, revealed at reply_ts
     status: str = "queued"  # queued | delivered | replied (display-only; derived from ts in the API)
     alert_id: int | None = Field(default=None, foreign_key="alert.id")
+
+
+class OnboardStep(SQLModel, table=True):
+    """One step of the plan the crew follows while a report travels to Earth
+    and back. Ticked by a person; the time is recorded, never inferred."""
+
+    id: int | None = Field(default=None, primary_key=True)
+    message_id: int = Field(foreign_key="earthmessage.id", index=True)
+    position: int
+    label: str
+    due_ts: datetime | None = None
+    done_ts: datetime | None = None

@@ -167,6 +167,40 @@ export type EarthMessage = {
   reply_payload: string | null;
   status: 'queued' | 'delivered' | 'replied';
   alert_id: number | null;
+  kind: 'report' | 'update';
+  parent_id: number | null;
+  crew_member_id: number | null;
+  /** Latest values on board for the indicators Earth was sent. */
+  onboard_now: OnboardReading[];
+  /** Demo rules saying when the crew acts without waiting for the reply. */
+  dont_wait: { rules: DontWaitRule[]; triggered: boolean } | null;
+  plan: OnboardStep[];
+};
+
+export type OnboardReading = {
+  indicator: string;
+  sent_value: number | null;
+  value: number | null;
+  unit: string;
+  level: Level | null;
+  measured_ts: string | null;
+  change: 'better' | 'worse' | 'same' | 'unknown';
+};
+
+export type DontWaitRule = {
+  kind: 'critical' | 'second_person';
+  indicator: string | null;
+  text: string;
+  triggered: boolean;
+};
+
+export type OnboardStep = { id: number; label: string; due_ts: string | null; done_ts: string | null };
+
+export type EarthUpdatePreview = {
+  summary: string;
+  who: string;
+  findings: { indicator: string; value: number | null; unit: string; previous: number | null; change: OnboardReading['change'] }[];
+  actions_taken: string[];
 };
 
 export type ThresholdRule = { level: Level; when: Record<string, number> };
@@ -578,6 +612,11 @@ export function createApiClient(baseUrl: string) {
     ackAlert: (id: number) => request<Alert>(`/api/alerts/${id}/ack`, { method: 'POST' }),
 
     getEarthMessages: () => request<EarthMessage[]>('/api/earth/messages'),
+    tickOnboardStep: (stepId: number, done: boolean) =>
+      request<OnboardStep>(`/api/earth/steps/${stepId}`, { method: 'POST', body: JSON.stringify({ done }) }),
+    previewEarthUpdate: (messageId: number) => request<EarthUpdatePreview>(`/api/earth/messages/${messageId}/update`),
+    sendEarthUpdate: (messageId: number) =>
+      request<EarthMessage>(`/api/earth/messages/${messageId}/update`, { method: 'POST' }),
     advanceEarthTime: (seconds: number) =>
       request<{ advanced_seconds: number }>(`/api/earth/advance?seconds=${seconds}`, { method: 'POST' }),
 

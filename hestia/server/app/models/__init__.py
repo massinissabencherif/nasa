@@ -1,6 +1,6 @@
 from .alert import Alert
 from .crew import CrewMember
-from .earth import EarthMessage
+from .earth import EarthMessage, OnboardStep
 from .food import FoodItem
 from .gamification import Gamification
 from .measurement import Measurement
@@ -13,6 +13,7 @@ __all__ = [
     "Alert",
     "CrewMember",
     "EarthMessage",
+    "OnboardStep",
     "FoodItem",
     "Gamification",
     "Measurement",

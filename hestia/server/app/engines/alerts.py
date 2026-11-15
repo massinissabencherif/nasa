@@ -84,6 +84,8 @@ def _earth_payload(crew: CrewMember, findings: list[dict]) -> str:
     )[:EARTH_SUMMARY_MAX_CHARS]
     payload = {
         "summary": summary,
+        "kind": "report",
+        "crew_member_id": crew.id,
         "who": crew.name,
         "level": "red",
         "findings": findings,
@@ -95,16 +97,6 @@ def _earth_payload(crew: CrewMember, findings: list[dict]) -> str:
         "actions_taken": [f"Procedure: {p}" for p in procedures] + ["crew notified on station and mobile"],
     }
     return json.dumps(payload)
-
-
-def _scripted_reply(level: str) -> str:
-    if level == "red":
-        return (
-            "Mission Control: acknowledged. Follow the onboard procedure, reassess in 6h, "
-            "escalate only if it worsens. No evacuation indicated. "
-            "— Flight Surgeon (SIMULATED REPLY)"
-        )
-    return "Mission Control: noted, keep monitoring. — Flight Surgeon (SIMULATED REPLY)"
 
 
 def evaluate_and_alert(session: Session, crew_member_id: int, use_llm: bool = False) -> list[Alert]:
@@ -189,17 +181,21 @@ def evaluate_and_alert(session: Session, crew_member_id: int, use_llm: bool = Fa
         scale = context.time_scale if context else 1.0
         effective_delay = max(1, round(delay_s / scale))
         deliver_ts = now + timedelta(seconds=effective_delay)
-        session.add(
-            EarthMessage(
-                created_ts=now,
-                deliver_ts=deliver_ts,
-                reply_ts=deliver_ts + timedelta(seconds=effective_delay),
-                payload=_earth_payload(crew, findings),
-                reply_payload=_scripted_reply("red"),
-                status="queued",
-                alert_id=active_reds[0].id,
-            )
+        from .earth_link import ensure_plan, reply_to_report  # local: earth_link reads alerts' models
+
+        payload = _earth_payload(crew, findings)
+        message = EarthMessage(
+            created_ts=now,
+            deliver_ts=deliver_ts,
+            reply_ts=deliver_ts + timedelta(seconds=effective_delay),
+            payload=payload,
+            # Earth answers what it received, nothing more (simulated)
+            reply_payload=reply_to_report(json.loads(payload)),
+            status="queued",
+            alert_id=active_reds[0].id,
         )
+        session.add(message)
         session.flush()
+        ensure_plan(session, message)
 
     return created

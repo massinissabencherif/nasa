@@ -4,6 +4,27 @@ Last update: 15 Nov 2026. This file says what
 works, how it was checked, and what is still open. Decisions are in
 [decisions.md](decisions.md).
 
+## 15 Nov — Earth link: the wait has content (Massi, branch `feat/earth-link-waiting`)
+
+- Includes David's `fix/earth-link-check` commit (cherry-picked, signed).
+- While a report travels, each report card now shows: what Earth reads (the
+  values sent) next to what is on board now (latest reading, better/worse);
+  an onboard plan ticked by a person with recorded times ("measure again"
+  comes due after 1 h of demo clock); the demo rules to act without waiting
+  for Earth, reusing the critical bands of `demo_rules.json` (plus "another
+  crew member turns red"), with a red banner when one is reached; an update
+  the crew can prepare, read and send, with its own delay and reply.
+- The simulated reply is built from what Earth received (values, trend,
+  procedures, the "do not wait" bands); the fixed "No evacuation indicated"
+  reply is gone. Replies stay in English, labelled SIMULATED.
+- New table `OnboardStep` (additive). Updates are EarthMessage rows whose
+  payload has `kind: "update"`; no column added to existing tables.
+- Run on Massi's Mac: 107 backend tests (6 new), station type check and 11
+  tests, `make check-offline`; the whole path rehearsed in headless Chrome
+  (FR, 1470 px): report, tick, new reading, preview, send, +40 min, reply,
+  critical value banner. **Not checked:** the crew phone, the Tauri window,
+  keyboard-only use. The rule texts themselves stay in English.
+
 ## 15 Nov — combined delivery verification
 
 David approved `feat: clarify mission settings, check-ins and reaction results`

@@ -1,10 +1,11 @@
 import { MissionIllustration, t } from '@hestia/ui';
 import { useCallback, useEffect, useState } from 'react';
-import type { EarthMessage, Level } from '@hestia/api-client';
-import { Button, indicatorLabel, Panel, parseServerTime, StatusBadge } from '@hestia/ui';
+import type { EarthMessage } from '@hestia/api-client';
+import { Button, Panel, parseServerTime, StatusBadge } from '@hestia/ui';
 import { api } from '../lib/api';
 import { formatDelay, useStation } from '../lib/hooks';
 import { useRefreshOn } from '../lib/useSSE';
+import { DontWaitBanner, DontWaitRules, OnboardPlan, TwoClocks, UpdateComposer } from '../components/earth/Waiting';
 
 function remaining(targetTs: string, now: number): number {
   return Math.max(0, Math.round((parseServerTime(targetTs) - now) / 1000));
@@ -130,7 +131,62 @@ function LinkPath({
   );
 }
 
-type Finding = { indicator: string; value: number | null; unit?: string; trend_7d?: string };
+/** An update the crew sent while waiting: its own trip, its own reply. */
+function UpdateCard({
+  msg,
+  now,
+  baseLabel,
+  contextType,
+}: {
+  msg: EarthMessage;
+  now: number;
+  baseLabel: string;
+  contextType: string;
+}) {
+  let summary = msg.payload;
+  try {
+    summary = String(JSON.parse(msg.payload).summary ?? msg.payload);
+  } catch {
+    // raw text
+  }
+  const left = msg.status === 'queued' ? remaining(msg.deliver_ts, now) : remaining(msg.reply_ts, now);
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gap: 'var(--space-3)',
+        padding: 'var(--space-3) var(--space-4)',
+        borderRadius: 'var(--radius-md)',
+        border: '1px solid var(--border)',
+        background: 'var(--panel-raised)',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-3)', alignItems: 'baseline' }}>
+        <p style={{ fontWeight: 600 }}>
+          {t('Update', 'Complément')} #{msg.id}
+        </p>
+        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
+          {msg.status === 'replied' ? (
+            t('reply received', 'réponse reçue')
+          ) : (
+            <>
+              <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent)' }}>{clock(left)}</span>{' '}
+              {msg.status === 'queued' ? t('until it reaches Earth') : t('until the reply arrives')}
+            </>
+          )}
+        </p>
+      </div>
+      <LinkPath msg={msg} now={now} baseLabel={baseLabel} contextType={contextType} />
+      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>{summary}</p>
+      {msg.status === 'replied' && msg.reply_payload && (
+        <p style={{ fontSize: 'var(--text-sm)' }}>
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--orange-ink)' }}>{t('Simulated ground reply')} · </span>
+          {msg.reply_payload}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export function EarthScreen() {
   const { context } = useStation();
@@ -154,7 +210,7 @@ export function EarthScreen() {
       clearInterval(poll);
     };
   }, [refresh]);
-  useRefreshOn(['alert_created', 'reset'], refresh);
+  useRefreshOn(['alert_created', 'reset', 'earth_changed', 'checkin'], refresh);
 
   async function advance(seconds: number) {
     setAdvancing(true);
@@ -215,7 +271,7 @@ export function EarthScreen() {
         </Panel>
       )}
 
-      {(messages ?? []).map((msg) => {
+      {(messages ?? []).filter((m) => m.kind !== 'update').map((msg) => {
         let payload: Record<string, unknown> = {};
         try {
           payload = JSON.parse(msg.payload);
@@ -224,7 +280,6 @@ export function EarthScreen() {
         }
         const toEarth = remaining(msg.deliver_ts, now);
         const toReply = remaining(msg.reply_ts, now);
-        const findings: Finding[] = Array.isArray(payload.findings) ? (payload.findings as Finding[]) : [];
         const summary = String(payload.summary ?? msg.payload);
         const actions: string[] = (
           Array.isArray(payload.actions_taken) ? (payload.actions_taken as string[]) : []
@@ -285,6 +340,8 @@ export function EarthScreen() {
                 </div>
               </div>
 
+              <DontWaitBanner msg={msg} />
+
               {msg.status === 'replied' && msg.reply_payload && (
                 <div
                   style={{
@@ -300,71 +357,45 @@ export function EarthScreen() {
                       marginBottom: 'var(--space-1)',
                     }}
                   >
-                    {t('Simulated ground reply')}
+                    {t('Simulated ground reply')} · {t('received in English', 'reçue en anglais')}
                   </p>
-                  <p style={{ fontSize: 'var(--text-sm)' }}>{t(msg.reply_payload)}</p>
+                  <p style={{ fontSize: 'var(--text-sm)' }}>{msg.reply_payload}</p>
                 </div>
               )}
+
+              <TwoClocks msg={msg} now={now} />
 
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'minmax(0, 320px) minmax(0, 1fr)',
-                  gap: 'var(--space-6)',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
+                  gap: 'var(--space-5)',
+                  paddingTop: 'var(--space-4)',
+                  borderTop: '1px solid var(--border)',
                 }}
               >
-                <div style={{ display: 'grid', gap: 'var(--space-2)', alignContent: 'start' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                    {Boolean(payload.level) && <StatusBadge level={payload.level as Level} />}
-                    <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>
-                      {t('what was sent')}
-                    </span>
-                  </div>
-                  {findings.map((finding) => (
-                    <div
-                      key={finding.indicator}
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'minmax(0, 1fr) auto',
-                        gap: 'var(--space-3)',
-                        fontSize: 'var(--text-sm)',
-                        alignItems: 'baseline',
-                      }}
-                    >
-                      <span>
-                        {t(indicatorLabel(finding.indicator))}
-                        {finding.trend_7d && (
-                          <span style={{ color: 'var(--text-faint)' }}>
-                            {' '}
-                            · {t(finding.trend_7d)} {t('over 7 d')}
-                          </span>
-                        )}
-                      </span>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
-                        {finding.value ?? 'n/a'} {finding.unit ?? ''}
-                      </span>
-                    </div>
-                  ))}
-                  {actions.length > 0 && (
-                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                      {t('Crew is applying:')} {actions.map((action) => t(action)).join(', ')}.
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <p
-                    style={{
-                      fontSize: 'var(--text-xs)',
-                      color: 'var(--text-faint)',
-                      marginBottom: 'var(--space-1)',
-                    }}
-                  >
-                    {t('Report text,')} {summary.length} {t('characters (limit 600)')} ·{' '}
-                    {t('sent in English', 'envoyé en anglais')}
-                  </p>
-                  <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>{summary}</p>
-                </div>
+                <OnboardPlan msg={msg} now={now} onChange={refresh} />
+                <DontWaitRules msg={msg} />
+                <UpdateComposer msg={msg} onSent={refresh} />
               </div>
+
+              {(messages ?? [])
+                .filter((u) => u.kind === 'update' && u.parent_id === msg.id)
+                .map((u) => (
+                  <UpdateCard key={u.id} msg={u} now={now} baseLabel={context?.label ?? 'Base'} contextType={context?.type ?? 'mars_base'} />
+                ))}
+
+              <details>
+                <summary style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', cursor: 'pointer' }}>
+                  {t('Report text,')} {summary.length} {t('characters (limit 600)')} · {t('sent in English', 'envoyé en anglais')}
+                </summary>
+                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', marginTop: 'var(--space-2)' }}>{summary}</p>
+                {actions.length > 0 && (
+                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                    {t('Crew is applying:')} {actions.map((action) => t(action)).join(', ')}.
+                  </p>
+                )}
+              </details>
             </div>
           </Panel>
         );
