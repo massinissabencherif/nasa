@@ -26,6 +26,7 @@ export const french: Record<string, string> = {
   'Cereal box': 'Céréales',
   'Bean can': 'Haricots',
   'Water pouch': 'Eau',
+  'Orange juice': "Jus d'orange",
   'Energy bar box': 'Barres énergétiques',
   'entered by you': 'saisi par vous',
   'read by the camera': 'lu par la caméra',

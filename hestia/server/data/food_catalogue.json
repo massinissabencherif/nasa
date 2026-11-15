@@ -95,6 +95,17 @@
       "note": "hydration only, not counted toward kcal autonomy"
     },
     {
+      "key": "orange_juice",
+      "name": "Orange juice",
+      "kcal": 420,
+      "protein_g": 7,
+      "carbs_g": 93,
+      "fat_g": 5,
+      "mass_g": 1000,
+      "expiry_days": 180,
+      "note": "values read from the bottle label; mass and shelf life are demo assumptions"
+    },
+    {
       "key": "energy_bar_box",
       "name": "Energy bar box",
       "kcal": 1000,

@@ -246,6 +246,32 @@ export function PantryAutonomy(
   const assigned = pantry?.slots.filter((s) => s.item).length ?? 0;
   return (
     <Panel className="pantry-stock-summary">
+      <div className="pantry-mission-shortcuts">
+        <div className="pantry-mission-meta">
+          <p className="pantry-note">
+            {t(
+              `Active mission · demo scale ×${pantry?.units_per_lot ?? '…'}`,
+              `Mission active · échelle de démo ×${pantry?.units_per_lot ?? '…'}`,
+            )}
+          </p>
+          <Button variant="ghost" size="sm" onClick={props.onSettings}>
+            {t('Change mission', 'Changer de mission')}
+          </Button>
+        </div>
+        <div className="pantry-mission-buttons">
+          {props.context && (
+            <Button onClick={() => setProjection(props.context)}>
+              <MissionIllustration context={props.context.type} size={24} />
+              <span>
+                {t('Simulate', 'Simuler')} · {t(props.context.label)}
+              </span>
+            </Button>
+          )}
+          <Button icon={<IconCargo size={18} />} onClick={props.onSimulator}>
+            <span>{t('Management simulator', 'Simulateur de gestion')}</span>
+          </Button>
+        </div>
+      </div>
       <div className="pantry-stage-heading">
         <IconCheck size={22} />
         <div>
@@ -307,30 +333,6 @@ export function PantryAutonomy(
       <Button onClick={onReview}>
         {t('Review or correct quantities', 'Vérifier ou corriger les quantités')}
       </Button>
-      <div className="pantry-mission-shortcuts">
-        <p className="pantry-note">
-          {t(
-            `Active mission · demo scale ×${pantry?.units_per_lot ?? '…'}`,
-            `Mission active · échelle de démo ×${pantry?.units_per_lot ?? '…'}`,
-          )}
-        </p>
-        <div className="pantry-mission-buttons">
-          {props.context && (
-            <Button onClick={() => setProjection(props.context)}>
-              <MissionIllustration context={props.context.type} size={36} />
-              <span>
-                {t('Simulate', 'Simuler')} · {t(props.context.label)}
-              </span>
-            </Button>
-          )}
-        </div>
-        <Button icon={<IconCargo size={18} />} onClick={props.onSimulator}>
-          {t('Management simulator', 'Simulateur de gestion')}
-        </Button>
-        <Button variant="ghost" size="sm" onClick={props.onSettings}>
-          {t('Change mission in Settings', 'Changer de mission dans les Réglages')}
-        </Button>
-      </div>
       {projection && (
         <DetailSheet
           title={t('Mission reserves', 'Réserves de la mission')}
