@@ -10,6 +10,7 @@ from app.models import (
     InventoryLine,
     InventorySnapshot,
     ShelfSlot,
+    MealCancellation,
 )
 
 KCAL_PER_KG_BODYWEIGHT_CHANGE = 7700  # NASA-referenced approximation, flagged as an assumption
@@ -47,41 +48,56 @@ def _latest_snapshot(session: Session) -> InventorySnapshot | None:
 
 
 def is_meal(event: ConsumptionEvent) -> bool:
-    """A consumption event logged by a crew member is a meal, counted in real
-    portions. An event without a crew member comes from a shelf scan and is
+    """A crew meal consumes whole catalogue packages, never virtual demo units.
+    An event without a crew member comes from a shelf scan and is
     counted in boxes, i.e. whole lots at the demo scale."""
     return event.crew_member_id is not None
 
 
 def pending_portions(session: Session, snapshot: InventorySnapshot) -> dict[int, int]:
-    """Portions eaten per food item since the given snapshot."""
+    """Whole packages eaten per food since the given snapshot (legacy name)."""
     # A partial shelf photograph must not erase meals from untouched slots.
     carried = json.loads(snapshot.raw_json or "{}").get("carried_meals", {})
     eaten: dict[int, int] = {int(food): qty for food, qty in carried.items()}
+    cancelled = {c.consumption_event_id for c in session.exec(select(MealCancellation)).all() if c.restore_stock}
     for event in session.exec(select(ConsumptionEvent).where(ConsumptionEvent.ts > snapshot.ts)):
-        if is_meal(event):
+        if is_meal(event) and event.id not in cancelled:
             eaten[event.food_item_id] = eaten.get(event.food_item_id, 0) - event.qty
     return eaten
 
 
-def counted_foods(session: Session, snapshot: InventorySnapshot) -> dict[int, tuple[FoodItem, int]]:
-    """Aggregate distinct shelf locations before subtracting meals once per product."""
+def remaining_slot_counts(session: Session, snapshot: InventorySnapshot) -> dict[int, int]:
+    """Allocate each consumed package once, in stable shelf order across duplicate foods."""
     lines = session.exec(select(InventoryLine).where(InventoryLine.snapshot_id == snapshot.id)).all()
-    slots = {slot.id: slot for slot in session.exec(select(ShelfSlot)).all()}
+    lines_by_slot = {line.slot_id: line for line in lines}
+    eaten = pending_portions(session, snapshot)
+    remaining = {}
+    for slot in session.exec(select(ShelfSlot).order_by(ShelfSlot.label)).all():
+        line = lines_by_slot.get(slot.id)
+        if line is None or line.source == "configuration_changed" or slot.food_item_id is None:
+            continue
+        used = min(line.count, eaten.get(slot.food_item_id, 0))
+        remaining[slot.id] = max(0, line.count - used)
+        eaten[slot.food_item_id] = max(0, eaten.get(slot.food_item_id, 0) - used)
+    return remaining
+
+
+def counted_foods(session: Session, snapshot: InventorySnapshot) -> dict[int, tuple[FoodItem, int]]:
+    """Aggregate the remaining physical packages, after meals, once per product."""
+    remaining = remaining_slot_counts(session, snapshot)
     foods: dict[int, tuple[FoodItem, int]] = {}
-    for line in lines:
-        slot = slots.get(line.slot_id)
-        if line.source == "configuration_changed" or slot is None or slot.food_item_id is None:
+    for slot in session.exec(select(ShelfSlot)).all():
+        if slot.id not in remaining:
             continue
         food = session.get(FoodItem, slot.food_item_id)
         if food is not None:
             previous = foods.get(food.id)
-            foods[food.id] = (food, line.count + (previous[1] if previous else 0))
+            foods[food.id] = (food, remaining[slot.id] + (previous[1] if previous else 0))
     return foods
 
 
 def counted_package_kcal(session: Session) -> float:
-    """Energy of the recorded packages, without demo scaling or later meal deductions."""
+    """Energy of remaining physical packages, without demo scaling."""
     snapshot = _latest_snapshot(session)
     if snapshot is None:
         return 0.0
@@ -92,11 +108,10 @@ def current_stock(session: Session) -> StockTotals:
     snapshot = _latest_snapshot(session)
     if snapshot is None:
         return StockTotals(0, 0, 0, 0, None)
-    portions_eaten = pending_portions(session, snapshot)
     kcal = protein = carbs = fat = 0.0
     min_expiry: int | None = None
     for food_id, (food, count) in counted_foods(session, snapshot).items():
-        portions = count * food.units_per_lot - portions_eaten.get(food_id, 0)
+        portions = count * food.units_per_lot
         if portions <= 0:
             continue
         kcal += portions * food.kcal
@@ -132,8 +147,8 @@ class AvailableItem:
     protein_g: float
     carbs_g: float
     fat_g: float
-    available_count: int      # boxes seen on the shelf by the last scan
-    available_portions: int   # portions left in those boxes (demo scale)
+    available_count: int      # real packages remaining after logged meals
+    available_portions: int   # same real units; retained for API compatibility
 
 
 def available_items(session: Session) -> list[AvailableItem]:
@@ -143,10 +158,9 @@ def available_items(session: Session) -> list[AvailableItem]:
     snapshot = _latest_snapshot(session)
     if snapshot is None:
         return []
-    portions_eaten = pending_portions(session, snapshot)
     out = []
     for food_id, (food, count) in counted_foods(session, snapshot).items():
-        portions = count * food.units_per_lot - portions_eaten.get(food_id, 0)
+        portions = count
         if portions <= 0:
             continue
         out.append(AvailableItem(food_item_id=food_id, name=food.name,
@@ -156,20 +170,27 @@ def available_items(session: Session) -> list[AvailableItem]:
     return out
 
 
-def kcal_eaten_today(session: Session, crew_member_id: int, since) -> float:
-    events = session.exec(
-        select(ConsumptionEvent).where(
-            ConsumptionEvent.crew_member_id == crew_member_id,
-            ConsumptionEvent.ts >= since,
-            ConsumptionEvent.qty < 0,
-        )
-    ).all()
-    total = 0.0
+def consumed_today(session: Session, crew_member_id: int, since) -> list[dict]:
+    cancelled = {c.consumption_event_id: c for c in session.exec(select(MealCancellation)).all()}
+    events = session.exec(select(ConsumptionEvent).where(
+        ConsumptionEvent.crew_member_id == crew_member_id,
+        ConsumptionEvent.ts >= since,
+        ConsumptionEvent.qty < 0,
+    ).order_by(ConsumptionEvent.id.desc())).all()
+    out = []
     for event in events:
         food = session.get(FoodItem, event.food_item_id)
-        if food:
-            total += -event.qty * food.kcal
-    return total
+        if food is not None:
+            cancellation = cancelled.get(event.id)
+            out.append({"id": event.id, "food_item_id": food.id, "name": food.name,
+                        "qty": -event.qty, "kcal": -event.qty * food.kcal, "ts": event.ts,
+                        "cancelled": cancellation is not None,
+                        "cancelled_ts": cancellation.ts if cancellation else None})
+    return out
+
+
+def kcal_eaten_today(session: Session, crew_member_id: int, since) -> float:
+    return sum(item["kcal"] for item in consumed_today(session, crew_member_id, since) if not item["cancelled"])
 
 
 @dataclass

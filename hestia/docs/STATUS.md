@@ -4,6 +4,44 @@ Last update: 15 Nov 2026. This file says what
 works, how it was checked, and what is still open. Decisions are in
 [decisions.md](decisions.md).
 
+## 15 Nov — Real stock, explicit scan intent and consumption cancellation
+
+David approved a real-package contract: **2 packages permit 2 consumed units,
+independent of the mission multiplier**. This supersedes the former virtual-meal
+behaviour. Projections multiply the remaining physical stock; recorded calories
+use the catalogue values of the actual package consumed. Existing meal history
+is retained and interpreted as whole packages; old overconsumption is clamped
+at zero available stock until a person corrects/recounts it.
+
+The common phone/station review always offers Add / Whole stock / Recount slots,
+with before→after quantities and an explicit acknowledgement. Add carries the
+remaining stock forward without reviving meals; a proposal saves once. Adding
+to unknown counts requires recounting first. Per-photo capacities still bound
+one captured batch; cumulative stock has the existing manual-count ceiling of
+99 per slot. The photo of an addition is labelled as that batch, separately from
+the total. Stock cards say units remaining, without the misleading capacity line.
+
+Meals prioritise actual availability and explicit consumption actions. Success is
+shown next to the action and in today's persistent log; depleted products cannot
+be consumed. SQLite locks protect the final item from simultaneous consumption.
+Cancellation needs confirmation, retains an audit row, removes calories and score
+once, and restores stock only if no newer stock record intervened; otherwise it
+asks for a check without adding food blindly. `MealCancellation` is an additive
+table created on startup, not a destructive migration/reset.
+
+**Verified:** 119 backend tests (8 new regressions), 27 frontend tests, both builds,
+focused lint, formatting/offline/diff checks; Chrome at 390/320 px and station
+1280 px: 2 juices at ×212 allow two drinks; excess refused; failed save unchanged;
+Add then Whole stock; one juice + two waters → consume one each → zero juice and
+one water; cancellation modal/error/retry/audit/replay. Physical-camera/model
+accuracy is not retested by these no-AI checks. Evidence is appended to the
+[audit](sources/2026-11-15-revue-parcours-codex.md).
+
+David also authorises a backed-up cleanup of **8011 stock and consumption history
+only**, keeping profiles, health scenarios, catalogue and product assignments for
+his phone rehearsal. No `make reset`. Coordinate before further destructive demo
+controls. Video/project-page commits arriving on main are retained on integration.
+
 ## 15 Nov — 30-second NASA film and project page (Claude)
 
 The online demo film is in [video/](video/README.md): 29.8 s, English captions, real captures of `main` at

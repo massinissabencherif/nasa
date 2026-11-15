@@ -206,11 +206,17 @@ export function PantryScreen() {
               slots={pantry?.slots ?? []}
               boxes={pantry?.boxes ?? boxes}
               variant="station"
-              onSaved={() => {
+              onSaved={(mode) => {
                 refresh();
                 refreshFeed();
                 setImageUrl(api.snapshotImageUrl());
-                setLastScan(t('Verified inventory saved.', 'Stock vérifié enregistré.'));
+                setLastScan(
+                  mode === 'add'
+                    ? t('Products added to stock.', 'Produits ajoutés au stock.')
+                    : mode === 'replace'
+                      ? t('Whole stock replaced.', 'Stock entièrement remplacé.')
+                      : t('Stock counts updated.', 'Quantités du stock mises à jour.'),
+                );
               }}
             />
             <p className="pantry-note">
@@ -235,15 +241,21 @@ export function PantryScreen() {
               scanning={scanning}
               slotsDone={slotsDone}
               onConfirm={confirm}
+              addedCounts={pantry?.photo_is_addition ? pantry.photo_counts : undefined}
             />
           )}
           {pantry?.has_photo !== false && (
             <p className="pantry-photo-hint">
               <IconCheck size={16} />
-              {t(
-                'Choose a slot in the picture to check its count.',
-                'Cliquez sur une case de la photo pour vérifier son contenu.',
-              )}
+              {pantry?.photo_is_addition
+                ? t(
+                    'Photo of the last addition; the recorded stock includes previous batches and logged meals.',
+                    'Photo du dernier ajout ; le stock enregistré tient compte des lots précédents et des repas consommés.',
+                  )
+                : t(
+                    'Choose a slot in the picture to check its count.',
+                    'Cliquez sur une case de la photo pour vérifier son contenu.',
+                  )}
             </p>
           )}
           <div className="pantry-capture-details">

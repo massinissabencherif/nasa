@@ -47,7 +47,7 @@ export function Pantry() {
     return () => clearInterval(timer);
   }, [refresh]);
   async function confirm() {
-    if (!editing || busy || !/^\d+$/.test(draft) || Number(draft) > editing.capacity) return;
+    if (!editing || busy || !/^\d+$/.test(draft) || Number(draft) > 99) return;
     setBusy(true);
     setSaveError(null);
     try {
@@ -81,9 +81,15 @@ export function Pantry() {
             startOpen={openPhoto}
             slots={pantry.slots}
             boxes={pantry.boxes ?? {}}
-            onSaved={() => {
+            onSaved={(mode) => {
               refresh();
-              setReceipt(t('Verified inventory saved.', 'Stock vérifié enregistré.'));
+              setReceipt(
+                mode === 'add'
+                  ? t('Products added to stock.', 'Produits ajoutés au stock.')
+                  : mode === 'replace'
+                    ? t('Whole stock replaced.', 'Stock entièrement remplacé.')
+                    : t('Stock counts updated.', 'Quantités du stock mises à jour.'),
+              );
             }}
           />
           {receipt && (
@@ -95,8 +101,8 @@ export function Pantry() {
             <p>
               <strong>{pantry.slots.reduce((sum, s) => sum + (s.count ?? 0), 0)}</strong>{' '}
               {t(
-                'packages · quantities from the last saved reading',
-                'emballages · quantités de la dernière lecture enregistrée',
+                'packages remaining after logged meals',
+                'emballages restants après les consommations enregistrées',
               )}
             </p>
             <p>
@@ -107,8 +113,8 @@ export function Pantry() {
                 kcal
               </strong>{' '}
               {t(
-                'according to the catalogue, before scaling and later meals. Unknown counts are excluded.',
-                'selon le catalogue, avant projection et repas suivants. Les quantités inconnues sont exclues.',
+                'according to the catalogue, after logged meals and before mission scaling. Unknown counts are excluded.',
+                'selon le catalogue, après les repas et avant projection. Les quantités inconnues sont exclues.',
               )}
             </p>
             <p className="hz-caption">
@@ -164,11 +170,13 @@ export function Pantry() {
                         {event.qty > 0 ? '+' : '−'}
                         {Math.abs(event.qty)}
                       </strong>{' '}
-                      {event.unit === 'portion'
-                        ? t('portion(s)', 'portion(s)')
-                        : t('package(s)', 'emballage(s)')}{' '}
+                      {event.unit === 'portion' ? t('unit(s)', 'unité(s)') : t('package(s)', 'emballage(s)')}{' '}
                       · {t(event.food_name ?? '')}
-                      <small>{event.crew_name ?? t('Inventory correction', 'Correction du stock')}</small>
+                      <small>
+                        {event.cancelled
+                          ? t('Cancelled', 'Annulé')
+                          : (event.crew_name ?? t('Inventory correction', 'Correction du stock'))}
+                      </small>
                     </span>
                     <time>
                       {new Date(parseServerTime(event.ts)).toLocaleString(dateLocale(), {
@@ -188,20 +196,14 @@ export function Pantry() {
       {editing && (
         <DetailSheet title={`${editing.slot} · ${t(editing.item ?? '')}`} onClose={() => setEditing(null)}>
           <label>
-            {t('Packages visible', 'Emballages visibles')}
-            <Input
-              type="number"
-              min={0}
-              max={editing.capacity}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-            />
+            {t('Total packages remaining', 'Total des emballages restants')}
+            <Input type="number" min={0} max={99} value={draft} onChange={(e) => setDraft(e.target.value)} />
           </label>
           {saveError && <p role="alert">{saveError}</p>}
           <Button
             variant="primary"
             loading={busy}
-            disabled={!/^\d+$/.test(draft) || Number(draft) > editing.capacity}
+            disabled={!/^\d+$/.test(draft) || Number(draft) > 99}
             onClick={() => void confirm()}
           >
             {t('Save correction', 'Enregistrer la correction')}

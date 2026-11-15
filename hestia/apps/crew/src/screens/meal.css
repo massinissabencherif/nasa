@@ -44,3 +44,78 @@
 .meal-unit-note {
   margin-bottom: var(--space-2);
 }
+
+.meal-today {
+  padding: var(--space-3);
+  background: var(--panel-raised);
+  border-radius: var(--radius-md);
+}
+.meal-today-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  align-items: baseline;
+}
+.meal-today-heading h2 {
+  font-size: var(--text-base);
+  font-weight: 600;
+  margin: 0;
+}
+.meal-today-heading strong {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.meal-today ul {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-2) 0;
+  max-height: 10rem;
+  overflow-y: auto;
+}
+.meal-today li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  padding-block: var(--space-1);
+}
+.meal-today time {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.meal-inline-confirmation {
+  grid-column: 2 / -1;
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  color: var(--green);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+.meal-page .meal-available {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.meal-available strong {
+  font-size: var(--text-lg);
+  font-variant-numeric: tabular-nums;
+}
+
+.meal-today li {
+  align-items: center;
+}
+.meal-today li > span {
+  flex: 1;
+  min-width: 0;
+}
+.meal-today li[data-cancelled] {
+  color: var(--text-muted);
+}
+.meal-today li[data-cancelled] > span {
+  text-decoration: line-through;
+}
+.meal-today li .hz-btn {
+  flex-shrink: 0;
+  min-height: 44px;
+}

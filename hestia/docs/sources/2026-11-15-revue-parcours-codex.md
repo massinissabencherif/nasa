@@ -253,3 +253,44 @@ libellé est en HTML : erreur du script, sans nouveau défaut produit.
 Le générateur exact des premières images d'étagère et les liens publics finaux
 restent à confirmer, sans inventer d'attribution. Le dossier vidéo séparé de
 Claude n'a pas été modifié ; fusionner ses textes en conservant ces corrections.
+
+## Addendum — stock réel et annulation demandés pendant l'essai matériel
+
+David signale que 2 jus autorisent plus de 2 consommations et que plusieurs scans
+ne s'additionnent pas. Le comportement provenait du ×212 appliqué aux portions,
+explicitement encodé par d'anciens tests. David valide le changement de règle :
+**1 consommation = 1 emballage réel**, projection ×212 séparée. Les anciens tests
+qui exigeaient 4 consommations sur 3 boîtes et des boîtes inchangées après repas
+sont donc corrigés volontairement, pas contournés. Le repère de démo 412→398 reste
+couvert par la suite.
+
+Huit régressions couvrent les limites de stock réel à ×1/×212, la dernière unité
+concurrente, deux ajouts successifs après un repas, le remplacement complet,
+la correction après consommation avec produits dupliqués, les écritures rejetées,
+l'annulation unique avec score/calories/audit, l'annulation après recomptage et le
+refus d'annuler l'événement d'un autre profil. Les quatre premiers nouveaux tests
+ont échoué avant leur correction (424 au lieu de 2, remplacement au lieu d'ajout,
+double consommation et comptes inchangés), puis réussi. Le total final est de
+119 tests serveur et 27 frontend ; les deux builds passent. Avertissements
+existants de bundle et Starlette, pas de nouvelle dépendance.
+
+`stock-meal-check.cjs/.json` vérifie le vrai parcours Chrome/API sur 8012 : deux
+jus autorisent exactement deux consommations ; troisième refusée ; erreur réseau
+sans déduction ; log persistant ; modes visibles même sur une grille complète ;
+ajout de deux jus et trois eaux puis remplacement par un seul produit. Captures
+`meal-recorded-one.png`, `meal-empty-after-consumption.png`, `review-add-stock.png`
+et `review-replace-stock.png`. `undo-meal-check.cjs/.json` rejoue le scénario de
+David (un jus, deux eaux ; consommer un de chaque) puis annulation avec confirmation,
+panne 503 visible dans la modale, reprise et vérification qu'un rejeu ne rend pas
+une seconde bouteille. Captures `undo-meal-confirmation.png`,
+`undo-meal-restored.png`. Tous ces tests utilisent la base jetable, sans nouveau
+scan Ollama ni preuve d'exactitude du modèle.
+
+Limites : une unité reste un emballage entier déclaré dans le catalogue, pas une
+portion alimentaire personnalisée. Le système n'identifie pas visuellement des
+produits déjà photographiés : le mode Ajout exige que la personne confirme qu'ils
+sont nouveaux. Une annulation après un nouvel enregistrement du stock retire les
+calories, mais ne modifie pas aveuglément la quantité : vérification demandée.
+David autorise séparément le nettoyage sauvegardé de son stock et des événements
+de consommation sur 8011, pour refaire son essai ; profils/catalogue/attributions
+conservés, aucun reset global.

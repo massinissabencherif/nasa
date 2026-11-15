@@ -152,17 +152,19 @@ export function PantryMovements({
                     {Math.abs(event.qty)}{' '}
                     {event.unit === 'portion'
                       ? Math.abs(event.qty) === 1
-                        ? t('portion', 'portion')
-                        : t('portions', 'portions')
+                        ? t('unit', 'unité')
+                        : t('units', 'unités')
                       : Math.abs(event.qty) === 1
                         ? t('box', 'boîte')
                         : t('boxes', 'boîtes')}
                   </strong>{' '}
                   · {t(event.food_name ?? `#${event.food_item_id}`)}
                   <small>
-                    {event.crew_name
-                      ? `${t('Meal', 'Repas')} · ${event.crew_name}`
-                      : t('Shelf count change', 'Changement de comptage')}
+                    {event.cancelled
+                      ? t('Cancelled', 'Annulé')
+                      : event.crew_name
+                        ? `${t('Meal', 'Repas')} · ${event.crew_name}`
+                        : t('Shelf count change', 'Changement de comptage')}
                   </small>
                 </span>
                 <time dateTime={event.ts}>

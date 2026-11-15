@@ -172,8 +172,8 @@ function MissionProjection({
                   kcal
                 </strong>{' '}
                 {t(
-                  'in the recorded packages, before later meals.',
-                  'pour les emballages comptés, avant les repas suivants.',
+                  'in the remaining packages, after logged meals.',
+                  'pour les emballages restants, après les repas enregistrés.',
                 )}
               </p>
               <p>

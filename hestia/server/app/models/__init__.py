@@ -5,7 +5,7 @@ from .food import FoodItem
 from .gamification import Gamification
 from .measurement import Measurement
 from .mission import MissionContext
-from .pantry import ConsumptionEvent, InventoryLine, InventorySnapshot, ShelfSlot
+from .pantry import ConsumptionEvent, InventoryLine, InventorySnapshot, ShelfSlot, MealCancellation
 from .reaction import ReactionSession, ReactionTrial
 from .simulation import SimulationReport
 
@@ -19,6 +19,7 @@ __all__ = [
     "Measurement",
     "MissionContext",
     "ConsumptionEvent",
+    "MealCancellation",
     "InventoryLine",
     "InventorySnapshot",
     "ShelfSlot",

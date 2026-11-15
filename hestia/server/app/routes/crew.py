@@ -1,14 +1,15 @@
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictInt
 from sqlmodel import Session, select
 
 from app.db import engine
 from app.engines.checkin import record_checkin
 from app.engines.gamification import gamification_report, register_meal
-from app.engines.nutrition import available_items, daily_need, kcal_eaten_today
+from app.engines.nutrition import available_items, daily_need, kcal_eaten_today, consumed_today
 from app.engines.status import crew_status
+from app.engines.meal_log import cancel_meal
 from app.models import Alert, ConsumptionEvent, CrewMember, Measurement, MissionContext
 from app.routes.events import publish_event
 
@@ -209,6 +210,7 @@ def propose_meal(crew_id: int) -> dict:
             "daily_need_kcal": round(need, 1),
             "kcal_eaten_today": round(eaten, 1),
             "kcal_remaining_today": round(max(0.0, need - eaten), 1),
+            "consumed_today": consumed_today(session, crew_id, today_start),
             "suggestion": _suggest_meal(available_items(session), max(0.0, min(need / 3, need - eaten))),
             "available": [
                 {
@@ -228,12 +230,15 @@ def propose_meal(crew_id: int) -> dict:
 
 class MealBody(BaseModel):
     food_item_id: int
-    qty: int = Field(default=1, ge=1, le=10)
+    qty: StrictInt = Field(default=1, ge=1, le=10)
 
 
 @router.post("/{crew_id}/meal")
 def eat_meal(crew_id: int, body: MealBody) -> ConsumptionEvent:
     with Session(engine) as session:
+        # Availability and deduction share the SQLite write lock: two crew
+        # members cannot both consume the last remaining package.
+        session.connection().exec_driver_sql("BEGIN IMMEDIATE")
         crew = session.get(CrewMember, crew_id)
         if crew is None:
             raise HTTPException(404, f"no crew member {crew_id}")
@@ -253,3 +258,14 @@ def eat_meal(crew_id: int, body: MealBody) -> ConsumptionEvent:
         session.refresh(event)
         publish_event({"type": "meal_logged", "crew_member_id": crew_id, "food_item_id": body.food_item_id})
         return event
+
+
+@router.post("/{crew_id}/meal/{event_id}/cancel")
+def cancel_consumption(crew_id: int, event_id: int) -> dict:
+    with Session(engine) as session:
+        try:
+            result = cancel_meal(session, crew_id, event_id)
+        except LookupError as exc:
+            raise HTTPException(404, str(exc)) from exc
+    publish_event({"type": "meal_logged", "crew_member_id": crew_id})
+    return result

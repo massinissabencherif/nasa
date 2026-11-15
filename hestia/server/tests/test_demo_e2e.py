@@ -97,31 +97,22 @@ def test_confirming_a_slot_corrects_stock_and_feed(client):
     assert client.get("/api/pantry/consumption").json()[0]["qty"] == -2
 
 
-def test_a_meal_removes_portions_and_a_scan_removes_boxes(client):
+def test_a_meal_consumes_one_real_package_regardless_of_demo_scale(client):
     alex = crew_id(client, "Alex Mercer")
     meal = client.get(f"/api/crew/{alex}/meal").json()
     soup = next(i for i in meal["available"] if i["name"] == "Tomato soup can")
     assert meal["suggestion"]
-    assert soup["available_count"] == 3 and soup["available_portions"] == 3 * 212
-
+    assert soup["available_count"] == soup["available_portions"] == 3
     before = client.get("/api/pantry").json()
-    for _ in range(4):  # four portions out of three boxes of 212: all available
+    for _ in range(3):
         assert client.post(f"/api/crew/{alex}/meal", json={"food_item_id": soup["food_item_id"]}).status_code == 200
     after = client.get("/api/pantry").json()
-    assert before["stock_kcal"] - after["stock_kcal"] == pytest.approx(4 * soup["kcal"])
-    assert before["autonomy_days"] - after["autonomy_days"] < 0.2  # not a whole lot per meal
-    assert after["pending_meals"] == 4
-    assert client.post(
-        f"/api/crew/{alex}/meal", json={"food_item_id": soup["food_item_id"], "qty": 10}
-    ).status_code == 200
-
-    # the scan then sees three boxes gone: a stock event, not somebody's meal
+    assert before["stock_kcal"] - after["stock_kcal"] == pytest.approx(3 * 212 * soup["kcal"])
+    assert before["counted_package_kcal"] - after["counted_package_kcal"] == pytest.approx(3 * soup["kcal"])
+    assert client.post(f"/api/crew/{alex}/meal", json={"food_item_id": soup["food_item_id"]}).status_code == 400
+    assert client.get(f"/api/crew/{alex}/meal").json()["kcal_eaten_today"] == pytest.approx(3 * soup["kcal"])
     client.post("/api/pantry/scan", params={"mode": "mock", "variant": "after_removal"})
-    soup_events = [e for e in client.get("/api/pantry/consumption").json() if e["food_name"] == "Tomato soup can"]
-    boxes = [e for e in soup_events if e["unit"] == "box"]
-    assert [(e["qty"], e["crew_name"]) for e in boxes] == [(-3, None)]
-    meals = [e for e in soup_events if e["unit"] == "portion"]
-    assert sum(e["qty"] for e in meals) == -14 and all(e["crew_name"] == "Alex Mercer" for e in meals)
+    assert next(s['count'] for s in client.get('/api/pantry').json()['slots'] if s['slot'] == 'A1') == 0
 
 
 def test_gamification_reminders_station_info_and_validation(client):

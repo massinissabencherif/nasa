@@ -363,6 +363,16 @@ says nothing about the code.
   presentation text with actual protocol/network/demo behaviour. No new feature,
   threshold or migration. Exact commit message and main publication approved.
 
+- **D51 (implemented and verified, 15 Nov):** David explicitly replaces virtual
+  meal portions with whole physical catalogue packages, independent of the demo
+  multiplier. Shared scan review must distinguish Add / Whole stock / Partial
+  recount on every photo. Add must preserve consumed quantities; whole stock is
+  an explicit replacement. Consumption supports auditable, once-only cancellation;
+  no automatic restocking after a newer stock count. Today's consumption and
+  inline success/error feedback are visible in the crew app. This supersedes the
+  former meal-unit behaviour referenced by D49 and earlier evidence. Exact commit
+  `fix: count real stock and clarify meal recording` and publication approved.
+
 ## Proposed, not decided
 
 | # | Idea | State |

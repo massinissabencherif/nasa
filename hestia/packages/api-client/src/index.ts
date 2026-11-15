@@ -72,6 +72,8 @@ export type PantrySlot = {
 
 export type PantryState = {
   has_photo?: boolean;
+  photo_is_addition?: boolean;
+  photo_counts?: Record<string, number>;
   boxes?: ShelfBoxes;
   snapshot_ts: string | null;
   slots: PantrySlot[];
@@ -89,6 +91,7 @@ export type PantryState = {
 };
 
 export type ScanSlotResult = { slot: string; count: number; confidence: number; needs_confirmation: boolean };
+export type StockReviewMode = 'add' | 'replace' | 'recount';
 
 export type ScanResponse = {
   proposal_id?: string;
@@ -120,7 +123,8 @@ export type ConsumptionEvent = {
   crew_member_id: number | null;
   food_name: string | null;
   crew_name: string | null;
-  /** a meal is counted in portions; a scan in boxes, i.e. whole lots at the demo scale */
+  cancelled?: boolean;
+  /** Legacy unit names; a meal now consumes one whole physical package. */
   unit: 'portion' | 'box';
 };
 
@@ -239,6 +243,16 @@ export type MealProposal = {
   kcal_remaining_today: number;
   suggestion: { food_item_id: number; name: string; kcal: number }[];
   available: MealItem[];
+  consumed_today?: {
+    id: number;
+    food_item_id: number;
+    name: string;
+    qty: number;
+    kcal: number;
+    ts: string;
+    cancelled?: boolean;
+    cancelled_ts?: string | null;
+  }[];
 };
 
 export type FoodItem = {
@@ -544,6 +558,14 @@ export function createApiClient(baseUrl: string) {
         method: 'POST',
         body: JSON.stringify({ food_item_id: foodItemId, qty }),
       }),
+    cancelMeal: (id: number, eventId: number) =>
+      request<{
+        event_id: number;
+        cancelled: boolean;
+        already_cancelled: boolean;
+        restored_qty: number;
+        stock_needs_check: boolean;
+      }>(`/api/crew/${id}/meal/${eventId}/cancel`, { method: 'POST' }),
 
     getPantry: () => request<PantryState>('/api/pantry'),
     scanPantry: (opts?: ScanOptions) => {
@@ -589,10 +611,10 @@ export function createApiClient(baseUrl: string) {
     reviewImageUrl: (id: string) => `${baseUrl}/api/pantry/review/${encodeURIComponent(id)}/image`,
     emptyStock: () =>
       request('/api/pantry/empty', { method: 'POST', body: JSON.stringify({ confirmed: true }) }),
-    saveScanReview: (id: string, counts: Record<string, number>, replaceStock = false) =>
+    saveScanReview: (id: string, counts: Record<string, number>, mode: StockReviewMode = 'recount') =>
       request(`/api/pantry/review/${encodeURIComponent(id)}`, {
         method: 'POST',
-        body: JSON.stringify({ counts, replace_stock: replaceStock }),
+        body: JSON.stringify({ counts, replace_stock: mode === 'replace', add_stock: mode === 'add' }),
       }),
     discardScanReview: (id: string) =>
       request(`/api/pantry/review/${encodeURIComponent(id)}`, { method: 'DELETE' }),

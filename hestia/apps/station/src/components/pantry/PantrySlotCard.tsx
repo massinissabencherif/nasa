@@ -19,7 +19,7 @@ export function PantrySlotCard({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const count = Number(draft);
-  const valid = draft.trim() !== '' && Number.isInteger(count) && count >= 0 && count <= slot.capacity;
+  const valid = draft.trim() !== '' && Number.isInteger(count) && count >= 0 && count <= 99;
   async function save() {
     if (!valid || busy || disabled) return;
     setBusy(true);
@@ -64,14 +64,14 @@ export function PantrySlotCard({
           }}
         >
           <label htmlFor={`count-${slot.slot}`}>
-            {t('Boxes counted', 'Boîtes comptées')} · {slot.slot}
+            {t('Total packages remaining', 'Total des emballages restants')} · {slot.slot}
           </label>
           <Input
             id={`count-${slot.slot}`}
             type="number"
             inputMode="numeric"
             min={0}
-            max={slot.capacity}
+            max={99}
             step={1}
             value={draft}
             autoFocus
@@ -96,12 +96,7 @@ export function PantrySlotCard({
         <>
           <div className="pantry-slot-count">
             <strong>{slot.count ?? '—'}</strong>
-            <span>
-              {t('boxes', 'boîtes')}
-              <small>
-                {t('capacity', 'capacité')} {slot.capacity}
-              </small>
-            </span>
+            <span>{t('units remaining', 'unités restantes')}</span>
             {slot.food_item_id != null && (
               <Button
                 size="sm"

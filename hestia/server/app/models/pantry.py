@@ -32,3 +32,10 @@ class ConsumptionEvent(SQLModel, table=True):
     food_item_id: int = Field(foreign_key="fooditem.id")
     qty: int
     crew_member_id: int | None = Field(default=None, foreign_key="crewmember.id")
+
+
+class MealCancellation(SQLModel, table=True):
+    consumption_event_id: int = Field(primary_key=True, foreign_key="consumptionevent.id")
+    ts: datetime
+    restore_stock: bool
+    restored_qty: int = 0

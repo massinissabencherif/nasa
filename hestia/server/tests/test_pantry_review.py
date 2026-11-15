@@ -284,7 +284,7 @@ def test_repeated_food_deducts_meals_once_and_edits_recalculate_meals(client):
     response = client.post(f'/api/crew/{crew_id}/meal', json={'food_item_id': bean['id'], 'qty': 2})
     assert response.status_code == 200, response.text
     after = client.get('/api/pantry').json()
-    assert after['counted_package_kcal'] == 750 and after['stock_kcal'] == 250
+    assert after['counted_package_kcal'] == 250 and after['stock_kcal'] == 250
     with Session(engine) as session:
         remaining = [f for f in available_items(session) if f.food_item_id == bean['id']]
         assert len(remaining) == 1 and remaining[0].available_portions == 1
@@ -309,11 +309,140 @@ def test_reference_photo_keeps_prior_and_new_meal_deductions(client, monkeypatch
     image = cv2.imencode('.png', np.zeros((40, 40, 3), dtype=np.uint8))[1].tobytes()
     for meal_count in (1, 2):
         assert client.post('/api/crew/1/meal', json={'food_item_id': food['food_item_id'], 'qty': 1}).status_code == 200
-        expected = baseline['stock_kcal'] - meal_count * food['kcal']
+        expected = baseline['stock_kcal'] - meal_count * food['kcal'] * baseline['units_per_lot']
         # Replacing the same reference twice must neither restore nor double-deduct meals.
         for _ in range(2):
             response = client.post('/api/pantry/photo?scan=false', files={'file': ('reference.png', image, 'image/png')})
             assert response.status_code == 200, response.text
             stock = client.get('/api/pantry').json()
             assert stock['stock_kcal'] == pytest.approx(expected)
-            assert [s['count'] for s in stock['slots']] == [s['count'] for s in baseline['slots']]
+            assert sum(s['count'] or 0 for s in stock['slots']) == sum(s['count'] or 0 for s in baseline['slots']) - meal_count
+
+
+def stage_counts(client, monkeypatch, counts):
+    def scanner(**kwargs):
+        result = scan_mock('full')
+        result.readings = {key: result.readings[key] for key in counts}
+        for key, count in counts.items():
+            result.readings[key].count = count
+        return result
+    monkeypatch.setattr(pantry, 'run_scan', scanner)
+    data = client.post('/api/pantry/scan', params={'mode': 'mock', 'review': True}).json()
+    return f"/api/pantry/review/{data['proposal_id']}"
+
+
+def test_real_packages_limit_meals_at_any_demo_scale(client):
+    food = client.get('/api/crew/1/meal').json()['available'][0]
+    client.post('/api/pantry/empty', json={'confirmed': True})
+    client.post('/api/pantry/confirm', json={'slot': 'A1', 'count': 2})
+    food_id = next(s['food_item_id'] for s in client.get('/api/pantry').json()['slots'] if s['slot'] == 'A1')
+    for multiplier in (212, 1):
+        client.put('/api/pantry/scale', json={'multiplier': multiplier})
+        available = next(f for f in client.get('/api/crew/1/meal').json()['available'] if f['food_item_id'] == food_id)
+        assert available['available_portions'] == 2
+    client.put('/api/pantry/scale', json={'multiplier': 212})
+    assert client.post('/api/crew/1/meal', json={'food_item_id': food_id, 'qty': 3}).status_code == 400
+    assert client.post('/api/crew/1/meal', json={'food_item_id': food_id, 'qty': 1}).status_code == 200
+    stock = client.get('/api/pantry').json()
+    assert next(s['count'] for s in stock['slots'] if s['slot'] == 'A1') == 1
+    assert client.post('/api/crew/2/meal', json={'food_item_id': food_id, 'qty': 1}).status_code == 200
+    assert client.post('/api/crew/1/meal', json={'food_item_id': food_id, 'qty': 1}).status_code == 400
+    assert not client.get('/api/crew/1/meal').json()['available']
+    assert sum(x['qty'] for x in client.get('/api/crew/1/meal').json()['consumed_today']) == 1
+
+
+def test_add_scan_keeps_consumed_units_and_saves_only_once(client, monkeypatch):
+    food = client.get('/api/crew/1/meal').json()['available'][0]
+    food_id = next(s['food_item_id'] for s in client.get('/api/pantry').json()['slots'] if s['slot'] == 'A1')
+    before = client.get('/api/pantry').json()
+    assert client.post('/api/crew/1/meal', json={'food_item_id': food_id, 'qty': 1}).status_code == 200
+    url = stage_counts(client, monkeypatch, {'A1': 2})
+    assert client.post(url, json={'counts': {'A1': 2}, 'add_stock': True}).status_code == 200
+    after = client.get('/api/pantry').json()
+    assert next(s['count'] for s in after['slots'] if s['slot'] == 'A1') == 4
+    assert [s['count'] for s in after['slots'] if s['slot'] != 'A1'] == [s['count'] for s in before['slots'] if s['slot'] != 'A1']
+    assert client.post(url, json={'counts': {'A1': 2}, 'add_stock': True}).status_code == 410
+    url = stage_counts(client, monkeypatch, {'A1': 2})
+    assert client.post(url, json={'counts': {'A1': 2}, 'add_stock': True}).status_code == 200
+    assert next(s['count'] for s in client.get('/api/pantry').json()['slots'] if s['slot'] == 'A1') == 6
+    assert len(client.get('/api/crew/1/meal').json()['consumed_today']) == 1
+    url = stage_counts(client, monkeypatch, {'A1': 1})
+    assert client.post(url, json={'counts': {'A1': 1}, 'replace_stock': True}).status_code == 200
+    state = client.get('/api/pantry').json()
+    assert sum(s['count'] or 0 for s in state['slots']) == 1
+
+
+def test_last_package_cannot_be_eaten_twice_concurrently(client):
+    from concurrent.futures import ThreadPoolExecutor
+    client.post('/api/pantry/empty', json={'confirmed': True})
+    client.post('/api/pantry/confirm', json={'slot': 'A1', 'count': 1})
+    food_id = next(s['food_item_id'] for s in client.get('/api/pantry').json()['slots'] if s['slot'] == 'A1')
+    def eat(crew_id):
+        return client.post(f'/api/crew/{crew_id}/meal', json={'food_item_id': food_id, 'qty': 1}).status_code
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        assert sorted(pool.map(eat, (1, 2))) == [200, 400]
+    assert client.get('/api/pantry').json()['stock_kcal'] == 0
+
+
+def test_confirm_after_consumption_preserves_other_locations(client):
+    client.post('/api/pantry/empty', json={'confirmed': True})
+    food_id = next(s['food_item_id'] for s in client.get('/api/pantry').json()['slots'] if s['slot'] == 'A1')
+    client.put('/api/pantry/grid', json={'label': 'A2', 'food_item_id': food_id})
+    for label in ('A1', 'A2'):
+        client.post('/api/pantry/confirm', json={'slot': label, 'count': 2})
+    assert client.post('/api/crew/1/meal', json={'food_item_id': food_id, 'qty': 3}).status_code == 200
+    assert client.post('/api/pantry/confirm', json={'slot': 'A1', 'count': 2}).status_code == 200
+    counts = {s['slot']: s['count'] for s in client.get('/api/pantry').json()['slots']}
+    assert counts['A1'] == 2 and counts['A2'] == 1
+
+
+def test_addition_limit_and_contradictory_modes_never_partly_write(client, monkeypatch):
+    assert client.post('/api/pantry/confirm', json={'slot': 'A1', 'count': 98}).status_code == 200
+    before = client.get('/api/pantry').json()
+    url = stage_counts(client, monkeypatch, {'A1': 2})
+    assert client.post(url, json={'counts': {'A1': 2}, 'replace_stock': True, 'add_stock': True}).status_code == 409
+    assert client.get('/api/pantry').json() == before
+    assert client.post(url, json={'counts': {'A1': 2}, 'add_stock': True}).status_code == 409
+    assert client.get('/api/pantry').json() == before
+    assert client.post('/api/crew/1/meal', json={'food_item_id': before['slots'][0]['food_item_id'], 'qty': True}).status_code == 422
+
+
+def test_cancel_meal_restores_stock_once_and_keeps_audit_and_score(client, monkeypatch):
+    before = client.get('/api/pantry').json()
+    food_id = next(s['food_item_id'] for s in before['slots'] if s['slot'] == 'A1')
+    score = client.get('/api/crew/1/gamification').json()['score']
+    event = client.post('/api/crew/1/meal', json={'food_item_id': food_id}).json()
+    proposal = stage_counts(client, monkeypatch, {'A1': 1})
+    url = f"/api/crew/1/meal/{event['id']}/cancel"
+    result = client.post(url)
+    assert result.status_code == 200, result.text
+    assert result.json()['restored_qty'] == 1 and not result.json()['stock_needs_check']
+    assert client.get('/api/pantry').json()['stock_kcal'] == before['stock_kcal']
+    assert client.post(url).json()['already_cancelled']
+    assert client.get('/api/pantry').json()['stock_kcal'] == before['stock_kcal']
+    assert client.get('/api/crew/1/gamification').json()['score'] == score
+    log = client.get('/api/crew/1/meal').json()
+    assert log['consumed_today'][0]['cancelled'] and log['kcal_eaten_today'] == 0
+    assert next(e for e in client.get('/api/pantry/consumption').json() if e['id'] == event['id'])['cancelled']
+    assert client.post(proposal, json={'counts': {'A1': 1}}).status_code == 409
+
+
+def test_cancel_after_recount_does_not_add_a_package_already_recounted(client, monkeypatch):
+    food_id = next(s['food_item_id'] for s in client.get('/api/pantry').json()['slots'] if s['slot'] == 'A1')
+    event = client.post('/api/crew/1/meal', json={'food_item_id': food_id}).json()
+    url = stage_counts(client, monkeypatch, {'A1': 2})
+    assert client.post(url, json={'counts': {'A1': 2}, 'replace_stock': True}).status_code == 200
+    before = client.get('/api/pantry').json()
+    response = client.post(f"/api/crew/1/meal/{event['id']}/cancel")
+    assert response.json()['stock_needs_check'] and response.json()['restored_qty'] == 0
+    assert client.get('/api/pantry').json() == before
+    assert client.get('/api/crew/1/meal').json()['kcal_eaten_today'] == 0
+
+
+def test_cancel_is_scoped_to_the_original_crew_member(client):
+    food_id = client.get('/api/crew/1/meal').json()['available'][0]['food_item_id']
+    event = client.post('/api/crew/1/meal', json={'food_item_id': food_id}).json()
+    before = client.get('/api/pantry').json()
+    assert client.post(f"/api/crew/2/meal/{event['id']}/cancel").status_code == 404
+    assert client.post('/api/crew/1/meal/999999/cancel').status_code == 404
+    assert client.get('/api/pantry').json() == before

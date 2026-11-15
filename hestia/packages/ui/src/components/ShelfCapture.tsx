@@ -3,6 +3,7 @@ import type {
   ApiClient,
   PantrySlot,
   ScanResponse,
+  StockReviewMode,
   ShelfBoxes,
   ShelfFrame,
   VisionStrategy,
@@ -29,7 +30,7 @@ export function ShelfCapture({
   api: ApiClient;
   slots: PantrySlot[];
   boxes: ShelfBoxes;
-  onSaved: () => void;
+  onSaved: (mode?: StockReviewMode) => void;
   variant?: 'station' | 'crew';
   /** Open the photo sheet at once (a phone that scanned the station's code). */
   startOpen?: boolean;
@@ -324,13 +325,13 @@ export function ShelfCapture({
                 slots={currentSlots}
                 api={api}
                 onDiscard={close}
-                onSaved={() => {
+                onSaved={(mode) => {
                   setResult(null);
                   setStep(null);
                   setPhoto(null);
                   setPhotoUrl('');
                   setUpdatedSlots(null);
-                  onSaved();
+                  onSaved(mode);
                 }}
               />
             )}

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { ApiClient, PantrySlot, ScanResponse } from '@hestia/api-client';
+import type { ApiClient, PantrySlot, ScanResponse, StockReviewMode } from '@hestia/api-client';
 import { Button } from './Button';
 import { Input } from './Input';
 import { ShelfPhotoViewport } from './ShelfPhotoViewport';
@@ -15,13 +15,13 @@ export function ShelfScanReview({
   result: ScanResponse;
   slots: PantrySlot[];
   api: ApiClient;
-  onSaved: () => void;
+  onSaved: (mode: StockReviewMode) => void;
   onDiscard: () => void;
 }) {
   const [counts, setCounts] = useState<Record<string, string>>(() =>
     Object.fromEntries((result.slots ?? []).map((s) => [s.slot, String(s.count)])),
   );
-  const [replaceStock, setReplaceStock] = useState(false);
+  const [mode, setMode] = useState<StockReviewMode | null>(null);
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,16 +40,16 @@ export function ShelfScanReview({
       );
     });
   async function save() {
-    if (!id || busy || !valid || !checked) return;
+    if (!id || busy || !valid || !checked || !mode) return;
     setBusy(true);
     setError(null);
     try {
       await api.saveScanReview(
         id,
         Object.fromEntries(Object.entries(counts).map(([k, v]) => [k, Number(v)])),
-        replaceStock,
+        mode,
       );
-      onSaved();
+      onSaved(mode);
     } catch (cause) {
       setError(cause instanceof Error ? t(cause.message) : String(cause));
     } finally {
@@ -70,6 +70,48 @@ export function ShelfScanReview({
           {t('Demo replay: known counts, no AI.', 'Rejeu de démo : quantités connues, sans IA.')}
         </p>
       )}
+      <fieldset className="hz-shelf-stock-scope">
+        <legend>{t('What should happen to the stock?', 'Que faire de ces produits ?')}</legend>
+        {(
+          [
+            ['add', t('Add these products', 'Ajouter ces produits')],
+            ['replace', t('This is my whole stock', 'C’est tout mon stock')],
+            ['recount', t('Recount only these slots', 'Recompter seulement ces cases')],
+          ] as const
+        ).map(([value, label]) => (
+          <label key={value}>
+            <input
+              type="radio"
+              name="stock-scope"
+              checked={mode === value}
+              disabled={busy}
+              onChange={() => {
+                setMode(value);
+                setChecked(false);
+              }}
+            />
+            {label}
+          </label>
+        ))}
+        {mode && (
+          <p className={mode === 'replace' ? 'hz-shelf-warning' : 'hz-caption'}>
+            {mode === 'add'
+              ? t(
+                  'Only new packages: these quantities are added to the stock already recorded. Do not scan the same packages twice.',
+                  'Uniquement de nouveaux emballages : ces quantités s’ajoutent au stock enregistré. Ne comptez pas les mêmes produits deux fois.',
+                )
+              : mode === 'replace'
+                ? t(
+                    `This photo replaces the whole reserve. ${slots.filter((s) => !Object.prototype.hasOwnProperty.call(counts, s.slot)).reduce((sum, s) => sum + (s.count ?? 0), 0)} packages outside this photo will be removed from the recorded stock.`,
+                    `Cette photo remplace toute la réserve. ${slots.filter((s) => !Object.prototype.hasOwnProperty.call(counts, s.slot)).reduce((sum, s) => sum + (s.count ?? 0), 0)} emballages hors photo seront retirés du stock enregistré.`,
+                  )
+                : t(
+                    'The photographed slot quantities are updated; other stock is kept.',
+                    'Les quantités de ces cases sont mises à jour ; le reste du stock est conservé.',
+                  )}
+          </p>
+        )}
+      </fieldset>
       <ShelfPhotoViewport
         imageUrl={api.reviewImageUrl(id)}
         boxes={result.boxes ?? {}}
@@ -97,51 +139,21 @@ export function ShelfScanReview({
           {t(warning)}
         </p>
       ))}
-      {photographedSlots.length < slots.length && (
-        <fieldset className="hz-shelf-stock-scope">
-          <legend>{t('What does this crop contain?', 'Que contient ce cadrage ?')}</legend>
-          <label>
-            <input
-              type="radio"
-              name="stock-scope"
-              checked={!replaceStock}
-              onChange={() => {
-                setReplaceStock(false);
-                setChecked(false);
-              }}
-            />
-            {t('Part of the existing stock', 'Une partie du stock existant')}
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="stock-scope"
-              checked={replaceStock}
-              onChange={() => {
-                setReplaceStock(true);
-                setChecked(false);
-              }}
-            />
-            {t('My whole new reserve', 'Toute ma nouvelle réserve')}
-          </label>
-          <p className={replaceStock ? 'hz-shelf-warning' : 'hz-caption'}>
-            {replaceStock
-              ? t(
-                  'Saving will set every slot outside this crop to zero. Use this when replacing the old demo layout.',
-                  'À l’enregistrement, toutes les cases hors de ce cadrage passeront à zéro. À choisir pour remplacer l’ancienne disposition de démo.',
-                )
-              : t(
-                  'Other slot quantities are kept. If you moved the same products into new slots, choose the whole-reserve option to avoid counting them twice.',
-                  'Les autres quantités sont conservées. Si vous avez déplacé les mêmes produits vers de nouvelles cases, choisissez la réserve entière pour éviter de les compter deux fois.',
-                )}
-          </p>
-        </fieldset>
-      )}
       <div className="hz-shelf-review-counts">
         {photographedSlots.map((slot) => (
           <label key={slot.slot}>
             <span>
               <strong>{slot.slot}</strong> · {t(slot.item ?? 'Empty slot')}
+              {mode && (
+                <small className="hz-caption">
+                  {t('Stock', 'Stock')} : {slot.count ?? '—'} →{' '}
+                  {mode === 'add'
+                    ? slot.count == null
+                      ? '—'
+                      : slot.count + Number(counts[slot.slot] || 0)
+                    : Number(counts[slot.slot] || 0)}
+                </small>
+              )}
             </span>
             <Input
               type="number"
@@ -174,12 +186,34 @@ export function ShelfScanReview({
           disabled={busy}
           onChange={(e) => setChecked(e.target.checked)}
         />
-        {t('I checked all quantities against the photo.', 'J’ai vérifié toutes les quantités sur la photo.')}
+        {mode === 'add'
+          ? t(
+              'These are new packages, not already included in stock. I checked their quantities.',
+              'Ces produits ne sont pas déjà comptés dans le stock. J’ai vérifié leurs quantités.',
+            )
+          : mode === 'replace'
+            ? t(
+                'This is my whole remaining stock. I confirm replacing the old quantities.',
+                'C’est tout le stock qu’il me reste. Je confirme le remplacement des anciennes quantités.',
+              )
+            : t(
+                'I checked all quantities against the photo.',
+                'J’ai vérifié toutes les quantités sur la photo.',
+              )}
       </label>
       {error && <p role="alert">{error}</p>}
       <div className="hz-shelf-actions">
-        <Button variant="primary" disabled={!valid || !checked} loading={busy} onClick={() => void save()}>
-          {t('Save verified inventory', 'Enregistrer le stock vérifié')}
+        <Button
+          variant="primary"
+          disabled={!valid || !checked || !mode}
+          loading={busy}
+          onClick={() => void save()}
+        >
+          {mode === 'add'
+            ? t('Add to stock', 'Ajouter au stock')
+            : mode === 'replace'
+              ? t('Replace stock', 'Remplacer le stock')
+              : t('Save verified inventory', 'Enregistrer le stock vérifié')}
         </Button>
         <Button disabled={busy} onClick={onDiscard}>
           {t('Discard this reading', 'Abandonner cette lecture')}

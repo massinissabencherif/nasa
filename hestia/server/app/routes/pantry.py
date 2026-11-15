@@ -12,7 +12,8 @@ from pydantic import BaseModel, Field, StrictInt, field_validator
 from sqlmodel import Session, select
 
 from app.db import engine
-from app.engines.nutrition import autonomy_report, crew_daily_need, is_meal, counted_package_kcal, pending_portions
+from app.models import MealCancellation
+from app.engines.nutrition import autonomy_report, crew_daily_need, is_meal, counted_package_kcal, pending_portions, remaining_slot_counts
 from app.engines import pantry_review, pantry_setup
 from app.models import (
     ConsumptionEvent,
@@ -57,6 +58,7 @@ def get_pantry() -> dict:
         slots = session.exec(select(ShelfSlot).order_by(ShelfSlot.label)).all()
         lines_by_slot = {}
         pending_meals = 0
+        remaining = remaining_slot_counts(session, snapshot) if snapshot else {}
         if snapshot is not None:
             lines = session.exec(
                 select(InventoryLine).where(InventoryLine.snapshot_id == snapshot.id)
@@ -76,7 +78,7 @@ def get_pantry() -> dict:
         for slot in slots:
             food = session.get(FoodItem, slot.food_item_id) if slot.food_item_id else None
             line = lines_by_slot.get(slot.id)
-            count = line.count if line and line.source != "configuration_changed" else None
+            count = remaining.get(slot.id, 0) if line and line.source != "configuration_changed" else None
             slot_days = 0.0
             if food is not None:
                 units_per_lot = food.units_per_lot
@@ -102,6 +104,8 @@ def get_pantry() -> dict:
 
         return {
             "has_photo": bool(snapshot and snapshot.image_path),
+            "photo_is_addition": bool(snapshot and json.loads(snapshot.raw_json or "{}").get("adds_stock")),
+            "photo_counts": json.loads(snapshot.raw_json or "{}").get("photo_counts", {}) if snapshot else {},
             "boxes": json.loads(snapshot.raw_json or "{}").get("boxes", vision_grid.load_boxes()) if snapshot else vision_grid.load_boxes(),
             "snapshot_ts": snapshot.ts if snapshot else None,
             "slots": out,
@@ -389,6 +393,7 @@ def set_grid_from_frame(body: GridFrameBody) -> dict[str, list[float]]:
 class ReviewBody(BaseModel):
     counts: dict[str, StrictInt]
     replace_stock: bool = False
+    add_stock: bool = False
 
 
 @router.get("/review/{proposal_id}/image")
@@ -417,7 +422,8 @@ def save_review(proposal_id: str, body: ReviewBody):
             raise HTTPException(410, str(exc)) from exc
         with Session(engine) as session:
             try:
-                snapshot = pantry_review.apply(session, proposal, body.counts, replace_stock=body.replace_stock)
+                snapshot = pantry_review.apply(session, proposal, body.counts,
+                                              replace_stock=body.replace_stock, add_stock=body.add_stock)
             except ValueError as exc:
                 raise HTTPException(409, str(exc)) from exc
             ts = snapshot.ts.isoformat()
@@ -449,12 +455,14 @@ class ConfirmBody(BaseModel):
 @router.post("/confirm")
 def confirm_count(body: ConfirmBody) -> dict:
     with Session(engine) as session:
+        session.connection().exec_driver_sql("BEGIN IMMEDIATE")
         slot = session.exec(select(ShelfSlot).where(ShelfSlot.label == body.slot)).first()
         if slot is None:
             raise HTTPException(404, f"no slot '{body.slot}'")
         snapshot = _latest_snapshot(session)
         if snapshot is None:
             raise HTTPException(404, "no scan to confirm — run /api/pantry/scan first")
+        pantry_setup.settle_meals(session, snapshot)
         line = session.exec(
             select(InventoryLine).where(
                 InventoryLine.snapshot_id == snapshot.id, InventoryLine.slot_id == slot.id
@@ -607,12 +615,14 @@ def get_consumption(limit: int = 30) -> list[dict]:
         ).all()
         foods = {f.id: f.name for f in session.exec(select(FoodItem)).all()}
         crew = {c.id: c.name for c in session.exec(select(CrewMember)).all()}
+        cancelled = {c.consumption_event_id for c in session.exec(select(MealCancellation)).all()}
         return [
             {
                 "id": e.id, "ts": e.ts, "food_item_id": e.food_item_id, "qty": e.qty,
                 "crew_member_id": e.crew_member_id,
                 "food_name": foods.get(e.food_item_id),
                 "crew_name": crew.get(e.crew_member_id) if e.crew_member_id else None,
+                "cancelled": e.id in cancelled,
                 # a meal is counted in portions, a scan in boxes (= lots at the demo scale)
                 "unit": "portion" if is_meal(e) else "box",
             }

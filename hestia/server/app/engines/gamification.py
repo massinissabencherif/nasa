@@ -8,7 +8,7 @@ from sqlmodel import Session, select
 
 from app.models import ConsumptionEvent, CrewMember, Gamification, Measurement
 
-from .nutrition import daily_need, kcal_eaten_today
+from .nutrition import daily_need, kcal_eaten_today, consumed_today
 
 POINTS_CHECKIN = 10
 POINTS_EXERCISE = 5
@@ -52,6 +52,12 @@ def register_meal(session: Session, crew_member_id: int) -> None:
     session.add(row)
 
 
+def unregister_meal(session: Session, crew_member_id: int) -> None:
+    row = _row(session, crew_member_id)
+    row.score = max(0, row.score - POINTS_MEAL)
+    session.add(row)
+
+
 def _earned(session: Session, crew: CrewMember, row: Gamification) -> set[str]:
     earned: set[str] = set()
     if row.streak >= 7:
@@ -82,14 +88,8 @@ def gamification_report(session: Session, crew: CrewMember) -> dict:
     all_rows = session.exec(select(Gamification)).all()
     ranking = sorted(all_rows, key=lambda r: r.score, reverse=True)
     rank = next((i + 1 for i, r in enumerate(ranking) if r.crew_member_id == crew.id), None)
-    meals_today = len(
-        session.exec(
-            select(ConsumptionEvent).where(
-                ConsumptionEvent.crew_member_id == crew.id,
-                ConsumptionEvent.ts >= datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0),
-            )
-        ).all()
-    )
+    start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    meals_today = sum(not item["cancelled"] for item in consumed_today(session, crew.id, start))
     return {
         "streak": row.streak,
         "score": row.score,

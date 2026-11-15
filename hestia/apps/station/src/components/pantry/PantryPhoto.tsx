@@ -12,6 +12,7 @@ export function PantryPhoto({
   scanning,
   slotsDone,
   onConfirm,
+  addedCounts,
 }: {
   imageUrl: string;
   slots: Map<string, PantrySlot>;
@@ -19,6 +20,7 @@ export function PantryPhoto({
   scanning: boolean;
   slotsDone: Set<string>;
   onConfirm: (label: string, count: number) => Promise<void>;
+  addedCounts?: Record<string, number>;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
   const slot = selected ? slots.get(selected) : undefined;
@@ -56,7 +58,12 @@ export function PantryPhoto({
                   onClick={() => setSelected(label)}
                 >
                   <span>
-                    {label} · {pending ? '…' : (item?.count ?? '—')}
+                    {label} ·{' '}
+                    {pending
+                      ? '…'
+                      : addedCounts?.[label] != null
+                        ? `+${addedCounts[label]}`
+                        : (item?.count ?? '—')}
                     {item?.needs_confirmation ? ' ?' : ''}
                   </span>
                 </button>
@@ -71,10 +78,15 @@ export function PantryPhoto({
           onClose={() => setSelected(null)}
         >
           <p className="pantry-review-instruction">
-            {t(
-              'Count the boxes in this picture, then confirm or correct the number.',
-              'Comptez les boîtes sur cette image, puis confirmez ou corrigez le nombre.',
-            )}
+            {addedCounts
+              ? t(
+                  'This picture shows the last added batch. The field below corrects the total remaining stock, not only the packages in this photo.',
+                  'Cette photo montre le dernier ajout. Le champ ci-dessous corrige le stock total restant, pas seulement les produits de cette photo.',
+                )
+              : t(
+                  'Count the boxes in this picture, then confirm or correct the number.',
+                  'Comptez les boîtes sur cette image, puis confirmez ou corrigez le nombre.',
+                )}
           </p>
           <ShelfPhotoViewport
             imageUrl={imageUrl}

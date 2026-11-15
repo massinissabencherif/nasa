@@ -144,3 +144,14 @@ Shared DetailSheet has a centred modal variant, preserving native dialog, close,
 focus return and reduced motion. Nested dialog keyboard/cancel events are stopped
 at the active dialog. Companion motion uses the existing visibility hook and CSS;
 no frame-by-frame React update or animation dependency was added.
+
+### Real packages and meal cancellation (D51)
+
+`nutrition.remaining_slot_counts` allocates each consumed physical package once
+across matching food slots, before applying mission scaling. Add/recount/replace
+reviews materialise these remaining counts into the new snapshot. SQLite write
+locks cover availability and meal writes. `engines/meal_log.py` cancels a meal
+using the additive `MealCancellation` table (event ID primary key), retaining the
+original consumption record and making replay idempotent. Cancellation affects
+stock only when the active snapshot predates that meal; a newer record requires
+a human stock check. Catalogue nutrition and demo multiplier remain separate.

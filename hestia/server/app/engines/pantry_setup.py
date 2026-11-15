@@ -3,6 +3,25 @@ import json
 from datetime import datetime, timezone
 from sqlmodel import Session, select
 from app.models import InventoryLine, InventorySnapshot, ShelfSlot, FoodItem
+from app.engines.nutrition import pending_portions, remaining_slot_counts
+
+
+def settle_meals(session: Session, snapshot: InventorySnapshot) -> None:
+    """Materialise already consumed packages before a manual count correction.
+
+    The caller owns the write transaction; meal history itself is never edited.
+    """
+    if not any(pending_portions(session, snapshot).values()):
+        return
+    remaining = remaining_slot_counts(session, snapshot)
+    for line in session.exec(select(InventoryLine).where(InventoryLine.snapshot_id == snapshot.id)).all():
+        if line.slot_id in remaining:
+            line.count = remaining[line.slot_id]
+            session.add(line)
+    snapshot.ts = datetime.now(timezone.utc)
+    snapshot.raw_json = json.dumps({**json.loads(snapshot.raw_json or "{}"), "carried_meals": {}})
+    session.add(snapshot)
+    session.flush()
 
 
 def empty_stock(session: Session) -> InventorySnapshot:
