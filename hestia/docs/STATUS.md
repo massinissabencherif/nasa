@@ -4,6 +4,19 @@ Last update: 15 Nov 2026. This file says what
 works, how it was checked, and what is still open. Decisions are in
 [decisions.md](decisions.md).
 
+## 15 Nov — 30-second NASA film and project page (Claude)
+
+The online demo film is in [video/](video/README.md): 29.8 s, English captions, real captures of `main` at
+`8daaa75` on a disposable database, original code-generated sound (−16 LUFS, true peak −1.5 dBTP). Every frame says
+"Simulated data · not a medical device"; AI-generated images carry a visible tag and the credits say "AI-assisted
+production". The shelf counts come from the seeded demo scan, not a live model run. An unlisted YouTube (or public Drive) link
+is recommended for the demo field because GitHub serves a raw MP4 as a download. [nasa-project-page.md](nasa-project-page.md) is rewritten
+from the code and merges Codex's corrections; the shelf-photo generator and the demo link are still to fill in.
+
+**Verified:** 108 backend and 27 frontend tests passed on `8ed3edf`; capture, render and loudness measured on the final
+file; transitions checked frame by frame. **Not verified:** the film was not listened to by the agent; NASA source
+titles were carried over, not re-read online today.
+
 ## 15 Nov — Simplified camera choices and persistent Ollama
 
 David approves removal of the station's duplicate phone-photo choice and the
