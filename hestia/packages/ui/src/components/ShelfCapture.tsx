@@ -24,16 +24,19 @@ export function ShelfCapture({
   boxes,
   onSaved,
   variant = 'crew',
+  startOpen = false,
 }: {
   api: ApiClient;
   slots: PantrySlot[];
   boxes: ShelfBoxes;
   onSaved: () => void;
   variant?: 'station' | 'crew';
+  /** Open the photo sheet at once (a phone that scanned the station's code). */
+  startOpen?: boolean;
 }) {
   const [updatedSlots, setUpdatedSlots] = useState<PantrySlot[] | null>(null);
   const currentSlots = updatedSlots ?? slots;
-  const [step, setStep] = useState<Step | null>(null);
+  const [step, setStep] = useState<Step | null>(startOpen ? 'choose' : null);
   const [photo, setPhoto] = useState<Blob | null>(null);
   const [photoUrl, setPhotoUrl] = useState('');
   const [frame, setFrame] = useState<ShelfFrame>({ left: 0.05, top: 0.05, right: 0.95, bottom: 0.95 });
@@ -43,6 +46,9 @@ export function ShelfCapture({
   const [elapsed, setElapsed] = useState(0);
   const [working, setWorking] = useState(false);
   const file = useRef<HTMLInputElement>(null);
+  const shot = useRef<HTMLInputElement>(null);
+  // the in-page viewfinder needs HTTPS or localhost; the native camera does not
+  const viewfinder = typeof window !== 'undefined' && window.isSecureContext;
   const errorBox = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!error || !errorBox.current) return;
@@ -169,6 +175,18 @@ export function ShelfCapture({
           if (f) selectPhoto(f);
         }}
       />
+      <input
+        ref={shot}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = '';
+          if (f) selectPhoto(f);
+        }}
+      />
       {step && (
         <DetailSheet title={title} onClose={close}>
           <div className="hz-shelf-flow">
@@ -180,11 +198,18 @@ export function ShelfCapture({
                     'Choisissez une photo. Vous la cadrez, puis vous vérifiez les quantités avant l’enregistrement.',
                   )}
                 </p>
-                <Button icon={<IconScan size={22} />} onClick={() => setStep('camera')}>
-                  {variant === 'station'
-                    ? t('Mac camera', 'Caméra du Mac')
-                    : t('This device’s camera', 'Caméra de cet appareil')}
-                </Button>
+                {variant === 'crew' && (
+                  <Button variant="primary" icon={<IconPhoto size={22} />} onClick={() => shot.current?.click()}>
+                    {t('Take a photo', 'Prendre une photo')}
+                  </Button>
+                )}
+                {(variant === 'station' || viewfinder) && (
+                  <Button icon={<IconScan size={22} />} onClick={() => setStep('camera')}>
+                    {variant === 'station'
+                      ? t('Mac camera', 'Caméra du Mac')
+                      : t('Live viewfinder', 'Viseur en direct')}
+                  </Button>
+                )}
                 <Button icon={<IconPhoto size={22} />} onClick={() => file.current?.click()}>
                   {t('Import a photo', 'Importer une photo')}
                 </Button>
@@ -209,13 +234,13 @@ export function ShelfCapture({
               <>
                 <p>
                   {t(
-                    'Connect the phone to the station’s Wi-Fi, scan this code, then open Pantry. No Internet is needed.',
-                    'Connectez le téléphone au Wi-Fi de la station, scannez ce code, puis ouvrez Réserve. Pas besoin d’Internet.',
+                    'Connect the phone to the station’s Wi-Fi and scan this code: the phone opens the shelf photo directly, no profile needed. No Internet is needed.',
+                    'Connectez le téléphone au Wi-Fi de la station et scannez ce code : le téléphone ouvre directement la photo de la réserve, sans choisir de profil. Pas besoin d’Internet.',
                   )}
                 </p>
                 <img
                   className="hz-shelf-qr"
-                  src={api.crewQrUrl()}
+                  src={api.crewQrUrl(false, 'pantry_photo')}
                   alt={t('Open the crew app', 'Ouvrir l’app astronaute')}
                   width={200}
                   height={200}

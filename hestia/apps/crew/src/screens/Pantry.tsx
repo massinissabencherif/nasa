@@ -1,3 +1,4 @@
+import { useLocation } from 'react-router-dom';
 import { useCallback, useEffect, useState } from 'react';
 import type { ConsumptionEvent, PantrySlot, PantryState } from '@hestia/api-client';
 import {
@@ -16,6 +17,8 @@ import {
 import { useApi } from '../lib/ApiProvider';
 
 export function Pantry() {
+  // `#/pantry?photo=1`: the station's code opens the photo sheet at once
+  const openPhoto = new URLSearchParams(useLocation().search).get('photo') === '1';
   const api = useApi();
   const [pantry, setPantry] = useState<PantryState | null>(null);
   const [feed, setFeed] = useState<ConsumptionEvent[]>([]);
@@ -75,6 +78,7 @@ export function Pantry() {
         <>
           <ShelfCapture
             api={api}
+            startOpen={openPhoto}
             slots={pantry.slots}
             boxes={pantry.boxes ?? {}}
             onSaved={() => {

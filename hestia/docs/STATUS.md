@@ -162,6 +162,24 @@ organisers' morning instructions. Aim for a stable demo, a hardware rehearsal,
 the five-minute pitch, short submission media and reconciled NASA project text
 before 18:00. This does not change the separate online submission deadline.
 
+## 15 Nov — shelf photo from a phone (Massi, branch `fix/phone-pantry-photo`)
+
+- Observed by Massi on a real phone: scanning the code under "Photo from a
+  phone" opened the crew app at its root, which asks for a crew profile and
+  lands on Home; there was no way to the photo, and the in-page camera does
+  not start over plain HTTP.
+- Now the code opens `/crew/#/pantry?photo=1`: the Pantry, without a
+  profile (the shelf photo is a station task), with the photo sheet already
+  open. "Take a photo" uses the phone's own camera (`capture="environment"`),
+  which works over HTTP; the live viewfinder is offered only in a secure
+  context. `/api/station/info` gives `crew_photo_url`; `qr.svg?target=`
+  accepts `home` or `pantry_photo`.
+- Run on Massi's Mac: backend 102 tests, crew 16 tests, both type checks;
+  headless Chrome as an iPhone 13 with no saved profile: the link lands on
+  the open sheet and a photo reaches the framing step. **Not checked:** a
+  real iPhone and Android on the venue Wi-Fi, HEIC handling by Safari, the
+  analysis after a phone photo.
+
 ## Current handover — 15 Nov, before David's sleep
 
 David approved consolidating and pushing the night's work onto `main`, with the

@@ -288,6 +288,8 @@ export type StationInfo = {
   api_url: string;
   crew_url: string;
   crew_url_secure: string | null;
+  /** Opens the shelf photo sheet directly on a phone. */
+  crew_photo_url: string;
   on_lan: boolean;
   ollama: OllamaStatus;
 };
@@ -628,7 +630,8 @@ export function createApiClient(baseUrl: string) {
     getSimulationReport: (id: number) => request<SimulationReport>(`/api/forecast/reports/${id}`),
 
     getStationInfo: () => request<StationInfo>('/api/station/info'),
-    crewQrUrl: (secure = false) => `${baseUrl}/api/station/qr.svg?secure=${secure}`,
+    crewQrUrl: (secure = false, target: 'home' | 'pantry_photo' = 'home') =>
+      `${baseUrl}/api/station/qr.svg?secure=${secure}&target=${target}`,
 
     runScenario: (name: string) =>
       request<{ status: string }>(`/api/demo/scenario/${name}`, { method: 'POST' }),

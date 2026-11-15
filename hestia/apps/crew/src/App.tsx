@@ -50,7 +50,9 @@ function Shell() {
   const context = useMissionContext();
 
   const onSettings = location.pathname === '/settings';
-  if (crewId == null && location.pathname !== '/profile' && !onSettings) {
+  // the shelf photo is a station task: a scanned code opens it without a profile
+  const onPantry = location.pathname === '/pantry';
+  if (crewId == null && location.pathname !== '/profile' && !onSettings && !onPantry) {
     return <Navigate to="/profile" replace />;
   }
 
