@@ -2,6 +2,7 @@
 
 `hestia-30s.mp4` — 1920×1080, 30 fps, 29.8 s, English captions, AAC stereo (−16 LUFS, true peak −1.5 dBTP).
 It is the online project demo (NASA rule: video of 30 seconds or less, or up to seven slides).
+Published (unlisted, viewable without an account): https://youtu.be/9PFC_OzkaCY
 
 ## What it shows (all real captures of the app, disposable database, `main` at `8daaa75`)
 

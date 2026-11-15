@@ -20,7 +20,7 @@ medical device.
 
 ## Link to project demo
 
-_[YouTube unlisted link to `hestia/docs/video/hestia-30s.mp4`]_ (30-second video, English captions)
+https://youtu.be/9PFC_OzkaCY (30-second video, English captions; also in the repository as `hestia/docs/video/hestia-30s.mp4`)
 
 ## Link to final project
 
