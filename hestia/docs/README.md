@@ -18,6 +18,11 @@ Implementation evidence: [camera, pantry, settings and checklist review](sources
 
 Current implementation and open requests: [15 Nov register](sources/2026-11-15-interactions-and-evidence.md), [screens and checks](design/2026-11-15/README.md).
 
+Midday UI pass: [compact reaction results and zone explanations](design/2026-11-15/result-zone-clarity.md)
+on `fix/reaction-zone-clarity`; current scope and limits are at the top of [STATUS](STATUS.md).
+
+Afternoon UI pass: [mission explanations, compact settings and check-in](design/2026-11-15/mission-checkin-clarity.md). Phone opening over LAN is confirmed; full hardware rehearsal remains open.
+
 ## Reference
 
 | Document | What it answers |

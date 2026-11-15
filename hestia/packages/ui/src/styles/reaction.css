@@ -26,6 +26,109 @@
   border-radius: var(--radius-md);
   padding: var(--space-3);
 }
+.reaction-session {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  align-items: start;
+  gap: var(--space-3);
+}
+.reaction-session-main {
+  align-content: start;
+}
+.reaction-result-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+.reaction-result-label,
+.reaction-reference h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+.reaction-result-label svg,
+.reaction-reference svg {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.reaction-result-number {
+  font: 500 var(--text-display) / 1.15 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  margin: var(--space-2) 0;
+}
+.reaction-result-number > span {
+  font-size: var(--text-lg);
+  font-weight: 400;
+  color: var(--text-muted);
+}
+.reaction-empty {
+  font-size: var(--text-xl);
+  margin: var(--space-2) 0;
+}
+.reaction-counts {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+}
+.reaction-counts > div {
+  display: grid;
+  grid-template-columns: 2ch minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: var(--space-2);
+}
+.reaction-counts dt {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  grid-column: 2;
+}
+.reaction-counts dd {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+  font: 500 var(--text-lg) var(--font-mono);
+}
+.reaction-reference p {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+.hz-guide-note.reaction-reference {
+  padding: var(--space-3);
+  gap: var(--space-1);
+}
+.reaction-trials-figure {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  min-width: 0;
+}
+.reaction-trials-figure h3 {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  margin-bottom: var(--space-1);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-1);
+}
+.reaction-trials-figure h3 > span {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+.reaction-method,
+.reaction-result-actions {
+  grid-column: 1 / -1;
+}
+.reaction-protocol {
+  padding-top: var(--space-2);
+  overflow-wrap: anywhere;
+}
+.reaction-method .hz-guide-definitions {
+  padding-top: var(--space-3);
+  font-size: var(--text-sm);
+}
 .reaction-pad {
   min-height: 240px;
   width: 100%;
@@ -58,7 +161,7 @@
 }
 .reaction-trials > li {
   display: grid;
-  grid-template-columns: 2ch minmax(0, 1fr) 13ch;
+  grid-template-columns: 2ch minmax(0, 1fr) minmax(7ch, auto);
   align-items: center;
   gap: var(--space-2);
   font-size: var(--text-sm);
@@ -67,10 +170,57 @@
   text-align: right;
   font-family: var(--font-mono);
 }
+.reaction-track {
+  border-left: 1px solid var(--border);
+  min-width: 0;
+}
 .reaction-bar {
   display: block;
   height: var(--space-2);
   background: var(--accent);
+}
+.reaction-trials[data-layout='columns'] > li {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(1.5em, auto) calc(var(--space-7) * 2) auto;
+  gap: var(--space-1);
+  text-align: center;
+  align-items: end;
+  min-width: 0;
+}
+.reaction-trials[data-layout='columns'] > li > span:first-child {
+  grid-row: 3;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.reaction-trials[data-layout='columns'] > li > span:last-child {
+  grid-row: 1;
+  text-align: center;
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}
+.reaction-trials[data-layout='columns'] .reaction-track {
+  grid-row: 2;
+  height: 100%;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+}
+.reaction-trials[data-layout='columns'] .reaction-bar {
+  width: 65%;
+  max-width: var(--space-6);
+}
+.reaction-completion-heading {
+  display: grid;
+  gap: var(--space-1);
+}
+.reaction-completion-heading h1 {
+  font-size: var(--text-xl);
+}
+.reaction-completion-heading p {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
 }
 .reaction-history-list {
   padding: 0;

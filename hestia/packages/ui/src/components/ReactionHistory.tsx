@@ -111,7 +111,7 @@ function History({ api, crewId, deviceId }: { api: ApiClient; crewId: number; de
         </p>
         {error && (
           <p role="alert">
-            {error}{' '}
+            {t(error, 'Station inaccessible. Les résultats affichés peuvent ne pas être à jour.')}{' '}
             <Button size="sm" onClick={() => setRetry((value) => value + 1)}>
               {t('Retry')}
             </Button>
@@ -120,7 +120,7 @@ function History({ api, crewId, deviceId }: { api: ApiClient; crewId: number; de
         {rows == null && !error && <p role="status">{t('Loading sessions…')}</p>}
         {rows?.length === 0 && (
           <p>
-            {t('No recorded sessions')} {deviceId ? ' on this installation' : ''}
+            {t('No recorded sessions')} {deviceId ? t(' on this installation', ' sur cet appareil') : ''}
             {t('. Missing results do not mean normal health.')}
           </p>
         )}
@@ -130,7 +130,10 @@ function History({ api, crewId, deviceId }: { api: ApiClient; crewId: number; de
               className="reaction-trend"
               viewBox="0 0 320 140"
               role="img"
-              aria-label={`Median reaction times, ${comparable.length} comparable sessions, oldest to newest. Values are listed below.`}
+              aria-label={t(
+                `Median reaction times, ${comparable.length} comparable sessions, oldest to newest. Values are listed below.`,
+                `Temps médians de ${comparable.length} tests comparables, du plus ancien au plus récent. Les valeurs figurent ci-dessous.`,
+              )}
             >
               <path d="M40 15v95h265" fill="none" stroke="var(--border)" />
               <text x="0" y="22" fill="var(--text-muted)" fontSize="11">
@@ -165,18 +168,29 @@ function History({ api, crewId, deviceId }: { api: ApiClient; crewId: number; de
                 }}
               >
                 {new Date(row.started_at).toLocaleString(dateLocale())} ·{' '}
-                {row.median_ms == null ? 'no valid response' : `${Math.round(row.median_ms)} ms median`}
+                {row.median_ms == null
+                  ? t('No valid response', 'Aucune réponse valide')
+                  : t(`${Math.round(row.median_ms)} ms median`, `${Math.round(row.median_ms)} ms de médiane`)}
                 <small>
-                  {t(row.status)} · {row.source === 'simulated' ? 'SIMULATED' : 'measured on device'} ·{' '}
-                  {row.protocol_version}
-                  {t('· installation')} {row.device_id?.slice(0, 8) ?? 'unknown'}
+                  {row.status === 'complete'
+                    ? t('Complete', 'Terminé')
+                    : row.status === 'abandoned'
+                      ? t('Abandoned', 'Abandonné')
+                      : t('Interrupted', 'Interrompu')}{' '}
+                  ·{' '}
+                  {row.source === 'simulated'
+                    ? t('Simulated', 'Simulé')
+                    : t('Measured on device', 'Mesuré sur l’appareil')}
                 </small>
               </button>
               {selected === row.id && (
                 <div className="assessment-notice">
                   {detailError ? (
                     <p role="alert">
-                      {detailError}{' '}
+                      {t(
+                        detailError,
+                        'Impossible de charger ce test. Réessayez lorsque la station est accessible.',
+                      )}{' '}
                       <Button onClick={() => setRetry((value) => value + 1)}>{t('Retry')}</Button>
                     </p>
                   ) : detail ? (

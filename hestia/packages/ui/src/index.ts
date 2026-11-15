@@ -39,6 +39,8 @@ export * from './components/MonitorReadingGuide';
 import './styles/identity.css';
 export * from './components/ProjectCredits';
 export * from './components/MissionIllustration';
+export * from './components/MissionBrief';
+export * from './missions';
 export { ShelfCamera } from './components/ShelfCamera';
 export { ShelfCapture } from './components/ShelfCapture';
 export { ShelfFrameEditor } from './components/ShelfFrameEditor';

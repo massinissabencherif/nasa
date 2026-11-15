@@ -87,8 +87,10 @@ start with the `hestia-context` skill. Details and what was tested:
 None of this was verified on 14 Nov. Do it before the jury and write the
 result in `STATUS.md`:
 
-- [ ] A real phone reaches the station on the base network (phone hotspot
-      with mobile data off), and the crew app works on it.
+- [x] David confirmed that a real phone opens the crew app over local Wi-Fi on
+      15 Nov (`10.184.21.92:8011/crew/`).
+- [ ] Full phone save/meal/photo journey and the intended network with Internet
+      disconnected. Opening the app alone does not verify these.
 - [ ] The reaction test with a real finger: the timings look plausible and
       a tap before the signal is a false start and repeats the trial. Verify
       1 practice + 5 measured trials, background interruption, and a pending
@@ -125,9 +127,10 @@ requires confirmation and keeps the catalogue, assignments and health records.
 One type per slot, several identical packages allowed. Use label nutrition for
 real quantities; ×212 and the existing catalogue remain demo assumptions.
 
-For the isolated preview, API 8011 is bound to localhost with a temporary DB; it
-is not a phone server. For a real phone, run the intended station server on the
-local network, accept the firewall prompt, test reachability and camera permission.
+Updated 15 Nov afternoon: API 8011 now listens on `0.0.0.0`, retaining the same
+temporary database. David confirmed phone access at `http://10.184.21.92:8011/crew/`.
+Use the current QR on station preview `http://127.0.0.1:1422/`; the LAN address can
+change. Full save/photo and camera-permission checks remain to do.
 Browser camera needs localhost or HTTPS; a QR alone cannot solve school Wi-Fi
 client isolation. Importing/transferring a photo is the fallback. Do not reset the
 real database or kill unrelated ports to set up the rehearsal.

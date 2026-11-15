@@ -1,0 +1,78 @@
+.hz-mission-brief {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.hz-mission-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.hz-mission-heading > svg,
+.hz-mission-objective > svg {
+  flex-shrink: 0;
+}
+.hz-mission-heading h3 {
+  font-size: var(--text-xl);
+  font-weight: 600;
+}
+.hz-mission-heading p,
+.hz-mission-objective p {
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+.hz-mission-heading p {
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+}
+.hz-mission-objective {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  background: var(--accent-dim);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+}
+.hz-mission-objective > svg {
+  color: var(--accent);
+}
+.hz-mission-objective h4 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+.hz-mission-constraint {
+  margin-top: var(--space-2);
+  color: var(--text-muted);
+}
+.hz-mission-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+.hz-mission-facts > div {
+  padding: var(--space-3);
+  background: var(--panel-raised);
+  border-radius: var(--radius-md);
+}
+.hz-mission-facts dt {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+.hz-mission-facts dt svg {
+  flex-shrink: 0;
+}
+.hz-mission-facts dd {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+.hz-mission-assumption {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}

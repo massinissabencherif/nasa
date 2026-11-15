@@ -73,10 +73,11 @@ make station-web
   le QR ne contourne pas cette restriction. Un réseau local dédié est le repli.
   Internet n'est pas nécessaire une fois les dépendances et le modèle installés.
 
-Sur le Mac de David seulement, les aperçus précédents sont station `1422` et
-API/équipage `8011`, avec une base jetable séparée. **8011 écoute seulement sur
-localhost** : ce n'est pas le serveur à faire scanner au jury. Conserver cette
-base et les services existants si David souhaite retrouver son état.
+Mise à jour du 15 novembre après-midi : station `http://127.0.0.1:1422/` et
+API/équipage `8011`, avec la même base jetable. **8011 écoute maintenant sur le
+réseau local** ; David confirme que `http://10.184.21.92:8011/crew/` s’ouvre sur son
+téléphone. Utiliser le QR actuel des réglages ; l’adresse peut changer. Le parcours
+complet bilan/repas/photo reste à répéter. Ne pas réinitialiser cette base.
 
 ## Répétition minimale, dans cet ordre
 
@@ -137,7 +138,7 @@ Des parcours Chrome ciblés couvrent cadrage, confirmation, échec/reprise, clav
 animations réduites et écrans étroits. Les derniers scénarios navigateur
 interceptaient les écritures/lectures IA. Lint : aucune erreur, 10 avertissements.
 
-**Non vérifié :** vrai téléphone, caméra physique et nouveaux produits, réseau
+**Non vérifié :** parcours complet sur téléphone réel (ouverture confirmée), caméra physique et nouveaux produits, réseau
 du lieu, machine de Massi, version native, présentation complète chronométrée.
 La lecture approfondie a obtenu 12/12 sur chacune de deux images ayant servi
 au réglage ; ce n'est pas une mesure de fiabilité sur de nouvelles photos.

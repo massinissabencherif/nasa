@@ -138,8 +138,8 @@ future. Manual capture + human review is the current behaviour; no scheduler add
 | Priority | Remaining task | Proposed owner / completion evidence |
 |---|---|---|
 | Before demo | Actual purchased products, labels/values, grid, ×1 vs demo scale; repeated photos, one removal, manual correction | David + Massi; record actual counts/time and a fallback; Claude on vision if failures |
-| Before demo | Whole Mac + real-phone local-network journey, QR, camera permissions, save/meal/stock consistency, network without Internet | David + Massi; current 8011 preview is localhost-only |
-| Before demo | Liaison Terre screen and scenario: trigger alert, queued/delivered/replied, explain accelerated clock | Proposed for Massi, not externally assigned; backend passes, actual UI rehearsal outstanding |
+| Before demo | Whole Mac + real-phone local-network journey, QR, camera permissions, save/meal/stock consistency, network without Internet | Opening over LAN confirmed by David on 15 Nov; API 8011 now binds 0.0.0.0. Full save/meal/photo and Internet-off rehearsal still open |
+| Before demo | Liaison Terre screen and scenario: trigger alert, queued/delivered/replied, explain accelerated clock | Separate Claude Earth-link worktree exists; actual team rehearsal still outstanding. David assigns guided Simulator/history to Massi |
 | Before demo | Reconcile NASA-page/pitch with actual features, sources, editable scale, 1+5 reaction, local-network limits; choose final demo media; timed 5min + about4min Q&A | Team; existing submission draft contains stale claims and placeholders; no submission performed |
 | Finish experience | Simulateur/Liaison Terre hierarchy and explanations; legacy calibration; remaining astronaut screens/copy/graphs and translated server messages | Decide from David's next reviews; no claim of whole-app UI completion |
 | Quality | Remaining raw controls/shared-component migration, complete keyboard/touch/motion review,10 lint warnings, JS/image size, Python checks/CI | Select high-impact items; no need to repeat checks already passed absent changes |

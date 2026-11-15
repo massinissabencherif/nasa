@@ -323,6 +323,32 @@ says nothing about the code.
   remains, without an assigned implementation task. Nothing is scheduled or sent,
   and no agent should infer permission to code from discovering that message.
 
+- **D46 (implemented and browser-checked, 15 Nov):** David approved a UI-only
+  pass on reaction results and body-zone explanations, preserving calculations,
+  thresholds, palette and existing motion. His follow-up chooses vertical bars
+  for the short reaction test, a prominent median and a compact screen with
+  visible return/restart actions. Long historical sessions retain horizontal
+  bars. Details explain comparisons and limitations without crowding the result.
+  Zone explanations reuse the Guide's typography/notes, with compact references
+  and full ordered rules available on demand. No claim of clinical validation or
+  physical-device validation. Work is on `fix/reaction-zone-clarity`, uncommitted;
+  [verification](design/2026-11-15/result-zone-clarity.md).
+
+- **D47 (implemented and browser-checked, 15 Nov):** David approves a shared
+  mission explanation, stable mission selection and compact Settings/Pantry
+  hierarchy. He then asks for provenance under the QR, key figures before prose
+  and an astronaut helmet for Crew. Mission descriptions are HESTIA scenarios,
+  not NASA mission plans; dates and fixed delays are labelled demo assumptions.
+  No request on reselecting the active mission. The shortfall is rounded up for
+  display (e.g. 353 full days against 380 means 27 days short), rather than
+  understating a fractional deficit; server calculations are untouched.
+  Massi owns the guided Simulator/history; its callbacks/engine remain unchanged.
+- **D48 (implemented and browser-checked, 15 Nov):** the approved check-in polish
+  groups existing measurements, reuses shared inputs/help/icons and separates
+  successful saving from health interpretation. Missing values remain unknown;
+  no new symptom semantics, thresholds or questionnaire. Review and saved-state
+  copy are FR/EN. See [verification](design/2026-11-15/mission-checkin-clarity.md).
+
 ## Proposed, not decided
 
 | # | Idea | State |

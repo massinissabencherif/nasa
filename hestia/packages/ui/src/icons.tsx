@@ -20,8 +20,9 @@ function base(props: IconProps) {
 export function IconCrew(props: IconProps) {
   return (
     <svg {...base(props)}>
-      <circle cx="10" cy="6.5" r="3" />
-      <path d="M4 17c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" />
+      <path d="M4.3 10V8a5.7 5.7 0 0 1 11.4 0v2a5.7 5.7 0 0 1-11.4 0Z" />
+      <rect x="6.2" y="6" width="7.6" height="5.2" rx="2" />
+      <path d="M8 7.8h1.8M3.4 9h.9m11.4 0h.9M7.4 14.8v2.6h5.2v-2.6M4.8 17.4h10.4" />
     </svg>
   );
 }

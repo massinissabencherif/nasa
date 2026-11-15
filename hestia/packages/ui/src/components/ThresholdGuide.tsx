@@ -11,8 +11,10 @@ export function ThresholdGuide({ label, config }: { label: string; config: Thres
   if (rows.length === 0) return null;
   return (
     <section className="hz-threshold-guide">
-      <h4>{label}</h4>
-      {config.unit && <p>{t(config.unit)}</p>}
+      <h4>
+        {label}
+        {config.unit && <span className="hz-threshold-unit">{t(config.unit)}</span>}
+      </h4>
       <dl>
         {rows.map((row, index) => (
           <div key={`${row.level}-${index}`}>

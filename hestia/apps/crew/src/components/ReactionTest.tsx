@@ -174,35 +174,69 @@ function TestSession({
       </div>
     );
 
-  if (state.phase === 'done' || state.phase === 'paused')
+  if (state.phase === 'done' || state.phase === 'paused') {
+    const actions = (
+      <div className="assessment-actions">
+        {state.phase === 'done' ? (
+          <>
+            <Button variant="primary" onClick={onCancel}>
+              {backLabel}
+            </Button>
+            <Button onClick={() => runner.start()}>{t('Do it again')}</Button>
+          </>
+        ) : (
+          <>
+            <Button variant="primary" onClick={() => runner.start()}>
+              {t('Restart from practice')}
+            </Button>
+            <Button onClick={onCancel}>{backLabel}</Button>
+          </>
+        )}
+      </div>
+    );
     return (
       <div className="assessment-stack" style={{ padding: 'var(--space-4)' }}>
-        <h1>
-          {t(
-            state.phase === 'done'
-              ? 'Reaction test complete'
-              : state.result?.status === 'abandoned'
-                ? 'Reaction test abandoned'
-                : 'Reaction test interrupted',
-          )}
-        </h1>
+        <header className="reaction-completion-heading">
+          <h1>
+            {t(
+              state.phase === 'done'
+                ? 'Reaction test complete'
+                : state.result?.status === 'abandoned'
+                  ? 'Reaction test abandoned'
+                  : 'Reaction test interrupted',
+            )}
+          </h1>
+          {result && <p role="status">{t('Saved on the station.')}</p>}
+        </header>
         {state.feedback && <p role="status">{t(state.feedback)}</p>}
         {result ? (
-          <>
-            <p role="status">{t('Saved on the station.')}</p>
-            <Panel>
-              <ReactionSessionView result={result} />
-            </Panel>
-          </>
+          <Panel>
+            <ReactionSessionView result={result} actions={actions} />
+          </Panel>
         ) : (
           <div className="assessment-stack assessment-notice">
             <p role="status">
               {pending?.persisted
-                ? 'Pending sync — a copy is kept on this device for this station.'
-                : 'Not saved on the station yet. Keep this screen open.'}
+                ? t(
+                    'Waiting to save on the station. A copy is kept on this device.',
+                    'En attente d’enregistrement sur la station. Une copie est conservée sur cet appareil.',
+                  )
+                : t(
+                    'Not saved on the station yet. Keep this screen open.',
+                    'Pas encore enregistré sur la station. Gardez cet écran ouvert.',
+                  )}
             </p>
-            <p className="assessment-number">
-              {preview.median == null ? 'No valid response' : `${Math.round(preview.median)} ms median`}
+            <p className="reaction-result-label">
+              {t('Local preview · median time', 'Aperçu local · temps médian')}
+            </p>
+            <p className={preview.median == null ? 'reaction-empty' : 'reaction-result-number'}>
+              {preview.median == null ? (
+                t('No valid response', 'Aucune réponse valide')
+              ) : (
+                <>
+                  {Math.round(preview.median)} <span>ms</span>
+                </>
+              )}
             </p>
             <p>
               {preview.valid} {t('valid responses ·')} {preview.falseStarts} {t('false starts ·')}{' '}
@@ -213,9 +247,11 @@ function TestSession({
                 'Local preview. The station will recompute statistics and compare eligible sessions after saving.',
               )}
               {state.result?.status !== 'complete' &&
-                ' This incomplete session is excluded from your personal reference.'}
+                t(
+                  ' This incomplete session is excluded from your personal reference.',
+                  ' Ce test incomplet ne compte pas dans votre référence personnelle.',
+                )}
             </p>
-            <ReactionTrials trials={state.trials} />
             {pending?.error && <p className="assessment-muted">{pending.error}</p>}
             <Button
               onClick={() => {
@@ -224,27 +260,13 @@ function TestSession({
             >
               {t('Retry saving')}
             </Button>
+            {actions}
+            <ReactionTrials trials={state.trials} />
           </div>
         )}
-        <div className="assessment-actions">
-          {state.phase === 'done' ? (
-            <>
-              <Button variant="primary" onClick={onCancel}>
-                {backLabel}
-              </Button>
-              <Button onClick={() => runner.start()}>{t('Do it again')}</Button>
-            </>
-          ) : (
-            <>
-              <Button variant="primary" onClick={() => runner.start()}>
-                {t('Restart from practice')}
-              </Button>
-              <Button onClick={onCancel}>{backLabel}</Button>
-            </>
-          )}
-        </div>
       </div>
     );
+  }
 
   if (state.phase === 'ready')
     return (

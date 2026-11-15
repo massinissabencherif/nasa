@@ -2,21 +2,12 @@ import { t } from '@hestia/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { CheckinResult } from '@hestia/api-client';
-import {
-  AdviceText,
-  Button,
-  Panel,
-  IconCaution,
-  IconCheck,
-  IconCritical,
-  HelpButton,
-  indicatorLabel,
-  ZONE_META,
-  ZONES,
-} from '@hestia/ui';
+import { Button, MeasurementIcon, IconSymptoms, IconMood, IconReaction, HelpButton } from '@hestia/ui';
 import { ExplainSheet, FieldRow } from '../components/FieldRow';
 import { ReactionTest } from '../components/ReactionTest';
 import { Stepper } from '../components/Stepper';
+import { CheckinResult as Result } from '../components/CheckinResult';
+import './checkin.css';
 import {
   answerCount,
   buildCheckinBody,
@@ -47,66 +38,6 @@ const MEASURE_KEYS = KEYS_OF(FIELDS);
 const MEASURE_META = Object.fromEntries(
   Object.entries(EXPLANATIONS).map(([key, info]) => [key, { label: info.label, unit: info.unit }]),
 );
-
-function Result({ result, onDone }: { result: CheckinResult; onDone: () => void }) {
-  const attention = ZONES.filter(
-    (z) => result.status[z].level === 'orange' || result.status[z].level === 'red',
-  );
-  const noData = ZONES.filter((z) => result.status[z].level === 'unknown');
-  return (
-    <div style={{ padding: 16, display: 'grid', gap: 14 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--green)' }}>
-        <IconCheck size={22} />
-        <h1 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--text)' }}>
-          {t('Check-in saved')}
-        </h1>
-      </div>
-      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-        {attention.length > 0
-          ? `Zones needing attention: ${attention.map((z) => ZONE_META[z].label).join(', ')}.`
-          : noData.length === 0
-            ? 'Every body zone is nominal. Nothing to do.'
-            : 'Every measured zone is nominal.'}
-        {noData.length > 0 && ` No recent data for: ${noData.map((z) => ZONE_META[z].label).join(', ')}.`}
-      </p>
-      {result.alerts.map((alert) => {
-        const red = alert.level === 'red';
-        return (
-          <div
-            key={alert.id}
-            role={red ? 'alert' : undefined}
-            style={{
-              padding: 14,
-              borderRadius: 'var(--radius-md)',
-              background: red ? 'var(--red-dim)' : 'var(--orange-dim)',
-              border: `1px solid ${red ? 'var(--red)' : 'var(--orange)'}`,
-              display: 'grid',
-              gap: 8,
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                color: red ? 'var(--red)' : 'var(--orange)',
-              }}
-            >
-              {red ? <IconCritical size={18} /> : <IconCaution size={18} />}
-              <span style={{ fontWeight: 700, color: 'var(--text)' }}>
-                {red ? 'Red alert' : 'Advice'}: {indicatorLabel(alert.indicator)}
-              </span>
-            </div>
-            <AdviceText message={alert.message} />
-          </div>
-        );
-      })}
-      <Button variant="primary" size="lg" onClick={onDone}>
-        {t('See my body status')}
-      </Button>
-    </div>
-  );
-}
 
 export function Checkin() {
   const navigate = useNavigate();
@@ -164,17 +95,6 @@ export function Checkin() {
     );
   }
 
-  const card = {
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--radius-md)',
-    background: 'var(--panel)',
-    overflow: 'hidden',
-  } as const;
-  const infoButton = (key: 'mood' | 'symptoms' | 'reaction_ms', _label: string) => (
-    <HelpButton label={t(EXPLANATIONS[key].label)}>
-      <ExplainSheet field={key} />
-    </HelpButton>
-  );
   const titles: Record<StepKey, string> = {
     feel: 'How do you feel?',
     measure: 'Your measurements',
@@ -182,14 +102,10 @@ export function Checkin() {
   };
 
   return (
-    <div key={step} className="hz-step" style={{ padding: 16, display: 'grid', gap: 12, paddingBottom: 24 }}>
+    <div key={step} className="hz-step checkin-page">
       <div ref={top} style={{ display: 'grid', gap: 'var(--space-3)', scrollMarginTop: 'var(--space-4)' }}>
         <Stepper current={step} />
-        <h1
-          ref={heading}
-          tabIndex={-1}
-          style={{ fontSize: 'var(--text-xl)', fontWeight: 700, outline: 'none' }}
-        >
+        <h1 ref={heading} tabIndex={-1} className="checkin-title">
           {t(titles[step])}
         </h1>
       </div>
@@ -199,7 +115,14 @@ export function Checkin() {
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
             {t('Two quick questions. You can leave any question unanswered.')}
           </p>
-          <Panel title={t(EXPLANATIONS.mood.label)} action={infoButton('mood', 'How, why and risk: mood')}>
+          <section className="checkin-question">
+            <header>
+              <IconMood size={20} aria-hidden="true" />
+              <h2>{t('Your mood today', 'Votre moral aujourd’hui')}</h2>
+              <HelpButton label={t(EXPLANATIONS.mood.label)}>
+                <ExplainSheet field="mood" />
+              </HelpButton>
+            </header>
             <div className="hz-mood-options" role="group" aria-label={t(EXPLANATIONS.mood.label)}>
               {MOODS.map((label, i) => {
                 const selected = mood === i + 1;
@@ -217,12 +140,16 @@ export function Checkin() {
                 );
               })}
             </div>
-          </Panel>
+          </section>
 
-          <Panel
-            title={t(EXPLANATIONS.symptoms.label)}
-            action={infoButton('symptoms', 'How, why and risk: symptoms')}
-          >
+          <section className="checkin-question">
+            <header>
+              <IconSymptoms size={20} aria-hidden="true" />
+              <h2>{t('What are you noticing?', 'Que ressentez-vous ?')}</h2>
+              <HelpButton label={t(EXPLANATIONS.symptoms.label)}>
+                <ExplainSheet field="symptoms" />
+              </HelpButton>
+            </header>
             <div className="hz-choice-list" role="group" aria-label={t(EXPLANATIONS.symptoms.label)}>
               {SYMPTOM_OPTIONS.map((s) => (
                 <Button
@@ -236,8 +163,8 @@ export function Checkin() {
                 </Button>
               ))}
             </div>
-            <p className="assessment-muted">{t('Select anything you are noticing.')}</p>
-          </Panel>
+            <p className="checkin-note">{t('Select anything you are noticing.')}</p>
+          </section>
 
           <Button variant="primary" size="lg" onClick={() => setStep('measure')}>
             {t('Continue to measurements')}
@@ -254,20 +181,33 @@ export function Checkin() {
             )}
           </p>
 
-          {FIELDS.map(({ key, step: increment }) => (
-            <FieldRow
-              key={key}
-              field={key}
-              step={increment}
-              value={form[key] ?? ''}
-              last={latest?.[key]?.value}
-              lastTs={latest?.[key]?.ts}
-              onChange={(v) => setForm((f) => ({ ...f, [key]: v }))}
-            />
+          {[
+            { title: t('Heart & blood pressure', 'Cœur et tension'), fields: FIELDS.slice(0, 3) },
+            { title: t('Other measurements', 'Autres mesures'), fields: FIELDS.slice(3, 6) },
+            { title: t('Sleep & exercise', 'Sommeil et activité'), fields: FIELDS.slice(6) },
+          ].map((group) => (
+            <section key={group.fields[0].key} className="checkin-measures">
+              <h2>{group.title}</h2>
+              <div className="checkin-measures-grid">
+                {group.fields.map(({ key, step: increment }) => (
+                  <FieldRow
+                    key={key}
+                    field={key}
+                    step={increment}
+                    value={form[key] ?? ''}
+                    last={latest?.[key]?.value}
+                    lastTs={latest?.[key]?.ts}
+                    onChange={(v) => setForm((f) => ({ ...f, [key]: v }))}
+                  />
+                ))}
+              </div>
+            </section>
           ))}
 
           <div className="hz-checkin-callout">
-            <Button onClick={() => setTesting(true)}>{t('Open reaction test')}</Button>
+            <Button icon={<IconReaction size={18} />} onClick={() => setTesting(true)}>
+              {t('Open reaction test')}
+            </Button>
             <p>
               {t(
                 'Optional. Your check-in answers are kept.',
@@ -280,16 +220,7 @@ export function Checkin() {
             {t('Nothing is saved until you confirm on the next step.')}
           </p>
           {/* stays in view: the list is long and the next step is the main action */}
-          <div
-            style={{
-              position: 'sticky',
-              bottom: 0,
-              display: 'grid',
-              gap: 'var(--space-2)',
-              padding: 'var(--space-3) 0',
-              background: 'var(--bg)',
-            }}
-          >
+          <div className="checkin-actions">
             <Button variant="primary" size="lg" onClick={() => setStep('review')}>
               {t('Review my check-in')}
             </Button>
@@ -303,39 +234,28 @@ export function Checkin() {
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
             {t('Check what will be recorded for you. Nothing is saved until you confirm.')}
           </p>
-          <div style={{ ...card, display: 'grid' }}>
-            {reviewRows(draft, MEASURE_KEYS, MEASURE_META, MOODS).map((row, i) => (
-              <div
-                key={row.key}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'minmax(0, 1fr) auto',
-                  gap: 'var(--space-3)',
-                  padding: 'var(--space-3) var(--space-4)',
-                  borderTop: i === 0 ? 'none' : '1px solid var(--border-soft)',
-                  fontSize: 'var(--text-sm)',
-                }}
-              >
-                <span style={{ color: 'var(--text-muted)' }}>{t(row.label)}</span>
-                <span
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    textAlign: 'right',
-                    color:
-                      row.value === 'Not answered' || row.value === 'None selected'
-                        ? 'var(--text-faint)'
-                        : 'var(--text)',
-                  }}
-                >
-                  {t(row.value)}
-                </span>
+          <dl className="checkin-review">
+            {reviewRows(draft, MEASURE_KEYS, MEASURE_META, MOODS).map((row) => (
+              <div key={row.key}>
+                <dt>
+                  <MeasurementIcon name={row.key} size={18} aria-hidden="true" />
+                  {t(row.label)}
+                </dt>
+                <dd data-empty={row.value === 'Not answered' || row.value === 'None selected' || undefined}>
+                  {row.key === 'mood' && mood != null
+                    ? `${mood}/5 · ${t(MOODS[mood - 1])}`
+                    : row.key === 'symptoms' && symptoms.size
+                      ? [...symptoms].map((symptom) => t(symptom)).join(', ')
+                      : t(row.value)}
+                </dd>
               </div>
             ))}
-          </div>
+          </dl>
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>
-            {emptyMeasureCount(draft, MEASURE_KEYS)} {t('measurement')}{' '}
-            {emptyMeasureCount(draft, MEASURE_KEYS) === 1 ? '' : 's'}{' '}
-            {t('left empty: they stay unknown, not normal.')}
+            {t(
+              `${emptyMeasureCount(draft, MEASURE_KEYS)} measurements left empty: they stay unknown, not normal.`,
+              `${emptyMeasureCount(draft, MEASURE_KEYS)} mesures non renseignées : elles restent inconnues, pas normales.`,
+            )}
           </p>
 
           {error && (

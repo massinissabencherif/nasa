@@ -6,8 +6,13 @@ import {
   IconReplay,
   IconPhone,
   IconScan,
+  IconEarthLink,
+  IconCargo,
+  IconCheck,
   LoadingState,
   MissionIllustration,
+  MissionBrief,
+  MISSION_PROFILES,
   Panel,
   ScienceSources,
   ShelfSetup,
@@ -19,13 +24,6 @@ import { formatDelay, useStation, usePantry } from '../lib/hooks';
 import './settings.css';
 import { StockScale } from '../components/pantry/StockScale';
 
-const MISSIONS = [
-  ['mars_base', 'Mars base'],
-  ['mars_transit', 'Earth-Mars transit'],
-  ['moon_base', 'Moon base'],
-  ['iss', 'ISS'],
-] as const;
-
 export function SettingsScreen() {
   const { context, refreshContext } = useStation();
   const [section, setSection] = useState('setup');
@@ -35,6 +33,7 @@ export function SettingsScreen() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [resetOpen, setResetOpen] = useState(false);
+  const [missionFeedback, setMissionFeedback] = useState<{ message: string; failed: boolean } | null>(null);
   useEffect(() => {
     let current = true;
     const load = () =>
@@ -68,6 +67,32 @@ export function SettingsScreen() {
       if (key === 'reset') setResetOpen(false);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setBusy(null);
+    }
+  }
+  async function selectMission(type: string) {
+    if (busy || context?.type === type) return;
+    setBusy(type);
+    setMissionFeedback(null);
+    try {
+      const saved = await api.setContext(type);
+      refreshContext();
+      setMissionFeedback({
+        message: t(
+          `${t(saved.label)} is now active for everyone.`,
+          `${t(saved.label)} est active pour tous.`,
+        ),
+        failed: false,
+      });
+    } catch {
+      setMissionFeedback({
+        message: t(
+          'Mission not changed. Check the station and try again.',
+          'Mission non modifiée. Vérifiez la connexion à la station, puis réessayez.',
+        ),
+        failed: true,
+      });
     } finally {
       setBusy(null);
     }
@@ -111,47 +136,73 @@ export function SettingsScreen() {
           <Panel title={t('1 · Choose the active mission', '1 · Choisir la mission active')}>
             <p>
               {t(
-                'This changes the station’s mission, communication delay and scenario context for everyone.',
-                'Ce choix change la mission de la station, le délai des échanges et le contexte des simulations pour tous.',
+                'Choose where the crew lives. The mission applies to the whole station.',
+                'Choisissez où vit l’équipage. La mission s’applique à toute la station.',
               )}
             </p>
             <div className="settings-missions">
-              {MISSIONS.map(([type, label]) => (
+              {MISSION_PROFILES.map(({ type, label, place }) => (
                 <Button
                   key={type}
                   active={context?.type === type}
                   aria-pressed={context?.type === type}
-                  disabled={busy != null}
-                  onClick={() =>
-                    void run(type, () => api.setContext(type), t('Mission changed.', 'Mission modifiée.'))
-                  }
+                  aria-disabled={busy != null}
+                  onClick={() => void selectMission(type)}
                 >
-                  <MissionIllustration context={type} size={40} />
-                  {t(label)}
+                  <MissionIllustration context={type} size={36} />
+                  <span>
+                    <strong>{t(label)}</strong>
+                    <small>{t(place[0], place[1])}</small>
+                  </span>
                 </Button>
               ))}
             </div>
+            <div
+              className="settings-mission-feedback"
+              role="status"
+              aria-live="polite"
+              data-error={missionFeedback?.failed || undefined}
+            >
+              {busy && MISSION_PROFILES.some(({ type }) => type === busy)
+                ? t('Changing the mission…', 'Changement de mission…')
+                : (missionFeedback?.message ?? (
+                    <>
+                      <IconCheck size={14} aria-hidden="true" />
+                      {context
+                        ? t(`Active: ${t(context.label)}`, `Active : ${t(context.label)}`)
+                        : t('Reading the mission…', 'Lecture de la mission…')}
+                    </>
+                  ))}
+            </div>
             {context && (
-              <div className="settings-note">
-                <strong>
-                  {t('Active mission:', 'Mission active :')} {t(context.label)}
-                </strong>
-                <p>
-                  {t('Earth reply:', 'Réponse de la Terre :')} {t(formatDelay(context.delay_s * 2))}{' '}
-                  {t('round trip.', 'aller-retour.')}
+              <MissionBrief context={context}>
+                <dl className="hz-mission-facts">
+                  <div>
+                    <dt>
+                      <IconEarthLink size={16} />
+                      {t('Earth · round trip', 'Terre · aller-retour')}
+                    </dt>
+                    <dd>{t(formatDelay(context.delay_s * 2))}</dd>
+                  </div>
+                  <div>
+                    <dt>
+                      <IconCargo size={16} />
+                      {t('Next supply', 'Ravitaillement')}
+                    </dt>
+                    <dd>
+                      {context.next_resupply_in_days == null
+                        ? t('Not planned', 'Non prévu')
+                        : `${context.next_resupply_in_days} ${t('days', 'jours')}`}
+                    </dd>
+                  </div>
+                </dl>
+                <p className="hz-mission-assumption">
+                  {t(
+                    'Demo settings: fixed communication delay and assumed supply schedule. These are not an actual mission plan.',
+                    'Paramètres de démo : délai de liaison fixe et calendrier de ravitaillement hypothétique. Ce n’est pas le plan d’une mission réelle.',
+                  )}
                 </p>
-                <p>
-                  {context.next_resupply_in_days != null
-                    ? t(
-                        `Next supply in ${context.next_resupply_in_days} days (demo assumption).`,
-                        `Prochain ravitaillement dans ${context.next_resupply_in_days} jours (hypothèse de démo).`,
-                      )
-                    : t(
-                        'No resupply scheduled in this scenario.',
-                        'Aucun ravitaillement prévu dans ce scénario.',
-                      )}
-                </p>
-              </div>
+              </MissionBrief>
             )}
             <ScienceSources />
           </Panel>
@@ -197,8 +248,8 @@ export function SettingsScreen() {
                   <strong>{t('No Internet needed', 'Pas besoin d’Internet')}</strong>
                   <p>
                     {t(
-                      'The school Wi-Fi may block device-to-device access. Rehearse on the exact network; the station must accept connections from that network. The QR code alone does not prove access.',
-                      'Le Wi-Fi de l’école peut bloquer les échanges entre appareils. Testez le réseau prévu ; la station doit accepter ses connexions. Le QR code seul ne garantit pas l’accès.',
+                      'The phone connects to this Mac over local Wi-Fi. Some school networks block this link: check before presenting.',
+                      'Le téléphone rejoint ce Mac par le Wi-Fi local. Certains réseaux d’école bloquent ce lien : vérifiez avant la présentation.',
                     )}
                   </p>
                 </div>
@@ -219,6 +270,22 @@ export function SettingsScreen() {
                 </p>
               </>
             )}
+            <aside className="settings-simulation-note">
+              <strong>{t('What remains simulated', 'Ce qui reste simulé')}</strong>
+              <p>
+                {t('Fictional crew and health readings.', 'Équipage et mesures fictifs.')}{' '}
+                {t(
+                  'Earth replies are scripted; colour rules are indicative.',
+                  'Les réponses Terre sont préparées ; les règles de couleur sont indicatives.',
+                )}
+              </p>
+              <p>
+                {t(
+                  'Mission stock uses the selected multiplier. Demo photos are generated; imported photos are your own.',
+                  'Le stock de mission utilise le multiplicateur choisi. Les photos de démo sont générées ; les photos importées sont les vôtres.',
+                )}
+              </p>
+            </aside>
           </Panel>
         </div>
       )}
@@ -436,14 +503,6 @@ export function SettingsScreen() {
           </Panel>
         </div>
       )}
-      <Panel title={t('What remains simulated', 'Ce qui reste simulé')}>
-        <p>
-          {t(
-            'Fictional crew and health history · scripted Earth replies · mission stock multiplier · indicative colour rules. Demo shelf images are generated; your own photos are separate. These labels stay visible to explain the prototype honestly.',
-            'Équipage et historique fictifs · réponses Terre écrites à l’avance · multiplicateur du stock de mission · règles de couleur indicatives. Les images de réserve de démo sont générées ; vos photos sont distinctes. Ces mentions restent utiles pour présenter honnêtement le prototype.',
-          )}
-        </p>
-      </Panel>
       {resetOpen && (
         <DetailSheet
           title={t('Reset all demo data?', 'Effacer les données de démo ?')}

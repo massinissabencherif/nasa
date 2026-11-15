@@ -1,6 +1,6 @@
 .settings-page {
   display: grid;
-  gap: var(--space-5);
+  gap: var(--space-3);
 }
 .settings-page h1 {
   font-size: var(--text-2xl);
@@ -42,6 +42,32 @@
   justify-content: flex-start;
   text-align: left;
   gap: var(--space-2);
+}
+.settings-missions button > span {
+  display: grid;
+  gap: var(--space-1);
+}
+.settings-missions strong {
+  font-weight: 600;
+}
+.settings-missions small {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 400;
+}
+.settings-mission-feedback {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--space-6);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.settings-mission-feedback svg {
+  color: var(--accent);
+}
+.settings-mission-feedback[data-error] {
+  color: var(--red-ink);
 }
 .settings-note {
   display: grid;
@@ -108,4 +134,25 @@
   display: grid;
   gap: var(--space-3);
   padding-top: var(--space-3);
+}
+
+.settings-simulation-note {
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-soft);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.settings-simulation-note strong {
+  color: var(--text);
+}
+.settings-page .hz-mission-brief {
+  gap: var(--space-2);
+}
+.settings-page .hz-panel-body {
+  gap: var(--space-2);
+}
+.settings-page .hz-mission-assumption {
+  order: 1;
 }

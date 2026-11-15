@@ -1,7 +1,15 @@
 import { t, useLocale } from '../i18n';
 import { readingText } from '../readingText';
 import type { CrewStatus, Thresholds } from '@hestia/api-client';
-import { IconCheck, IconCaution, IconCritical, MeasurementIcon, ZoneIcon } from '../icons';
+import {
+  IconCheck,
+  IconCaution,
+  IconCritical,
+  IconInfo,
+  IconReaction,
+  MeasurementIcon,
+  ZoneIcon,
+} from '../icons';
 import {
   CONTEXT_ZONE_NOTES,
   INDICATOR_LABELS,
@@ -108,39 +116,51 @@ export function ZoneDetailPanel({
       <details className="hz-help-answer" key={zone}>
         <summary>{t('Understand this result', 'Comprendre ce résultat')}</summary>
         <div className="hz-explanation">
-          <p>
-            {zone === 'brain_morale'
-              ? t(
-                  'Mood, sleep, reported symptoms and earlier reaction readings.',
-                  'Moral, sommeil, symptômes déclarés et anciennes mesures de réaction.',
-                )
-              : t(meta.function)}
-          </p>
-          {zone === 'brain_morale' && (
-            <p className="hz-explanation-note">
-              {t(
-                'The reaction test is separate and does not change this colour.',
-                'Le test de réaction est distinct et ne change pas cette couleur.',
-              )}
+          <section>
+            <h3>{t('What sets the colour', 'Ce qui détermine la couleur')}</h3>
+            <p>
+              {zone === 'brain_morale'
+                ? t(
+                    'Mood, sleep, reported symptoms and earlier reaction readings.',
+                    'Moral, sommeil, symptômes déclarés et anciennes mesures de réaction.',
+                  )
+                : t(meta.function)}
             </p>
+          </section>
+          {zone === 'brain_morale' && (
+            <aside className="hz-guide-note hz-zone-note">
+              <h3>
+                <IconReaction size={18} aria-hidden="true" />
+                {t('Your reaction test', 'Votre test de réaction')}
+              </h3>
+              <p>
+                {t(
+                  'Its results are kept separately. They do not change this colour.',
+                  'Ses résultats sont conservés à part. Ils ne changent pas cette couleur.',
+                )}
+              </p>
+            </aside>
           )}
           {thresholds && <ThresholdSummary indicators={meta.indicators} thresholds={thresholds} />}
-          <details className="hz-help-answer">
-            <summary>{t('Space context and references', 'Contexte spatial et références')}</summary>
-            <section>
-              <h3>{t('Why it matters in space', 'Pourquoi le suivre dans l’espace')}</h3>
-              <p>{t(meta.why)}</p>
-              <p>
-                <strong>{t('NASA risk:', 'Risque étudié par la NASA :')}</strong> {t(zoneStatus.hazard)}
-              </p>
-            </section>
-            {contextNote && (
-              <section>
-                <h3>{t('During this mission', 'Dans cette mission')}</h3>
-                <p>{t(contextNote)}</p>
-              </section>
-            )}
-          </details>
+          <section className="hz-guide-note hz-zone-note">
+            <h3>
+              <IconInfo size={18} aria-hidden="true" />
+              {t('Why it matters in space', 'Pourquoi le suivre dans l’espace')}
+            </h3>
+            <p>{t(meta.why)}</p>
+            <dl className="hz-guide-definitions hz-zone-context">
+              <div>
+                <dt>{t('NASA risk', 'Risque étudié par la NASA')}</dt>
+                <dd>{t(zoneStatus.hazard)}</dd>
+              </div>
+              {contextNote && (
+                <div>
+                  <dt>{t('During this mission', 'Dans cette mission')}</dt>
+                  <dd>{t(contextNote)}</dd>
+                </div>
+              )}
+            </dl>
+          </section>
           {thresholds && (
             <details className="hz-help-answer">
               <summary>{t('All colour rules', 'Toutes les règles de couleur')}</summary>
@@ -150,15 +170,17 @@ export function ZoneDetailPanel({
                   'Lecture dans l’ordre : la première règle applicable donne la couleur. Ces règles n’ont pas de validation médicale.',
                 )}
               </p>
-              {meta.indicators
-                .filter((key) => thresholds[key]?.rules?.length)
-                .map((key) => (
-                  <ThresholdGuide
-                    key={key}
-                    label={t(INDICATOR_LABELS[key] ?? key)}
-                    config={thresholds[key]}
-                  />
-                ))}
+              <div className="hz-threshold-rules">
+                {meta.indicators
+                  .filter((key) => thresholds[key]?.rules?.length)
+                  .map((key) => (
+                    <ThresholdGuide
+                      key={key}
+                      label={t(INDICATOR_LABELS[key] ?? key)}
+                      config={thresholds[key]}
+                    />
+                  ))}
+              </div>
             </details>
           )}
         </div>

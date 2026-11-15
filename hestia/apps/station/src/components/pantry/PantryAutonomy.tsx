@@ -5,6 +5,8 @@ import {
   DetailSheet,
   FoodIcon,
   MissionIllustration,
+  MissionBrief,
+  MissionHeading,
   IconClock,
   IconCargo,
   IconCheck,
@@ -35,13 +37,13 @@ function MissionProjection({
       <div className="pantry-stage-heading">
         <IconClock size={22} />
         <div>
-          <h2>
+          <h2>{t('Estimated food autonomy', 'Autonomie alimentaire estimée')}</h2>
+          <p>
             {t(
-              `Mission projection ×${pantry?.units_per_lot ?? '…'}`,
-              `Projection de mission ×${pantry?.units_per_lot ?? '…'}`,
+              `Demo projection ×${pantry?.units_per_lot ?? '…'}`,
+              `Projection de démo ×${pantry?.units_per_lot ?? '…'}`,
             )}
-          </h2>
-          <p>{t('Simulated duration at the selected scale.', 'Durée simulée à l’échelle choisie.')}</p>
+          </p>
         </div>
       </div>
       {pantry ? (
@@ -85,11 +87,12 @@ function MissionProjection({
                   <div>
                     <dt>
                       {margin >= 0
-                        ? t('Margin after supply', 'Marge au ravitaillement')
+                        ? t('Days left at supply', 'Réserve à l’arrivée')
                         : t('Shortfall', 'Manque estimé')}
                     </dt>
                     <dd data-short={margin < 0 || undefined}>
-                      {Math.floor(Math.abs(margin))} <small>{t('days', 'jours')}</small>
+                      {margin < 0 ? Math.ceil(-margin) : Math.floor(margin)}{' '}
+                      <small>{t('days', 'jours')}</small>
                     </dd>
                   </div>
                 </dl>
@@ -113,12 +116,21 @@ function MissionProjection({
                     `${reviewCount} uncertain count${reviewCount === 1 ? '' : 's'}`,
                     `${reviewCount} quantité${reviewCount === 1 ? '' : 's'} incertaine${reviewCount === 1 ? '' : 's'}`,
                   )
-                : t('Review the counts behind this estimate', 'Vérifier les quantités de cette estimation')}
+                : t('Based on the recorded stock', 'À partir du stock enregistré')}
             </p>
             <Button size="sm" onClick={onReview}>
               {t('Review inventory', 'Vérifier le stock')}
             </Button>
           </div>
+          <p className="pantry-projection-note">
+            <strong>
+              {t('Demo scale:', 'Échelle de démo :')} ×{pantry.units_per_lot}.
+            </strong>{' '}
+            {t(
+              'Each counted package represents this many catalogue units. These days are simulated, not the actual food in the photo. The supply date is also an assumption.',
+              'Chaque emballage représente autant d’unités du catalogue. Ces jours sont simulés, pas les réserves réelles de la photo. La date de ravitaillement est aussi une hypothèse.',
+            )}
+          </p>
           <details className="pantry-details">
             <summary>{t('Autonomy by nutrient', 'Autonomie par nutriment')}</summary>
             <div>
@@ -321,15 +333,10 @@ export function PantryAutonomy(
       </div>
       {projection && (
         <DetailSheet
-          title={`${t(projection.label)} · ${t('simulation', 'simulation')}`}
+          title={t('Mission reserves', 'Réserves de la mission')}
           onClose={() => setProjection(null)}
         >
-          <p>
-            {t(
-              'These days and calories use the demo multiplier. They do not describe the contents of your photograph.',
-              'Ces jours et calories utilisent le multiplicateur de démo. Ils ne représentent pas le contenu de votre photo. La mission active ne change pas.',
-            )}
-          </p>
+          <MissionHeading context={projection} />
           <MissionProjection
             {...props}
             context={projection}
@@ -346,6 +353,12 @@ export function PantryAutonomy(
           >
             {t('Simulate a supply delay', 'Simuler un retard de ravitaillement')}
           </Button>
+          <details className="pantry-details">
+            <summary>{t('Mission objective & constraints', 'Objectif et contraintes de la mission')}</summary>
+            <div>
+              <MissionBrief context={projection} />
+            </div>
+          </details>
         </DetailSheet>
       )}
     </Panel>

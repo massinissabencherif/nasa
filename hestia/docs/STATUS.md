@@ -4,6 +4,30 @@ Last update: 15 Nov 2026. This file says what
 works, how it was checked, and what is still open. Decisions are in
 [decisions.md](decisions.md).
 
+## 15 Nov — combined delivery verification
+
+David approved `feat: clarify mission settings, check-ins and reaction results`
+and publication on main. The UI lot is rebased onto Massi's `222076d`; the
+Pantry simulator navigation and both agents' status notes are retained.
+
+**Combined checks on David's Mac:** 101 backend tests and 27 frontend tests pass;
+both apps build; full Oxlint exits successfully with 10 existing warnings;
+merged Pantry formatting, diff checks and offline-source check pass. Large JS
+chunks and one Starlette test-client deprecation warning remain. Browser smoke
+checks the report API, Pantry → Management simulator → first guided step,
+mission settings and rebuilt crew check-in. No health/report test record is
+created by the browser smoke check; pytest uses its own temporary database.
+
+The 8011 preview was restarted on `0.0.0.0` with the same existing database,
+after a SQLite backup at `/private/tmp/hestia-before-simulator-integration.db`.
+It now exposes simulation reports too; no reset. Physical camera/products and
+full phone save/meal/photo rehearsal remain unverified. PWA/tablet finishing is
+deferred by David to focus on the 18:30 presentation. This delivery does not
+include unpublished Earth work; Massi is continuing that scope.
+
+Git is the source for the final commit/publication state; earlier branch and
+"uncommitted" statements below are dated snapshots.
+
 ## 15 Nov — management simulator (Massi, branch `feat/management-simulator`)
 
 - The What-if simulator becomes the **Management simulator**: five confirmed
@@ -31,6 +55,91 @@ works, how it was checked, and what is still open. Decisions are in
 - **Not checked:** keyboard path, screen reader, real Tauri window, phone
   widths (the station sends phones to the crew app). A demo reset drops the
   report history.
+## 15 Nov, afternoon — mission context, compact settings and check-in
+
+**Codex delivery: `feat: clarify mission settings, check-ins and reaction results`.**
+David approved this exact commit message and publication on main. Integration
+retains Massi’s published management simulator (`222076d`), including the Pantry
+entry point. Check Git for the resulting commit and publication state.
+David approved mission explanations/stable selection, then requested a more compact
+layout and an astronaut helmet for Crew. The four mission choices now explain
+where the crew lives; Earth round-trip time and supply date precede the scenario
+objective. Demo provenance sits below the QR. Pantry shows autonomy and the supply
+gap before optional mission explanations; the multiplier remains explicit.
+
+Selecting the already active mission sends no request. Confirmation/error feedback
+stays inside the mission card. Sheets enter as opaque surfaces, with existing
+slide/exit motion and reduced-motion support. The reported white frame was not
+reproduced in Chrome; this does not certify Safari or Tauri rendering.
+
+The already approved check-in pass groups existing measures, adds shared measure
+icons and translates the review/result. Saved, attention and missing-data states
+are distinct. Payloads, engines, thresholds and reaction protocol are unchanged.
+
+**Checks:** both frontend builds; focused lint (existing icon-file hot-refresh
+warnings remain); four check-in flow tests; Chrome phone 320/390, tablet 820,
+station 1024/1280. Intercepted mission changes, failure and retry, keyboard focus,
+reduced motion and FR/EN check-in paths. At 1280×800 settings have 23px residual
+scroll, with mission facts and QR visible. See [evidence and captures](design/2026-11-15/mission-checkin-clarity.md).
+No database reset or real test POST; no broad backend rerun for presentation changes.
+
+**Phone access confirmed by David:** current API 8011 was restarted on `0.0.0.0`
+with the same temporary database. `http://10.184.21.92:8011/crew/` opens on his
+phone; station preview is `http://127.0.0.1:1422/`. The LAN address may change.
+The full phone save/meal/photo journey and offline-network rehearsal are still open.
+The older 8010 process is separate and was not repaired/restarted in this task.
+
+**Ownership:** David says Massi is working on guided Simulator and simulation
+history. Do not edit that scope. Pantry's delay callback remains unchanged.
+Claude's Earth-link worktree exists separately; its work is not imported here.
+
+**Next:** real products/camera and end-to-end phone rehearsal; reconcile NASA
+submission/pitch with the final features; remaining history/page polish from the
+[request register](sources/2026-11-15-interactions-and-evidence.md#next-work-in-order).
+David prioritises the local presentation at 18:30; PWA and tablet finishing are
+explicitly deferred. Onboarding remains optional. Reliable offline PWA behaviour
+is not implemented by this pass.
+Existing install icon/standalone manifest is not a tested phone installation.
+
+## 15 Nov, midday — reaction results and zone explanations
+
+**Historical pre-delivery check on `fix/reaction-zone-clarity`.** David approved
+this UI-only lot, then requested vertical trial bars and an almost single-screen
+result. Reaction results now prioritise the median, counts, a short personal
+comparison, the graph and return/restart actions. Detailed interpretation is
+optional; the non-diagnostic limit stays visible. Shared views handle complete,
+incomplete, empty and reference-building states in FR/EN. Existing long protocols
+keep horizontal bars rather than crowding 15 columns onto a phone.
+
+Body explanations separate what sets the colour, the compact demo reference
+table, a Guide-style space-context note and optional complete rules. Rule units
+sit alongside headings. No engine, threshold, protocol, storage or animation change.
+
+**Checked:** both frontend builds, lint on touched components, formatting and
+Chrome at 320/390px for reaction results, 390/820/1180/1440px for zone layouts.
+At 390×844 the normal five-trial result and its actions are visible without
+scrolling; the main area has 4px of residual scroll. Reference/edge-state checks
+use intercepted responses, not new real observations. Seeded status/history reads
+use the disposable API database. No backend suite rerun for presentation-only work.
+See [screens and verification](design/2026-11-15/result-zone-clarity.md).
+
+Preview: station restarted on IPv4 `http://127.0.0.1:1422/#/earth` at David's
+request; API remains on 8011 with the same disposable database. Crew remains
+`http://127.0.0.1:8011/crew/`. The previous IPv6-only Vite listener was replaced;
+this is a preview-process change, not a source/network deployment change.
+
+**Still open:** physical tablet/phone and shelf rehearsal, check-in form/result
+polish, some raw server-error translations, and bundle size (~830/859kB). This is
+not a complete tablet certification or a redesign of the check-in form. External
+Claude's next task is not confirmed; Earth-link verification is a suggested
+independent scope. Do not overlap this branch's shared UI/result files.
+
+**Timing:** David's 18:00 target is internal readiness. An organiser exchange he
+pasted says the first local presentation starts at 18:30; the team's own slot,
+local presentation language and any local file requirements still need the
+organisers' morning instructions. Aim for a stable demo, a hardware rehearsal,
+the five-minute pitch, short submission media and reconciled NASA project text
+before 18:00. This does not change the separate online submission deadline.
 
 ## Current handover — 15 Nov, before David's sleep
 
