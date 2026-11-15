@@ -110,21 +110,45 @@ export function useMissionContext(): MissionContext | null {
   return usePolled(() => api.getContext(), [api]).data;
 }
 
-export function useMeasurements(id: number | null, type: string, days = 30): Measurement[] {
+/** Keep the response tied to its query so a previous value never gets a new unit. */
+export function useMeasurementState(id: number | null, type: string, days = 30) {
   const api = useApi();
-  const [data, setData] = useState<Measurement[]>([]);
+  const [revision, setRevision] = useState(0);
+  const [result, setResult] = useState<{
+    api: typeof api;
+    id: number;
+    type: string;
+    days: number;
+    revision: number;
+    data: Measurement[] | null;
+    error: boolean;
+  } | null>(null);
   useEffect(() => {
     if (id == null) return;
     let cancelled = false;
+    const query = { api, id, type, days, revision };
     api
       .getMeasurements(id, { type, days })
-      .then((rows) => !cancelled && setData(rows))
-      .catch(() => {});
+      .then((data) => {
+        if (!cancelled) setResult({ ...query, data, error: false });
+      })
+      .catch(() => {
+        if (!cancelled) setResult({ ...query, data: null, error: true });
+      });
     return () => {
       cancelled = true;
     };
-  }, [api, id, type, days]);
-  return data;
+  }, [api, id, type, days, revision]);
+  const current =
+    result?.api === api &&
+    result.id === id &&
+    result.type === type &&
+    result.days === days &&
+    result.revision === revision
+      ? result
+      : null;
+  const refresh = useCallback(() => setRevision((value) => value + 1), []);
+  return { data: current?.data ?? null, error: current?.error ?? false, refresh };
 }
 
 export function useLatestMeasurements(id: number | null): LatestMeasurements | null {

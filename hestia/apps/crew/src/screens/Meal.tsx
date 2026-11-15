@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
-import { Button, FoodIcon, IconCheck, LoadingState, LoadError, Panel, t } from '@hestia/ui';
+import { Button, FoodIcon, IconCheck, LoadingState, LoadError, Panel, dateLocale, t } from '@hestia/ui';
 import { useApi } from '../lib/ApiProvider';
+import './meal.css';
 import { useMealProposal, useSelectedCrewId } from '../lib/hooks';
 
 export function Meal() {
@@ -36,7 +37,7 @@ export function Meal() {
 
   if (!proposal)
     return (
-      <div className="hz-home">
+      <div className="hz-home meal-page">
         {loadError ? (
           <LoadError
             label={t('Stock could not load.', 'Impossible de charger le stock.')}
@@ -54,17 +55,18 @@ export function Meal() {
   const suggestionKcal = proposal.suggestion.reduce((sum, item) => sum + item.kcal, 0);
 
   return (
-    <div className="hz-home">
+    <div className="hz-home meal-page">
       <h1>{t('Meals', 'Repas')}</h1>
       <section className="hz-meal-progress" aria-label={t('Today', 'Aujourd’hui')}>
         <div>
           <span>{t('Logged today', 'Enregistré aujourd’hui')}</span>
           <strong>
-            {Math.round(proposal.kcal_eaten_today)} <small>kcal</small>
+            {Math.round(proposal.kcal_eaten_today).toLocaleString(dateLocale())} <small>kcal</small>
           </strong>
         </div>
         <p>
-          {t('Estimated need:', 'Besoin estimé :')} {Math.round(proposal.daily_need_kcal)} kcal
+          {t('Estimated need:', 'Besoin estimé :')}{' '}
+          {Math.round(proposal.daily_need_kcal).toLocaleString(dateLocale())} kcal
         </p>
         <progress
           max="100"
@@ -84,22 +86,23 @@ export function Meal() {
         </details>
       </section>
 
-      <div aria-live="polite" aria-atomic="true">
-        {receipt.length > 0 && (
-          <div className="hz-meal-receipt">
-            <IconCheck size={18} aria-hidden="true" />
-            <p>
-              <strong>{t('Recorded:', 'Enregistré :')}</strong> {receipt.map((name) => t(name)).join(' + ')}.{' '}
-              {t('One portion of each.', 'Une portion de chaque.')}
-            </p>
-          </div>
-        )}
-      </div>
+      {receipt.length > 0 && (
+        <div className="hz-meal-receipt" role="status" aria-live="polite" aria-atomic="true">
+          <IconCheck size={18} aria-hidden="true" />
+          <p>
+            <strong>{t('Recorded:', 'Enregistré :')}</strong> {receipt.map((name) => t(name)).join(' + ')}.{' '}
+            {t(
+              'One catalogue unit of each deducted from expected stock.',
+              'Une unité du catalogue de chaque aliment déduite du stock prévu.',
+            )}
+          </p>
+        </div>
+      )}
       {error && (
         <p role="alert" className="assessment-notice">
           {t(
-            'Recording was interrupted. Confirmed portions are listed above. Refresh and check before trying again.',
-            'L’enregistrement a été interrompu. Les portions confirmées sont indiquées ci-dessus. Actualisez et vérifiez avant de réessayer.',
+            'Recording was interrupted. Confirmed units are listed above. Refresh and check before trying again.',
+            'L’enregistrement a été interrompu. Les unités confirmées sont indiquées ci-dessus. Actualisez et vérifiez avant de réessayer.',
           )}
         </p>
       )}
@@ -124,13 +127,14 @@ export function Meal() {
             ))}
           </div>
           <p className="hz-meal-caption">
-            {Math.round(suggestionKcal)} kcal ·{' '}
-            {t('1 portion of each · from recorded stock', '1 portion de chaque · selon le stock enregistré')}
+            {Math.round(suggestionKcal).toLocaleString(dateLocale())} kcal ·{' '}
+            {t('1 unit of each · from recorded stock', '1 unité de chaque · selon le stock enregistré')}
           </p>
           <Button
             variant="primary"
             size="lg"
-            disabled={eating != null}
+            loading={eating === 'suggestion'}
+            disabled={eating != null || loadError}
             onClick={() => eat(proposal.suggestion, 'suggestion')}
           >
             {eating === 'suggestion'
@@ -140,12 +144,21 @@ export function Meal() {
         </Panel>
       )}
 
+      <details className="hz-help-answer meal-unit-guide">
+        <summary>{t('1 unit = a catalogue package', '1 unité = un emballage du catalogue')}</summary>
+        <p className="hz-meal-caption">
+          {t(
+            'One unit uses the catalogue’s nutrition values, entered per whole package. It is not a personalised serving. The mission demo multiplier creates virtual units: it does not add real food. Logging an individual food subtracts one unit; a scan only counts packages.',
+            'Une unité utilise les valeurs du catalogue, saisies pour un emballage entier. Ce n’est pas une portion adaptée à la personne. Le multiplicateur de mission crée des unités virtuelles, sans ajouter d’aliments réels. Enregistrer un aliment retire une unité ; un scan compte les emballages.',
+          )}
+        </p>
+      </details>
       <section className="hz-food-section">
         <h2>{t('Choose from the reserve', 'Choisir dans la réserve')}</h2>
         <p className="hz-meal-caption">
           {t(
-            'Based on the latest recorded inventory: scan, correction or simulation. Counts are estimates until checked.',
-            'D’après le dernier inventaire : scan, correction ou simulation. Les quantités restent des estimations avant vérification.',
+            'Choose food you actually consumed, then record it. The list comes from the station’s recorded inventory.',
+            'Choisissez ce que vous avez consommé, puis enregistrez-le. La liste vient de l’inventaire de la station.',
           )}
         </p>
         {proposal.available.length === 0 ? (
@@ -163,35 +176,42 @@ export function Meal() {
                 <div className="hz-food-description">
                   <h3>{t(item.name)}</h3>
                   <p>
-                    <strong>{item.kcal} kcal</strong> · {t('per demo portion', 'par portion de démo')}
+                    <strong>{item.kcal.toLocaleString(dateLocale())} kcal</strong> ·{' '}
+                    {t('per catalogue unit', 'par unité du catalogue')}
                   </p>
                   <p>
-                    {item.available_portions} {t('portions remaining', 'portions restantes')}
+                    {item.available_count.toLocaleString(dateLocale())}{' '}
+                    {t('packages counted', 'emballages comptés')}
                   </p>
                 </div>
+                <Button
+                  loading={eating === item.food_item_id}
+                  disabled={eating != null || loadError}
+                  onClick={() => eat([item], item.food_item_id)}
+                >
+                  {eating === item.food_item_id
+                    ? t('Recording…', 'Enregistrement…')
+                    : t('Log 1 unit', 'Enregistrer 1 unité')}
+                </Button>
                 <details className="hz-food-macros">
                   <summary>{t('Nutritional details', 'Détail nutritionnel')}</summary>
+                  <p className="meal-unit-note">
+                    {item.available_portions.toLocaleString(dateLocale())}{' '}
+                    {t(
+                      'catalogue units left in the projection.',
+                      'unités du catalogue restantes dans la projection.',
+                    )}
+                  </p>
                   <p>
                     {t('Protein', 'Protéines')} {item.protein_g} g · {t('Carbs', 'Glucides')} {item.carbs_g} g
                     · {t('Fat', 'Lipides')} {item.fat_g} g
                   </p>
                 </details>
-                <Button disabled={eating != null} onClick={() => eat([item], item.food_item_id)}>
-                  {eating === item.food_item_id
-                    ? t('Recording…', 'Enregistrement…')
-                    : t('Log 1 portion', 'Enregistrer 1 portion')}
-                </Button>
               </article>
             ))}
           </div>
         )}
       </section>
-      <p className="hz-meal-caption">
-        {t(
-          'Demo catalogue: nutrition values and the conversion from boxes to portions are simulated. Logging a meal deducts its portions from the expected stock; scanning the shelf does not log a meal.',
-          'Catalogue de démo : valeurs nutritionnelles et conversion des boîtes en portions simulées. Enregistrer un repas déduit ses portions du stock prévu ; scanner la réserve n’enregistre pas un repas.',
-        )}
-      </p>
     </div>
   );
 }

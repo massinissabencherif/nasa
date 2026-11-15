@@ -4,6 +4,22 @@ Last update: 15 Nov 2026. This file says what
 works, how it was checked, and what is still open. Decisions are in
 [decisions.md](decisions.md).
 
+## 15 Nov — History/Meal delivery integrated with Massi's Earth and photo QR
+
+Delivery rebases the approved `fix: keep history readings consistent and clarify
+meal logging` onto `bf214a8` (Earth wait/onboard plan, reply texts and direct-phone
+photo QR). Only STATUS needed a conflict resolution; both histories are retained.
+Combined verification on David's Mac: **108 backend tests, 27 frontend tests,
+both builds pass**. Formatting, offline-source and diff checks pass. Existing
+large-bundle and Starlette deprecation warnings remain. Browser integration
+checks direct-photo QR without a selected profile and Earth screen rendering;
+full Earth scenario/physical phone/camera rehearsal is handed to Massi.
+
+Preview :8011 restarted with the same DB (backed up before restart), no reset;
+new Earth routes and photo URL are loaded. Ollama remains local. Git establishes
+the final commit/publication state. Do not assume the separate old Earth branch
+still needs importing: its published successor is included here.
+
 ## 15 Nov — Earth link: the wait has content (Massi, branch `feat/earth-link-waiting`)
 
 - Includes David's `fix/earth-link-check` commit (cherry-picked, signed).
@@ -24,6 +40,43 @@ works, how it was checked, and what is still open. Decisions are in
   (FR, 1470 px): report, tick, new reading, preview, send, +40 min, reply,
   critical value banner. **Not checked:** the crew phone, the Tauri window,
   keyboard-only use. The rule texts themselves stay in English.
+## 15 Nov, 15:05 — History/Meal clarity and Ollama restart
+
+**Delivery on `fix/meal-history-clarity`:** David approved the exact message
+`fix: keep history readings consistent and clarify meal logging`. Check Git for
+the final commit/publication state. David approved
+this lot and the Claude whole-flow checklist. A delayed History request exposed
+an actual mismatch: switching from blood pressure to weight temporarily displayed
+118 kg. Responses now remain tied to API/profile/indicator/range/retry; loading,
+failure and empty data are distinct, with no previous-query values rendered.
+The indicator picker opens a shared sheet; current value/date/origin and the two
+named blood-pressure series are visible before secondary explanations.
+
+Meal cards put logging before optional details, show counted packages and label
+catalogue units explicitly. A unit uses whole-package catalogue values; this is
+not a personalised serving. Projected units remain in details. Saving receipt
+lists only successfully recorded foods after a partial failure; error/loading
+states remain explicit. Logging is disabled while known inventory refresh fails.
+No backend/nutrition/threshold changes, no model or schema dependency added.
+
+**Checked:** crew build, 16 existing crew tests, focused lint (one pre-existing
+hook warning), formatting/offline/diff checks; Chrome FR 390 and EN 320, picker
+keyboard/Escape/focus + reduced motion. Intercepted slow/racing History responses,
+failure/retry/empty; meal partial-save and failed-load retry. Browser mutations
+were intercepted; real preview data was read only. No redundant backend or station
+build rerun for this crew-only lot. [Screens and verification](design/2026-11-15/history-meal-clarity.md).
+
+**Ollama restarted at David's request:** local server :11434, existing
+`qwen2.5vl:7b` model answered `Ready.` and `/api/station/info` reports running,
+installed and loaded. Warmed for 30 minutes from that request; no download,
+photo scan, stock mutation or new accuracy claim. Keep the local process alive.
+
+**Handoff:** [Claude's complete flow-review brief](prompt/2026-11-15-claude-parcours-avant-jury-fr.md)
+is prepared, not sent. Its priorities are presentation blockers, misunderstandings
+and hardware rehearsal before 18:30. PWA/tablet finishing remains deferred;
+David now hands the full flow review and demo-scenario rehearsal to Massi, who
+also owns Simulator/Earth work. The Claude checklist is reusable by Massi or his
+agent; it has not been sent externally. This lot does not import unpublished work.
 
 ## 15 Nov — combined delivery verification
 

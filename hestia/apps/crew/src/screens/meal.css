@@ -1,0 +1,46 @@
+/* Meal actions stay above optional nutrition details. */
+.meal-page > h1 {
+  font-size: var(--text-xl);
+  font-weight: 600;
+}
+.meal-page .hz-panel-body > .hz-btn {
+  width: 100%;
+}
+.meal-page .hz-meal-suggestion {
+  justify-content: flex-start;
+  margin-bottom: var(--space-2);
+}
+.meal-page .hz-meal-suggestion > div {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+}
+.meal-page .hz-meal-suggestion .hz-food-icon {
+  width: 32px;
+  height: 32px;
+}
+.meal-page .hz-food-card {
+  padding: var(--space-3);
+}
+.meal-page .hz-food-icon {
+  width: 40px;
+  height: 40px;
+}
+.meal-page .hz-food-macros summary {
+  min-height: 36px;
+}
+.meal-page .hz-food-card > .hz-btn {
+  margin-top: var(--space-1);
+}
+.meal-page .hz-meal-caption {
+  margin-bottom: 0;
+}
+.meal-page .meal-unit-guide p {
+  padding: var(--space-3);
+  background: var(--panel-raised);
+  border-radius: var(--radius-md);
+}
+.meal-unit-note {
+  margin-bottom: var(--space-2);
+}

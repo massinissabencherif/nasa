@@ -23,6 +23,8 @@ on `fix/reaction-zone-clarity`; current scope and limits are at the top of [STAT
 
 Afternoon UI pass: [mission explanations, compact settings and check-in](design/2026-11-15/mission-checkin-clarity.md). Phone opening over LAN is confirmed; full hardware rehearsal remains open.
 
+Before-jury flow review: [ready-to-send Claude checklist](prompt/2026-11-15-claude-parcours-avant-jury-fr.md). Prepared, not sent; coordinate with Massi's Simulator/Earth work.
+
 ## Reference
 
 | Document | What it answers |

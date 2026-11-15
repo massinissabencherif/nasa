@@ -93,6 +93,16 @@ interfaces and the server without Wi-Fi. Only reaction sessions have a local
 pending-sync queue; ordinary check-ins are not independently usable offline.
 Labels now say local server/station. The Earth link and replies are simulated.
 
+## 15 Nov afternoon updates
+
+D46–D48 finish the approved reaction result, zone explanations, mission context
+and check-in scope; see STATUS. D49 now finishes the focused History/Meal pass,
+including the reproduced wrong-unit loading defect. Larger page/style/translation
+items below remain an open inventory, not a claim that these specific corrections
+are still undone. [Full flow checklist for Claude](../prompt/2026-11-15-claude-parcours-avant-jury-fr.md)
+is ready but unsent. PWA/tablet work is deferred for the 18:30 presentation.
+Ollama was restarted and its existing model warmed; no new photo benchmark run.
+
 ## Every request, with its real state
 
 | Request | State now | What remains |

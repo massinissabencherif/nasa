@@ -349,6 +349,13 @@ says nothing about the code.
   no new symptom semantics, thresholds or questionnaire. Review and saved-state
   copy are FR/EN. See [verification](design/2026-11-15/mission-checkin-clarity.md).
 
+- **D49 (implemented and browser-checked, 15 Nov):** David approves a
+  rapid History/Meal clarity pass and a whole-flow checklist for Claude before
+  the 18:30 presentation. History must distinguish query loading, empty and
+  failed responses, never relabel previous-query values. Meal labels distinguish
+  counted packages and catalogue units; existing nutrition rules are preserved.
+  PWA/tablet finishing stays deferred. Branch `fix/meal-history-clarity`.
+
 ## Proposed, not decided
 
 | # | Idea | State |
