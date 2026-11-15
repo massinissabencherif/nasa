@@ -8,6 +8,7 @@ import type {
 import {
   Button,
   DetailSheet,
+  LoadError,
   IconCheck,
   LEVEL_META,
   Input,
@@ -68,6 +69,7 @@ export function ForecastsScreen() {
   const [baseline, setBaseline] = useState<ForecastResponse | null>(null);
   const [inputs, setInputs] = useState<ForecastParams | null>(null);
   const [reports, setReports] = useState<SimulationReportSummary[] | null>(null);
+  const [reportsError, setReportsError] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
   const [requestedPage, setPage] = useState(0);
@@ -89,8 +91,11 @@ export function ForecastsScreen() {
       .catch((err) => setError(err instanceof Error ? err.message : String(err)));
     api
       .listSimulationReports()
-      .then(setReports)
-      .catch(() => setReports([]));
+      .then((value) => {
+        setReports(value);
+        setReportsError(false);
+      })
+      .catch(() => setReportsError(true));
   }, [tick, context?.type, context?.next_resupply_in_days]);
 
   const nextCargo = baseline?.context.next_resupply_in_days ?? null;
@@ -148,115 +153,133 @@ export function ForecastsScreen() {
           alignItems: 'stretch',
         }}
       >
-      <Panel title={t('How it works', 'Comment ça marche')} bodyStyle={{ display: 'flex' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', flex: 1 }}>
-          <p style={{ maxWidth: '68ch' }}>
-            {t(
-              'Earth answers in minutes and the next cargo is months away, so the crew decides alone. In five short steps, describe a situation; HESTIA then writes a report on what it does to the food stock, body weight, bone mass and radiation dose until the end of the period.',
-              'La Terre répond en plusieurs minutes et le prochain cargo est dans des mois : l’équipage décide seul. En cinq étapes courtes, décrivez une situation ; HESTIA rédige ensuite un rapport sur ses effets sur la réserve, le poids, la masse osseuse et la dose de radiation jusqu’à la fin de la période.',
-            )}
-          </p>
-          <p style={{ ...muted, maxWidth: '68ch' }}>
-            {t(
-              'Every step starts from today’s mission and stock; change only what your situation changes. Simulation on NASA reference values and flagged assumptions — not a prediction for a real person, not a medical device.',
-              'Chaque étape part de la mission et du stock actuels : ne modifiez que ce que votre situation change. Simulation sur des valeurs de référence NASA et des hypothèses signalées : ce n’est ni une prédiction pour une vraie personne, ni un dispositif médical.',
-            )}
-          </p>
-          <ol
-            aria-label={t('The five steps', 'Les cinq étapes')}
-            style={{ display: 'grid', gap: 'var(--space-1)', listStyle: 'none', padding: 0, margin: 0 }}
-          >
-            {STEPS.map((step, i) => (
-              <li key={step} style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'baseline', ...muted }}>
-                <span style={{ ...figure, color: 'var(--accent)', minWidth: '1.5ch' }}>{i + 1}</span>
-                <span style={{ color: 'var(--text)' }}>{STEP_TITLE[step]()}</span>
-              </li>
-            ))}
-          </ol>
-          {error && (
-            <p role="alert" style={{ color: 'var(--red-ink)' }}>
-              {error}
+        <Panel title={t('How it works', 'Comment ça marche')} bodyStyle={{ display: 'flex' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', flex: 1 }}>
+            <p style={{ maxWidth: '68ch' }}>
+              {t(
+                'Earth answers in minutes and the next cargo is months away, so the crew decides alone. In five short steps, describe a situation; HESTIA then writes a report on what it does to the food stock, body weight, bone mass and radiation dose until the end of the period.',
+                'La Terre répond en plusieurs minutes et le prochain cargo est dans des mois : l’équipage décide seul. En cinq étapes courtes, décrivez une situation ; HESTIA rédige ensuite un rapport sur ses effets sur la réserve, le poids, la masse osseuse et la dose de radiation jusqu’à la fin de la période.',
+              )}
             </p>
-          )}
-          <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', marginTop: 'auto' }}>
-            <Button variant="primary" disabled={!baseline} onClick={() => start(defaultInputs(nextCargo))}>
-              {t('Start a simulation', 'Lancer une simulation')}
-            </Button>
-            {nextCargo != null && (
-              <Button disabled={!baseline} onClick={() => start(demoInputs(nextCargo))}>
-                {t('Example: the cargo is 90 days late', 'Exemple : le cargo a 90 jours de retard')}
-              </Button>
-            )}
-          </div>
-        </div>
-      </Panel>
-
-      <Panel title={t('Report history', 'Historique des rapports')}>
-        {reports == null ? (
-          <p style={muted}>{t('Loading…', 'Chargement…')}</p>
-        ) : reports.length === 0 ? (
-          <p style={muted}>
-            {t(
-              'No report yet. Each simulation you complete is kept here, with the inputs you confirmed.',
-              'Aucun rapport pour l’instant. Chaque simulation terminée est conservée ici, avec les valeurs confirmées.',
-            )}
-          </p>
-        ) : (
-          <ul style={{ display: 'grid', gap: 'var(--space-2)', listStyle: 'none', padding: 0, margin: 0 }}>
-            {reports.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((r) => (
-              <li key={r.id}>
-                <button
-                  type="button"
-                  onClick={() => setView({ kind: 'report', id: r.id })}
-                  className="hz-control"
-                  style={{
-                    width: '100%',
-                    display: 'grid',
-                    gridTemplateColumns: 'minmax(0, 1fr) auto',
-                    gap: 'var(--space-3)',
-                    alignItems: 'center',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    minHeight: 44,
-                  }}
+            <p style={{ ...muted, maxWidth: '68ch' }}>
+              {t(
+                'Every step starts from today’s mission and stock; change only what your situation changes. Simulation on NASA reference values and flagged assumptions — not a prediction for a real person, not a medical device.',
+                'Chaque étape part de la mission et du stock actuels : ne modifiez que ce que votre situation change. Simulation sur des valeurs de référence NASA et des hypothèses signalées : ce n’est ni une prédiction pour une vraie personne, ni un dispositif médical.',
+              )}
+            </p>
+            <ol
+              aria-label={t('The five steps', 'Les cinq étapes')}
+              style={{ display: 'grid', gap: 'var(--space-1)', listStyle: 'none', padding: 0, margin: 0 }}
+            >
+              {STEPS.map((step, i) => (
+                <li
+                  key={step}
+                  style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'baseline', ...muted }}
                 >
-                  <span style={{ display: 'grid', gap: 2 }}>
-                    <strong>
-                      {t('Report', 'Rapport')} #{r.id} · {t(r.context_label)}
-                    </strong>
-                    <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                      {when(r.created_ts)} · {inputsLine(r.inputs)}
+                  <span style={{ ...figure, color: 'var(--accent)', minWidth: '1.5ch' }}>{i + 1}</span>
+                  <span style={{ color: 'var(--text)' }}>{STEP_TITLE[step]()}</span>
+                </li>
+              ))}
+            </ol>
+            {error && (
+              <p role="alert" style={{ color: 'var(--red-ink)' }}>
+                {error}
+              </p>
+            )}
+            <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', marginTop: 'auto' }}>
+              <Button variant="primary" disabled={!baseline} onClick={() => start(defaultInputs(nextCargo))}>
+                {t('Start a simulation', 'Lancer une simulation')}
+              </Button>
+              {nextCargo != null && (
+                <Button disabled={!baseline} onClick={() => start(demoInputs(nextCargo))}>
+                  {t('Example: the cargo is 90 days late', 'Exemple : le cargo a 90 jours de retard')}
+                </Button>
+              )}
+            </div>
+          </div>
+        </Panel>
+
+        <Panel title={t('Report history', 'Historique des rapports')}>
+          {reportsError && (
+            <LoadError
+              label={
+                reports?.length
+                  ? t(
+                      'Report history could not refresh. Displayed reports may be outdated.',
+                      'Actualisation de l’historique impossible. Les rapports affichés peuvent être anciens.',
+                    )
+                  : t('Report history could not load.', 'Impossible de charger l’historique des rapports.')
+              }
+              onRetry={() => setTick((value) => value + 1)}
+            />
+          )}
+          {reports == null ? (
+            !reportsError && <p style={muted}>{t('Loading…', 'Chargement…')}</p>
+          ) : reports.length === 0 ? (
+            !reportsError && (
+              <p style={muted}>
+                {t(
+                  'No report yet. Each simulation you complete is kept here, with the inputs you confirmed.',
+                  'Aucun rapport pour l’instant. Chaque simulation terminée est conservée ici, avec les valeurs confirmées.',
+                )}
+              </p>
+            )
+          ) : (
+            <ul style={{ display: 'grid', gap: 'var(--space-2)', listStyle: 'none', padding: 0, margin: 0 }}>
+              {reports.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((r) => (
+                <li key={r.id}>
+                  <button
+                    type="button"
+                    onClick={() => setView({ kind: 'report', id: r.id })}
+                    className="hz-control"
+                    style={{
+                      width: '100%',
+                      display: 'grid',
+                      gridTemplateColumns: 'minmax(0, 1fr) auto',
+                      gap: 'var(--space-3)',
+                      alignItems: 'center',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      minHeight: 44,
+                    }}
+                  >
+                    <span style={{ display: 'grid', gap: 2 }}>
+                      <strong>
+                        {t('Report', 'Rapport')} #{r.id} · {t(r.context_label)}
+                      </strong>
+                      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                        {when(r.created_ts)} · {inputsLine(r.inputs)}
+                      </span>
                     </span>
-                  </span>
-                  <FoodBadge summary={r.summary} />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {reports != null && pageCount > 1 && (
-          <nav
-            aria-label={t('Report pages', 'Pages des rapports')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 'var(--space-2)',
-              marginTop: 'var(--space-3)',
-            }}
-          >
-            <Button size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>
-              {t('Newer', 'Plus récents')}
-            </Button>
-            <span style={{ ...muted, fontVariantNumeric: 'tabular-nums' }} aria-live="polite">
-              {t('Page', 'Page')} {page + 1} / {pageCount} · {reports.length} {t('reports', 'rapports')}
-            </span>
-            <Button size="sm" disabled={page >= pageCount - 1} onClick={() => setPage(page + 1)}>
-              {t('Older', 'Plus anciens')}
-            </Button>
-          </nav>
-        )}
-      </Panel>
+                    <FoodBadge summary={r.summary} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {reports != null && pageCount > 1 && (
+            <nav
+              aria-label={t('Report pages', 'Pages des rapports')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 'var(--space-2)',
+                marginTop: 'var(--space-3)',
+              }}
+            >
+              <Button size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>
+                {t('Newer', 'Plus récents')}
+              </Button>
+              <span style={{ ...muted, fontVariantNumeric: 'tabular-nums' }} aria-live="polite">
+                {t('Page', 'Page')} {page + 1} / {pageCount} · {reports.length} {t('reports', 'rapports')}
+              </span>
+              <Button size="sm" disabled={page >= pageCount - 1} onClick={() => setPage(page + 1)}>
+                {t('Older', 'Plus anciens')}
+              </Button>
+            </nav>
+          )}
+        </Panel>
       </div>
     </div>
   );
@@ -332,12 +355,17 @@ function NumberField({
           value={Number.isFinite(value) ? value : ''}
           aria-invalid={problem != null}
           aria-describedby={`${id}-help`}
-          onChange={(e) => onChange({ ...inputs, [field]: e.target.value === '' ? NaN : Number(e.target.value) })}
+          onChange={(e) =>
+            onChange({ ...inputs, [field]: e.target.value === '' ? NaN : Number(e.target.value) })
+          }
           style={{ width: 120, fontFamily: 'var(--font-mono)' }}
         />
         <span style={muted}>{unit}</span>
       </div>
-      <p id={`${id}-help`} style={{ fontSize: 'var(--text-xs)', color: problem ? 'var(--red-ink)' : 'var(--text-faint)' }}>
+      <p
+        id={`${id}-help`}
+        style={{ fontSize: 'var(--text-xs)', color: problem ? 'var(--red-ink)' : 'var(--text-faint)' }}
+      >
         {problem ? t(problem) : help}
       </p>
     </div>
@@ -490,13 +518,19 @@ function Wizard({
             <>
               <div style={{ display: 'grid', gap: 'var(--space-1)' }}>
                 <Fact label={t('Mission', 'Mission')} value={t(ctx.label)} />
-                <Fact label={t('Crew', 'Équipage')} value={`${ctx.crew_count} (${t('simulated', 'simulé')})`} />
+                <Fact
+                  label={t('Crew', 'Équipage')}
+                  value={`${ctx.crew_count} (${t('simulated', 'simulé')})`}
+                />
                 <Fact
                   label={t('Radiation at this location', 'Radiation sur ce site')}
                   value={`${ctx.radiation_msv_day} mSv/${t('day', 'jour')}`}
                 />
                 <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>
-                  {t('To simulate another mission, change it in Settings first.', 'Pour une autre mission, changez-la d’abord dans les Réglages.')}
+                  {t(
+                    'To simulate another mission, change it in Settings first.',
+                    'Pour une autre mission, changez-la d’abord dans les Réglages.',
+                  )}
                 </p>
               </div>
               <NumberField
@@ -543,7 +577,9 @@ function Wizard({
                 </p>
               </div>
               {noCargo ? (
-                <p style={muted}>{t('No cargo is planned for this mission.', 'Aucun cargo n’est prévu pour cette mission.')}</p>
+                <p style={muted}>
+                  {t('No cargo is planned for this mission.', 'Aucun cargo n’est prévu pour cette mission.')}
+                </p>
               ) : (
                 <NumberField
                   id="sim-delay"
@@ -602,20 +638,26 @@ function Wizard({
                   </p>
                   {summary.required_ration_below_floor && (
                     <div style={{ gridColumn: '1 / -1' }}>
-                    <StatusBadge
-                      level="red"
-                      label={t(
-                        `Below the ${summary.safety_floor_pct} % safety floor`,
-                        `Sous le plancher de sécurité de ${summary.safety_floor_pct} %`,
-                      )}
-                    />
+                      <StatusBadge
+                        level="red"
+                        label={t(
+                          `Below the ${summary.safety_floor_pct} % safety floor`,
+                          `Sous le plancher de sécurité de ${summary.safety_floor_pct} %`,
+                        )}
+                      />
                     </div>
                   )}
                   <div style={{ gridColumn: '1 / -1' }}>
                     <Button
                       size="sm"
                       onClick={() =>
-                        onChange({ ...inputs, ration_pct: Math.max(LIMITS.ration_pct.min, Math.floor(summary.required_ration_pct)) })
+                        onChange({
+                          ...inputs,
+                          ration_pct: Math.max(
+                            LIMITS.ration_pct.min,
+                            Math.floor(summary.required_ration_pct),
+                          ),
+                        })
                       }
                     >
                       {t('Use', 'Utiliser')} {Math.floor(summary.required_ration_pct)} %
@@ -626,7 +668,10 @@ function Wizard({
               {inputs.ration_pct < (summary?.safety_floor_pct ?? 70) && (
                 <StatusBadge
                   level="red"
-                  label={t('This ration is under the safety floor', 'Cette ration est sous le plancher de sécurité')}
+                  label={t(
+                    'This ration is under the safety floor',
+                    'Cette ration est sous le plancher de sécurité',
+                  )}
                 />
               )}
               <Why>
@@ -693,7 +738,10 @@ function Wizard({
                     onChange={onChange}
                     help={
                       inputs.storm_day > inputs.mission_days
-                        ? t('After the horizon: choose an earlier day.', 'Après l’horizon : choisissez un jour plus tôt.')
+                        ? t(
+                            'After the horizon: choose an earlier day.',
+                            'Après l’horizon : choisissez un jour plus tôt.',
+                          )
                         : undefined
                     }
                   />
@@ -705,7 +753,10 @@ function Wizard({
                     inputs={inputs}
                     onChange={onChange}
                     step={10}
-                    help={t('50 mSv is an assumption, not a measurement.', '50 mSv est une hypothèse, pas une mesure.')}
+                    help={t(
+                      '50 mSv is an assumption, not a measurement.',
+                      '50 mSv est une hypothèse, pas une mesure.',
+                    )}
                   />
                 </>
               )}
@@ -724,14 +775,19 @@ function Wizard({
             </p>
           )}
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              gap: 'var(--space-2)',
+              flexWrap: 'wrap',
+            }}
+          >
             <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
               <Button variant="ghost" onClick={onCancel}>
                 {t('Cancel', 'Annuler')}
               </Button>
-              {step > 0 && (
-                <Button onClick={() => onStep(step - 1)}>{t('Back', 'Retour')}</Button>
-              )}
+              {step > 0 && <Button onClick={() => onStep(step - 1)}>{t('Back', 'Retour')}</Button>}
             </div>
             <Button type="submit" variant="primary" disabled={!valid || saving}>
               {last
@@ -762,7 +818,14 @@ function LevelTiles({ findings }: { findings: Finding[] }) {
   const items = open ? findings.filter((f) => f.level === open) : [];
   return (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 'var(--space-3)', height: '100%' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+          gap: 'var(--space-3)',
+          height: '100%',
+        }}
+      >
         {TILE_ORDER.map((level) => {
           const meta = LEVEL_META[level];
           const Icon = meta.icon;
@@ -791,11 +854,26 @@ function LevelTiles({ findings }: { findings: Finding[] }) {
                 font: 'inherit',
               }}
             >
-              <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-sm)', fontWeight: 600 }}>
+              <span
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--space-2)',
+                  fontSize: 'var(--text-sm)',
+                  fontWeight: 600,
+                }}
+              >
                 <Icon size={16} />
                 {capital(t(meta.word))}
               </span>
-              <span style={{ ...figure, fontSize: 'var(--text-display)', lineHeight: 1, color: count ? 'var(--text)' : 'var(--text-faint)' }}>
+              <span
+                style={{
+                  ...figure,
+                  fontSize: 'var(--text-display)',
+                  lineHeight: 1,
+                  color: count ? 'var(--text)' : 'var(--text-faint)',
+                }}
+              >
                 {count}
               </span>
               <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
@@ -923,7 +1001,10 @@ function ReportView({
     { label: t('Horizon', 'Horizon'), value: `${p.mission_days} ${t('days', 'jours')}`, step: 0 },
     {
       label: t('Cargo delay', 'Retard du cargo'),
-      value: ctx.next_resupply_in_days == null ? t('no cargo planned', 'aucun cargo prévu') : `${p.resupply_delay_days} ${t('days', 'jours')}`,
+      value:
+        ctx.next_resupply_in_days == null
+          ? t('no cargo planned', 'aucun cargo prévu')
+          : `${p.resupply_delay_days} ${t('days', 'jours')}`,
       step: 1,
     },
     { label: t('Ration', 'Ration'), value: `${p.ration_pct} %`, step: 2 },
@@ -939,7 +1020,15 @@ function ReportView({
 
   return (
     <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-3)', flexWrap: 'wrap', alignItems: 'end' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: 'var(--space-3)',
+          flexWrap: 'wrap',
+          alignItems: 'end',
+        }}
+      >
         <div>
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>
             {t('Simulation report', 'Rapport de simulation')} #{report.id} · {when(report.created_ts)}
@@ -956,7 +1045,14 @@ function ReportView({
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 320px)', gap: 'var(--space-4)', alignItems: 'stretch' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 320px)',
+          gap: 'var(--space-4)',
+          alignItems: 'stretch',
+        }}
+      >
         <Panel
           title={t('What this situation leads to', 'Ce que cette situation entraîne')}
           bodyStyle={{ display: 'grid', gridTemplateRows: 'minmax(0, 1fr) auto', gap: 'var(--space-3)' }}
@@ -965,7 +1061,9 @@ function ReportView({
           {s.required_ration_pct < 100 && (
             <p style={muted}>
               {t('To last until', 'Pour tenir jusqu’au')}{' '}
-              {s.resupply_day != null ? `${t('the cargo on day', 'cargo du jour')} ${s.resupply_day}` : `${t('day', 'jour')} ${p.mission_days}`}
+              {s.resupply_day != null
+                ? `${t('the cargo on day', 'cargo du jour')} ${s.resupply_day}`
+                : `${t('day', 'jour')} ${p.mission_days}`}
               , {t('the crew would need a ration of', 'il faudrait une ration de')}{' '}
               <strong style={{ color: s.required_ration_below_floor ? 'var(--red-ink)' : 'var(--text)' }}>
                 {Math.floor(s.required_ration_pct)} %
@@ -983,10 +1081,24 @@ function ReportView({
         <Panel title={t('Inputs you confirmed', 'Valeurs confirmées')}>
           <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
             {confirmed.map((c) => (
-              <div key={c.label} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto auto', gap: 'var(--space-2)', alignItems: 'center', ...muted }}>
+              <div
+                key={c.label}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(0, 1fr) auto auto',
+                  gap: 'var(--space-2)',
+                  alignItems: 'center',
+                  ...muted,
+                }}
+              >
                 <span>{c.label}</span>
                 <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text)' }}>{c.value}</span>
-                <Button size="sm" variant="ghost" onClick={() => onEdit(p, c.step)} aria-label={`${t('Change', 'Modifier')} ${c.label}`}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onEdit(p, c.step)}
+                  aria-label={`${t('Change', 'Modifier')} ${c.label}`}
+                >
                   {t('Change', 'Modifier')}
                 </Button>
               </div>
@@ -994,19 +1106,27 @@ function ReportView({
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>
               {t('Stock at the time:', 'Réserve à ce moment :')} {num(ctx.stock_kcal)} kcal ·{' '}
               {t('starting dose', 'dose de départ')} {num(ctx.current_dose_msv, 1)} mSv.{' '}
-              {t('Changing a value writes a new report; this one stays as it is.', 'Modifier une valeur crée un nouveau rapport ; celui-ci reste tel quel.')}
+              {t(
+                'Changing a value writes a new report; this one stays as it is.',
+                'Modifier une valeur crée un nouveau rapport ; celui-ci reste tel quel.',
+              )}
             </p>
           </div>
         </Panel>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-4)' }}>
+      <div
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-4)' }}
+      >
         <ForecastCurve
           title={t('Food stock', 'Réserve')}
           headline={
             s.stockout_day != null
               ? t(`runs out on day ${s.stockout_day}`, `épuisée au jour ${s.stockout_day}`)
-              : t(`${num(last?.stock_days ?? 0, 0)} days left at the end`, `${num(last?.stock_days ?? 0, 0)} jours restants à la fin`)
+              : t(
+                  `${num(last?.stock_days ?? 0, 0)} days left at the end`,
+                  `${num(last?.stock_days ?? 0, 0)} jours restants à la fin`,
+                )
           }
           badge={<FoodBadge summary={s} />}
           detail={
@@ -1015,7 +1135,10 @@ function ReportView({
                   `cargo on day ${s.resupply_day}${p.resupply_delay_days ? ` (${p.resupply_delay_days} days late)` : ''} · ${p.ration_pct} % rations`,
                   `cargo au jour ${s.resupply_day}${p.resupply_delay_days ? ` (${p.resupply_delay_days} j de retard)` : ''} · rations à ${p.ration_pct} %`,
                 )
-              : t(`no resupply · ${p.ration_pct} % rations`, `aucun ravitaillement · rations à ${p.ration_pct} %`)
+              : t(
+                  `no resupply · ${p.ration_pct} % rations`,
+                  `aucun ravitaillement · rations à ${p.ration_pct} %`,
+                )
           }
           data={series}
           dataKey="stock_days"
@@ -1038,7 +1161,12 @@ function ReportView({
             { y: -2, label: t('orange −2 %', 'orange −2 %'), color: 'var(--orange-ink)' },
             { y: -5, label: t('red −5 %', 'rouge −5 %'), color: 'var(--red-ink)' },
           ]}
-          domain={[(min: number) => Math.min(-6, Math.floor(min)), (max: number) => Math.max(1, Math.ceil(max))] as never}
+          domain={
+            [
+              (min: number) => Math.min(-6, Math.floor(min)),
+              (max: number) => Math.max(1, Math.ceil(max)),
+            ] as never
+          }
         />
         <ForecastCurve
           title={t('Bone mass', 'Masse osseuse')}
@@ -1063,23 +1191,39 @@ function ReportView({
           unit="mSv"
           color="var(--chart-series-2)"
           markers={[
-            { y: s.radiation_limit_msv, label: `${t('career limit', 'limite de carrière')} ${s.radiation_limit_msv} mSv`, color: 'var(--red-ink)' },
+            {
+              y: s.radiation_limit_msv,
+              label: `${t('career limit', 'limite de carrière')} ${s.radiation_limit_msv} mSv`,
+              color: 'var(--red-ink)',
+            },
           ]}
           domain={[0, (max: number) => Math.max(s.radiation_limit_msv * 1.08, max)] as never}
         />
       </div>
 
       <Panel>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            gap: 'var(--space-3)',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+          }}
+        >
           <p style={muted}>
-            <strong style={{ color: 'var(--text)' }}>{t('Simulator, not a trained model.', 'Simulateur, pas un modèle entraîné.')} </strong>
+            <strong style={{ color: 'var(--text)' }}>
+              {t('Simulator, not a trained model.', 'Simulateur, pas un modèle entraîné.')}{' '}
+            </strong>
             {t(
               'Day-by-day arithmetic on NASA reference values and flagged assumptions. Simulated crew; not a medical device.',
               'Calcul jour par jour sur des valeurs de référence NASA et des hypothèses signalées. Équipage simulé ; pas un dispositif médical.',
             )}
           </p>
           <Button size="sm" aria-expanded={showAssumptions} onClick={() => setShowAssumptions((v) => !v)}>
-            {showAssumptions ? t('Hide sources', 'Masquer les sources') : t('Assumptions & sources', 'Hypothèses et sources')}
+            {showAssumptions
+              ? t('Hide sources', 'Masquer les sources')
+              : t('Assumptions & sources', 'Hypothèses et sources')}
           </Button>
         </div>
         {showAssumptions && (
@@ -1090,10 +1234,19 @@ function ReportView({
                   style={{
                     fontSize: 'var(--text-xs)',
                     marginRight: 'var(--space-2)',
-                    color: a.kind === 'assumption' ? 'var(--orange-ink)' : a.kind === 'nasa' ? 'var(--accent)' : 'var(--text-muted)',
+                    color:
+                      a.kind === 'assumption'
+                        ? 'var(--orange-ink)'
+                        : a.kind === 'nasa'
+                          ? 'var(--accent)'
+                          : 'var(--text-muted)',
                   }}
                 >
-                  {a.kind === 'assumption' ? t('ASSUMPTION', 'HYPOTHÈSE') : a.kind === 'nasa' ? t('NASA VALUE', 'VALEUR NASA') : t('METHOD', 'MÉTHODE')}
+                  {a.kind === 'assumption'
+                    ? t('ASSUMPTION', 'HYPOTHÈSE')
+                    : a.kind === 'nasa'
+                      ? t('NASA VALUE', 'VALEUR NASA')
+                      : t('METHOD', 'MÉTHODE')}
                 </span>
                 <strong style={{ color: 'var(--text)' }}>{a.label}. </strong>
                 {a.text}

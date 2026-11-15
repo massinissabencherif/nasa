@@ -183,14 +183,15 @@ def evaluate_and_alert(session: Session, crew_member_id: int, use_llm: bool = Fa
         deliver_ts = now + timedelta(seconds=effective_delay)
         from .earth_link import ensure_plan, reply_to_report  # local: earth_link reads alerts' models
 
-        payload = _earth_payload(crew, findings)
+        payload = json.loads(_earth_payload(crew, findings))
+        payload["mission_context"] = {"type": context.type, "label": context.label} if context else None
         message = EarthMessage(
             created_ts=now,
             deliver_ts=deliver_ts,
             reply_ts=deliver_ts + timedelta(seconds=effective_delay),
-            payload=payload,
+            payload=json.dumps(payload),
             # Earth answers what it received, nothing more (simulated)
-            reply_payload=reply_to_report(json.loads(payload)),
+            reply_payload=reply_to_report(payload),
             status="queued",
             alert_id=active_reds[0].id,
         )

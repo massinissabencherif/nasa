@@ -84,3 +84,32 @@ def test_dont_wait_triggers_on_a_critical_value(client):
 
 def test_update_of_unknown_report_is_404(client):
     assert client.post("/api/earth/messages/999/update").status_code == 404
+
+
+def test_report_keeps_sending_mission_and_update_records_its_own(client):
+    original = report(client)
+    assert original['mission_context']['type'] == 'mars_base'
+    client.put('/api/context', json={'type': 'iss'})
+    frozen = next(m for m in client.get('/api/earth/messages').json() if m['id'] == original['id'])
+    assert frozen['mission_context'] == original['mission_context']
+    assert frozen['deliver_ts'] == original['deliver_ts']
+    update = client.post(f"/api/earth/messages/{original['id']}/update").json()
+    assert update['mission_context']['type'] == 'iss'
+
+
+def test_legacy_report_without_sending_mission_stays_unknown(client):
+    import json
+    from sqlmodel import Session
+    from app.db import engine
+    from app.models import EarthMessage
+    original = report(client)
+    with Session(engine) as session:
+        message = session.get(EarthMessage, original['id'])
+        payload = json.loads(message.payload)
+        payload.pop('mission_context', None)
+        message.payload = json.dumps(payload)
+        session.add(message)
+        session.commit()
+    client.put('/api/context', json={'type': 'iss'})
+    legacy = next(m for m in client.get('/api/earth/messages').json() if m['id'] == original['id'])
+    assert legacy['mission_context'] is None

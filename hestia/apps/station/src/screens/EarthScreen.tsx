@@ -1,11 +1,17 @@
-import { MissionIllustration, t } from '@hestia/ui';
+import { MissionIllustration, IconCrew, LoadingState, LoadError, t } from '@hestia/ui';
 import { useCallback, useEffect, useState } from 'react';
 import type { EarthMessage } from '@hestia/api-client';
 import { Button, Panel, parseServerTime, StatusBadge } from '@hestia/ui';
 import { api } from '../lib/api';
 import { formatDelay, useStation } from '../lib/hooks';
 import { useRefreshOn } from '../lib/useSSE';
-import { DontWaitBanner, DontWaitRules, OnboardPlan, TwoClocks, UpdateComposer } from '../components/earth/Waiting';
+import {
+  DontWaitBanner,
+  DontWaitRules,
+  OnboardPlan,
+  TwoClocks,
+  UpdateComposer,
+} from '../components/earth/Waiting';
 
 function remaining(targetTs: string, now: number): number {
   return Math.max(0, Math.round((parseServerTime(targetTs) - now) / 1000));
@@ -33,7 +39,7 @@ function LinkPath({
   msg: EarthMessage;
   now: number;
   baseLabel: string;
-  contextType: string;
+  contextType?: string;
 }) {
   const start = parseServerTime(msg.created_ts);
   const arrive = parseServerTime(msg.deliver_ts);
@@ -60,7 +66,13 @@ function LinkPath({
           gap: 'var(--space-3)',
         }}
       >
-        <MissionIllustration context={contextType} size={48} />
+        <>
+          {contextType ? (
+            <MissionIllustration context={contextType} size={48} />
+          ) : (
+            <IconCrew size={48} aria-hidden="true" />
+          )}
+        </>
         <div style={{ position: 'relative', height: 16 }}>
           <div
             style={{
@@ -122,7 +134,8 @@ function LinkPath({
         }}
       >
         <span>
-          {t(baseLabel)} {t('· sent')} <span style={{ fontFamily: 'var(--font-mono)' }}>{time(msg.created_ts)}</span>
+          {t(baseLabel)} {t('· sent')}{' '}
+          <span style={{ fontFamily: 'var(--font-mono)' }}>{time(msg.created_ts)}</span>
         </span>
         <span>{t('Earth')}</span>
       </div>
@@ -141,7 +154,7 @@ function UpdateCard({
   msg: EarthMessage;
   now: number;
   baseLabel: string;
-  contextType: string;
+  contextType?: string;
 }) {
   let summary = msg.payload;
   try {
@@ -161,7 +174,14 @@ function UpdateCard({
         background: 'var(--panel-raised)',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-3)', alignItems: 'baseline' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: 'var(--space-3)',
+          alignItems: 'baseline',
+        }}
+      >
         <p style={{ fontWeight: 600 }}>
           {t('Update', 'Complément')} #{msg.id}
         </p>
@@ -180,7 +200,9 @@ function UpdateCard({
       <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>{summary}</p>
       {msg.status === 'replied' && msg.reply_payload && (
         <p style={{ fontSize: 'var(--text-sm)' }}>
-          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--orange-ink)' }}>{t('Simulated ground reply')} · </span>
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--orange-ink)' }}>
+            {t('Simulated ground reply')} ·{' '}
+          </span>
           {msg.reply_payload}
         </p>
       )}
@@ -193,12 +215,17 @@ export function EarthScreen() {
   const [messages, setMessages] = useState<EarthMessage[] | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [advancing, setAdvancing] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [advanceError, setAdvanceError] = useState(false);
 
   const refresh = useCallback(() => {
     api
       .getEarthMessages()
-      .then(setMessages)
-      .catch(() => {});
+      .then((value) => {
+        setMessages(value);
+        setLoadError(false);
+      })
+      .catch(() => setLoadError(true));
   }, []);
 
   useEffect(() => {
@@ -214,9 +241,12 @@ export function EarthScreen() {
 
   async function advance(seconds: number) {
     setAdvancing(true);
+    setAdvanceError(false);
     try {
       await api.advanceEarthTime(seconds);
       refresh();
+    } catch {
+      setAdvanceError(true);
     } finally {
       setAdvancing(false);
     }
@@ -261,7 +291,34 @@ export function EarthScreen() {
         </div>
       </Panel>
 
-      {messages != null && messages.length === 0 && (
+      {advanceError && (
+        <p role="alert" style={{ color: 'var(--red-ink)' }}>
+          {t(
+            'Demo time could not advance. Check the station and try again.',
+            'Impossible d’avancer le temps de démo. Vérifiez la station, puis réessayez.',
+          )}
+        </p>
+      )}
+      {loadError && (
+        <LoadError
+          label={
+            messages?.length
+              ? t(
+                  'Messages could not refresh. Displayed reports may be outdated.',
+                  'Actualisation impossible. Les rapports affichés peuvent être anciens.',
+                )
+              : t(
+                  'Earth reports could not load. Check the station and retry.',
+                  'Impossible de charger les rapports Terre. Vérifiez la station, puis réessayez.',
+                )
+          }
+          onRetry={refresh}
+        />
+      )}
+      {messages == null && !loadError && (
+        <LoadingState label={t('Loading Earth reports…', 'Chargement des rapports Terre…')} />
+      )}
+      {messages != null && messages.length === 0 && !loadError && (
         <Panel>
           <p style={{ color: 'var(--text-muted)' }}>
             {t(
@@ -271,135 +328,165 @@ export function EarthScreen() {
         </Panel>
       )}
 
-      {(messages ?? []).filter((m) => m.kind !== 'update').map((msg) => {
-        let payload: Record<string, unknown> = {};
-        try {
-          payload = JSON.parse(msg.payload);
-        } catch {
-          // keep the raw text below
-        }
-        const toEarth = remaining(msg.deliver_ts, now);
-        const toReply = remaining(msg.reply_ts, now);
-        const summary = String(payload.summary ?? msg.payload);
-        const actions: string[] = (
-          Array.isArray(payload.actions_taken) ? (payload.actions_taken as string[]) : []
-        ).map((action) => action.replace(/^Procedure: /, ''));
-        return (
-          <Panel key={msg.id} title={`${t('Report', 'Rapport')} #${msg.id} · ${String(payload.who ?? t('crew', 'équipage'))}`}>
-            <div style={{ display: 'grid', gap: 'var(--space-5)' }}>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'minmax(0, 1fr) auto',
-                  alignItems: 'center',
-                  gap: 'var(--space-6)',
-                }}
-              >
-                <LinkPath
-                  msg={msg}
-                  now={now}
-                  baseLabel={context?.label ?? 'Base'}
-                  contextType={context?.type ?? 'mars_base'}
-                />
-                <div style={{ textAlign: 'right', minWidth: 200 }}>
-                  {msg.status === 'queued' && (
-                    <>
-                      <p
-                        style={{
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: 'var(--text-display)',
-                          color: 'var(--accent)',
-                          lineHeight: 1,
-                        }}
-                      >
-                        {clock(toEarth)}
-                      </p>
-                      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-                        {t('until it reaches Earth')}
-                      </p>
-                    </>
-                  )}
-                  {msg.status === 'delivered' && (
-                    <>
-                      <p
-                        style={{
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: 'var(--text-display)',
-                          color: 'var(--accent)',
-                          lineHeight: 1,
-                        }}
-                      >
-                        {clock(toReply)}
-                      </p>
-                      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-                        {t('until the reply arrives')}
-                      </p>
-                    </>
-                  )}
-                  {msg.status === 'replied' && <StatusBadge level="green" label={t('reply received')} />}
-                </div>
-              </div>
-
-              <DontWaitBanner msg={msg} />
-
-              {msg.status === 'replied' && msg.reply_payload && (
+      {(messages ?? [])
+        .filter((m) => m.kind !== 'update')
+        .map((msg) => {
+          let payload: Record<string, unknown> = {};
+          try {
+            payload = JSON.parse(msg.payload);
+          } catch {
+            // keep the raw text below
+          }
+          const toEarth = remaining(msg.deliver_ts, now);
+          const toReply = remaining(msg.reply_ts, now);
+          const summary = String(payload.summary ?? msg.payload);
+          const actions: string[] = (
+            Array.isArray(payload.actions_taken) ? (payload.actions_taken as string[]) : []
+          ).map((action) => action.replace(/^Procedure: /, ''));
+          return (
+            <Panel
+              key={msg.id}
+              title={`${t('Report', 'Rapport')} #${msg.id} · ${String(payload.who ?? t('crew', 'équipage'))}`}
+            >
+              <div style={{ display: 'grid', gap: 'var(--space-5)' }}>
                 <div
                   style={{
-                    background: 'var(--panel-raised)',
-                    padding: 'var(--space-3)',
-                    borderRadius: 'var(--radius-sm)',
+                    display: 'grid',
+                    gridTemplateColumns: 'minmax(0, 1fr) auto',
+                    alignItems: 'center',
+                    gap: 'var(--space-6)',
                   }}
                 >
-                  <p
+                  <LinkPath
+                    msg={msg}
+                    now={now}
+                    baseLabel={
+                      msg.mission_context
+                        ? t(msg.mission_context.label)
+                        : t('Mission not recorded', 'Mission non enregistrée')
+                    }
+                    contextType={msg.mission_context?.type}
+                  />
+                  <div style={{ textAlign: 'right', minWidth: 200 }}>
+                    {msg.status === 'queued' && (
+                      <>
+                        <p
+                          style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: 'var(--text-display)',
+                            color: 'var(--accent)',
+                            lineHeight: 1,
+                          }}
+                        >
+                          {clock(toEarth)}
+                        </p>
+                        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
+                          {t('until it reaches Earth')}
+                        </p>
+                      </>
+                    )}
+                    {msg.status === 'delivered' && (
+                      <>
+                        <p
+                          style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: 'var(--text-display)',
+                            color: 'var(--accent)',
+                            lineHeight: 1,
+                          }}
+                        >
+                          {clock(toReply)}
+                        </p>
+                        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
+                          {t('until the reply arrives')}
+                        </p>
+                      </>
+                    )}
+                    {msg.status === 'replied' && <StatusBadge level="green" label={t('reply received')} />}
+                  </div>
+                </div>
+
+                <DontWaitBanner msg={msg} />
+
+                {msg.status === 'replied' && msg.reply_payload && (
+                  <div
                     style={{
-                      fontSize: 'var(--text-xs)',
-                      color: 'var(--orange)',
-                      marginBottom: 'var(--space-1)',
+                      background: 'var(--panel-raised)',
+                      padding: 'var(--space-3)',
+                      borderRadius: 'var(--radius-sm)',
                     }}
                   >
-                    {t('Simulated ground reply')} · {t('received in English', 'reçue en anglais')}
-                  </p>
-                  <p style={{ fontSize: 'var(--text-sm)' }}>{msg.reply_payload}</p>
-                </div>
-              )}
-
-              <TwoClocks msg={msg} now={now} />
-
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
-                  gap: 'var(--space-5)',
-                  paddingTop: 'var(--space-4)',
-                  borderTop: '1px solid var(--border)',
-                }}
-              >
-                <OnboardPlan msg={msg} now={now} onChange={refresh} />
-                <DontWaitRules msg={msg} />
-                <UpdateComposer msg={msg} onSent={refresh} />
-              </div>
-
-              {(messages ?? [])
-                .filter((u) => u.kind === 'update' && u.parent_id === msg.id)
-                .map((u) => (
-                  <UpdateCard key={u.id} msg={u} now={now} baseLabel={context?.label ?? 'Base'} contextType={context?.type ?? 'mars_base'} />
-                ))}
-
-              <details>
-                <summary style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', cursor: 'pointer' }}>
-                  {t('Report text,')} {summary.length} {t('characters (limit 600)')} · {t('sent in English', 'envoyé en anglais')}
-                </summary>
-                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', marginTop: 'var(--space-2)' }}>{summary}</p>
-                {actions.length > 0 && (
-                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                    {t('Crew is applying:')} {actions.map((action) => t(action)).join(', ')}.
-                  </p>
+                    <p
+                      style={{
+                        fontSize: 'var(--text-xs)',
+                        color: 'var(--orange)',
+                        marginBottom: 'var(--space-1)',
+                      }}
+                    >
+                      {t('Simulated ground reply')} · {t('received in English', 'reçue en anglais')}
+                    </p>
+                    <p style={{ fontSize: 'var(--text-sm)' }}>{msg.reply_payload}</p>
+                  </div>
                 )}
-              </details>
-            </div>
-          </Panel>
-        );
-      })}
+
+                <TwoClocks msg={msg} now={now} />
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
+                    gap: 'var(--space-5)',
+                    paddingTop: 'var(--space-4)',
+                    borderTop: '1px solid var(--border)',
+                  }}
+                >
+                  <OnboardPlan msg={msg} now={now} onChange={refresh} />
+                  <DontWaitRules msg={msg} />
+                  <UpdateComposer msg={msg} onSent={refresh} />
+                </div>
+
+                {(messages ?? [])
+                  .filter((u) => u.kind === 'update' && u.parent_id === msg.id)
+                  .map((u) => (
+                    <UpdateCard
+                      key={u.id}
+                      msg={u}
+                      now={now}
+                      baseLabel={
+                        u.mission_context
+                          ? t(u.mission_context.label)
+                          : t('Mission not recorded', 'Mission non enregistrée')
+                      }
+                      contextType={u.mission_context?.type}
+                    />
+                  ))}
+
+                <details>
+                  <summary
+                    style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)', cursor: 'pointer' }}
+                  >
+                    {t('Report text,')} {summary.length} {t('characters (limit 600)')} ·{' '}
+                    {t('sent in English', 'envoyé en anglais')}
+                  </summary>
+                  <p
+                    style={{
+                      fontSize: 'var(--text-sm)',
+                      color: 'var(--text-muted)',
+                      marginTop: 'var(--space-2)',
+                    }}
+                  >
+                    {summary}
+                  </p>
+                  {actions.length > 0 && (
+                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                      {t('Crew is applying:')} {actions.map((action) => t(action)).join(', ')}.
+                    </p>
+                  )}
+                </details>
+              </div>
+            </Panel>
+          );
+        })}
     </div>
   );
 }

@@ -2,8 +2,8 @@
 
 | Risk | Likelihood | What we do about it |
 |---|---|---|
-| Vision is slow or wrong on the real shelf (venue lighting, glare, stacked items) | High | Fixed, calibrated slots (the model only counts, it never has to find or identify). Uncertain readings ask for an on-screen confirmation. "Accurate mode" (3 row crops, ~50 s). Last resort: the replay scan, which needs no camera and no AI. QR codes per slot were considered as an identification fallback and not built: slots are fixed, so identification is not the weak point. |
-| A live scan takes ~20 s of silence on stage | Certain | Per-slot progress bar; the presenter talks over it. The replay scan is instant if time is short. |
+| Vision is slow or wrong on the real shelf (venue lighting, glare, stacked items) | High | Fixed, calibrated slots (the model only counts, it never has to find or identify). Uncertain readings ask for an on-screen confirmation. In-depth reading compares counts and still requires human review; duration varies. Last resort: the replay scan, which needs no camera and no AI. QR codes per slot were considered as an identification fallback and not built: slots are fixed, so identification is not the weak point. |
+| A live scan may take a minute or more on stage | Certain | Elapsed-time loader; the presenter explains the review. Rehearse the actual device; switch to the explicitly labelled no-AI replay if time is short. |
 | Laptop heats up or throttles with the model loaded | Medium | Scans are on demand only (no periodic scan). One model in memory, loaded at server start, kept for 30 min. Advice text uses fixed templates by default, so the LLM is idle outside scans. |
 | 16 GB RAM: two models at once would swap | Medium | Only `qwen2.5vl:7b` is ever loaded; it does both vision and (opt-in) text. `gemma3:4b` is not used at runtime. |
 | Ollama not running | Low | The station shows it under Mission settings; camera and test-image scans return a clear message; everything else, including replay scans, alerts, forecasts and the crew app, keeps working. |

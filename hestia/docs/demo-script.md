@@ -10,29 +10,28 @@ Deux écrans : la **station** (portable, projeté) et un **téléphone** (appli
 
 1. Sur une base de démonstration jetable, `make reset`, puis `make demo` ; ne pas réinitialiser une base contenant des sessions à conserver.
 2. Les historiques de réaction préchargés sont marqués **SIMULATED**. Pour montrer un vrai essai, enregistrer une session complète sur le téléphone avant le pitch ; sa référence se construit sur cinq sessions comparables et ne réutilise pas les données simulées.
-3. Régler le facteur d'accélération du temps sur ×30 pour la liaison Terre.
+3. Garder la mission Mars pendant la séquence Terre. Les anciens rapports sans contexte d’envoi sont indiqués comme tels. Régler le facteur d'accélération du temps sur ×30 pour la liaison Terre.
 4. Faire un scan caméra à blanc, pour que macOS ait déjà demandé l'accès à
    la caméra.
-5. Remettre les 3 conserves dans le casier A1.
+5. Pour le scénario 412 → 398 uniquement, conserver le catalogue/stock de démo et ×212. Un bac réel ×1 aura ses propres chiffres. Remettre les 3 conserves dans le casier A1 si la caméra est utilisée.
 6. Téléphone : ouvrir l'appli, profil **Chen Wei**.
 
-Chaque étape a un bouton de secours dans **Mission settings → Demo
-controls**. Il passe par le même code que l'action réelle.
+Chaque étape a un bouton de secours dans **Réglages de la mission → Outils de présentation**. Il passe par le même code que l'action réelle.
 
 ## Déroulé
 
 | Temps | Ce que je fais | Ce que je dis |
 |---|---|---|
 | 0:00 – 0:30 | Station, écran **Crew** : quatre silhouettes vertes. Je montre la barre du haut : « Mars base · Earth reply in 40 min ». | « Base martienne. Quatre astronautes, pas de médecin, pas d'internet. Une réponse de la Terre met quarante minutes. L'énoncé le dit : les astronautes doivent pouvoir évaluer leur santé eux-mêmes. HESTIA tourne entièrement sur cet ordinateur. L'équipage est simulé, et ce n'est pas un dispositif médical. » |
-| 0:30 – 1:20 | Téléphone, **Home → Health assessments**. Je montre une session complète préparée avant le pitch, avec sa date et sa source. Un juré peut essayer un signal d’entraînement, puis je quitte explicitement le test. | « Le téléphone mesure le temps de réaction. Le protocole complet dure environ une à deux minutes : trois essais d’entraînement puis quinze essais mesurés. Voici un résultat enregistré auparavant et ses essais bruts. La référence se construit sur cinq sessions comparables ; avant cela, elle reste explicitement en construction. Ce n’est ni un diagnostic de fatigue ni une autorisation opérationnelle ; ce résultat ne colore pas la silhouette. » |
+| 0:30 – 1:20 | Téléphone, **Home → Health assessments**. Je montre une session complète préparée avant le pitch, avec sa date et sa source. Un juré peut essayer un signal d’entraînement, puis je quitte explicitement le test. | « Le téléphone mesure le temps de réaction. Le protocole complet dure environ trente secondes : un essai d’entraînement puis cinq essais mesurés. Voici un résultat enregistré auparavant et ses essais bruts. La référence se construit sur cinq sessions comparables ; avant cela, elle reste explicitement en construction. Ce n’est ni un diagnostic de fatigue ni une autorisation opérationnelle ; ce résultat ne colore pas la silhouette. » |
 | 1:20 – 2:10 | Je reviens dans **Check-in** et je touche le (i) de **Exercise** : comment, pourquoi, quel risque. Je saisis **10** minutes → **Save check-in**. Le conseil orange s'affiche. **See my body status** : la zone **Bones** est orange. Je touche la zone. Sur la station, la silhouette de Chen change en direct. | « Chaque mesure explique comment la prendre, pourquoi, et quel risque elle surveille. Troisième jour sous trente minutes d'exercice : la zone passe à l'orange. L'appli ne mesure pas l'os : elle suit la régularité de l'exercice, qui est la parade principale. Le conseil donne la valeur, les étapes et la procédure de bord. Orange : cela reste entre l'astronaute et l'appli. » |
 | 2:10 – 3:10 | Station, **Mission settings → Run** « Sofia Lindqvist: fever + high heart rate » (ou bilan de Sofia sur le téléphone : 38,6 °C et pouls 124). **Alerts** : deux alertes rouges, première étape « Tell the crew medical officer now ». **Earth link** : rapport compact, compte à rebours. J'avance le temps : la réponse simulée arrive. | « Fièvre et pouls élevé ensemble : rouge. L'équipage est alerté tout de suite. Un rapport de moins de 600 caractères part vers la Terre, parce que deux indicateurs sont rouges en même temps. Une seule valeur un peu haute ne dérange pas la Terre : la règle est écrite, pas cachée. En attendant la réponse, l'équipage applique la procédure. » |
-| 3:10 – 4:10 | Station, **Pantry** : 412 jours. Je retire les **3 conserves du casier A1**. **Scan now**. Pendant les vingt secondes du scan, je parle. Le compteur descend à **398**. | « La nutrition insuffisante fait partie des risques cités par l'énoncé. L'étagère est lue par une caméra et un modèle qui tourne sur ce portable. Les casiers sont fixes : le modèle ne fait que compter, et une lecture douteuse demande une confirmation humaine. Je retire trois lots… 412 jours d'autonomie deviennent 398. Échelle de démo : une boîte représente un lot de rations. » |
+| 3:10 – 4:10 | Station, **Pantry** : 412 jours. Je retire les **3 conserves du casier A1**. **Nouvelle photo** → photo déjà répétée, ou **Répéter avec une démo** → trois boîtes retirées. Je vérifie puis enregistre les quantités. Le rejeu est annoncé sans IA ; ne pas attendre un scan non répété sur scène. Le compteur descend à **398**. | « Le modèle local propose le nombre d’emballages ; une personne vérifie avant d’enregistrer. Ici, je montre un rejeu de quantités connues, sans IA [ou : notre photo réelle répétée]. Les boîtes photographiées restent distinctes de cette projection de mission : avec l’échelle de démo ×212, 412 jours deviennent 398. Ce n’est pas l’autonomie réelle de notre bac. » |
 | 4:10 – 4:40 | Diapositive « vrai / simulé / sources ». | « Ce qui est réel : le logiciel, les règles, les tests automatiques, l'IA locale. Ce qui est simulé : l'équipage et les réponses de la Terre. Nos sources : le programme de recherche humaine de la NASA, la norme NASA-STD-3001, l'Agence spatiale canadienne. Une première version a été écrite avant l'événement, avec l'accord des organisateurs ; ce week-end, nous avons corrigé les règles, vérifié les sources et ajouté le test de réaction. » |
-| 4:40 – 5:00 | Station : je bascule le contexte sur **Moon base**, puis j'ouvre **What-if simulator** deux secondes. | « Le même outil s'adapte à la Lune, à l'ISS, au transit. Et la suite du projet est là : simuler l'effet d'une décision avant de la prendre. Aujourd'hui ce simulateur repose sur des hypothèses affichées ; c'est notre prochaine étape. » |
+| 4:40 – 5:00 | Station : je bascule le contexte sur **Moon base**, puis j'ouvre **Simulateur de gestion** et son historique. | « Le même outil s'adapte à la Lune, à l'ISS, au transit. Et la suite du projet est là : simuler l'effet d'une décision avant de la prendre. Aujourd'hui ce simulateur repose sur des hypothèses affichées ; les rapports sont enregistrés et consultables. » |
 
-Une phrase à glisser pendant le scan : « La grille des casiers se calibre une
-fois, à l'installation de la caméra. »
+Une phrase à glisser pendant le scan : « Nous cadrons les cases sur la photo et attribuons les produits ;
+la personne contrôle les quantités proposées avant d’enregistrer. »
 
 ## Si quelque chose casse
 
@@ -41,9 +40,9 @@ fois, à l'installation de la caméra. »
   utiliser le bouton « Chen Wei: low-exercise check-in ».
 - **Le test de réaction se passe mal** (taps avant le signal) : ils ne sont
   pas comptés ; « Do it again » relance le test.
-- **Le scan caméra échoue ou se trompe** : cocher « Accurate mode » si on a
-  50 s, corriger le casier avec « Check count », ou choisir la source
-  « Replay: 3 boxes removed (no AI) » : instantané, 412 → 398. Dire au jury
+- **Le scan caméra échoue ou se trompe** : corriger les quantités avant enregistrement, ou choisir
+  « Répéter avec une démo → Trois boîtes de soupe retirées » : instantané,
+  412 → 398 avec le catalogue de démo et ×212. Dire au jury
   que c'est un scan rejoué.
 - **Ollama est arrêté** : seuls les scans caméra et image sont touchés.
 - **Tout est dans un état bizarre** : Mission settings → **Reset**.
@@ -52,11 +51,11 @@ fois, à l'installation de la caméra. »
 
 | Question | Réponse courte |
 |---|---|
-| Pourquoi ces seuils ? | Ce sont des plages cliniques courantes, affichées comme indicatives. Ce ne sont pas des règles de vol NASA. Les règles d'envoi vers la Terre sont des choix de démo, écrits dans un fichier à part. |
+| Pourquoi ces seuils ? | Ce sont des repères indicatifs de démonstration, documentés et sans validation médicale. Ce ne sont pas des règles de vol NASA. Les règles d'envoi vers la Terre sont des choix de démo, écrits dans un fichier à part. |
 | Et si l'astronaute ne fait pas son bilan ? | La zone passe à « no data », puis « no recent data » après 72 h. Elle n'est jamais verte par défaut. |
 | Et si l'IA se trompe ? | Elle ne fait que compter des boîtes. Une lecture douteuse demande une confirmation. Aucune alerte de santé ne dépend d'une IA. |
 | Pourquoi la nourriture dans un outil de santé ? | L'énoncé cite la nutrition insuffisante parmi les problèmes de santé des longues missions. |
-| Le test de réaction est-il validé ? | Non. Notre protocole comporte 3 essais d’entraînement et 15 mesurés, environ 1 à 2 minutes. Il montre des temps et des écarts ; il ne diagnostique pas la fatigue et ne déclenche aucune couleur ou alerte. |
+| Le test de réaction est-il validé ? | Non. Notre protocole comporte 1 essai d’entraînement et 5 mesurés, environ 30 secondes. Il montre des temps et des écarts ; il ne diagnostique pas la fatigue et ne déclenche aucune couleur ou alerte. |
 | Vos chiffres de radiation ? | Mars : instrument RAD du rover Curiosity. Lune : atterrisseur Chang'e-4, une mesure chinoise. ISS : hypothèse, affichée comme telle. |
 | Qu'avez-vous fait ce week-end ? | Voir la section « What was built before the event » de la page projet. |
 

@@ -277,6 +277,8 @@ def send_update(session: Session, parent: EarthMessage, now: datetime | None = N
         return None
     now = now or datetime.now(timezone.utc)
     delay = effective_delay_s(session)
+    context = session.exec(select(MissionContext).where(MissionContext.active == True)).first()  # noqa: E712
+    payload["mission_context"] = {"type": context.type, "label": context.label} if context else None
     message = EarthMessage(
         created_ts=now,
         deliver_ts=now + timedelta(seconds=delay),

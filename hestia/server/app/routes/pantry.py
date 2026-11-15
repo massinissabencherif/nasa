@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field, StrictInt, field_validator
 from sqlmodel import Session, select
 
 from app.db import engine
-from app.engines.nutrition import autonomy_report, crew_daily_need, is_meal, counted_package_kcal
+from app.engines.nutrition import autonomy_report, crew_daily_need, is_meal, counted_package_kcal, pending_portions
 from app.engines import pantry_review, pantry_setup
 from app.models import (
     ConsumptionEvent,
@@ -331,8 +331,13 @@ def scan_photo(
         return scan_pantry(mode="image", image_path=relative, strategy=strategy, boxes=boxes)
 
     with Session(engine) as session:
+        session.connection().exec_driver_sql("BEGIN IMMEDIATE")
         previous = _latest_snapshot(session)
-        snapshot = InventorySnapshot(ts=now, image_path=relative, raw_json=json.dumps({"reference_only": True}))
+        carried = pending_portions(session, previous) if previous else {}
+        snapshot = InventorySnapshot(ts=now, image_path=relative, raw_json=json.dumps({
+            "reference_only": True,
+            "carried_meals": {str(food): qty for food, qty in carried.items()},
+        }))
         session.add(snapshot)
         session.flush()
         if previous is not None:  # carry the counts over: only the picture changes

@@ -160,6 +160,8 @@ export type Alert = {
 
 export type EarthMessage = {
   id: number;
+  /** Mission frozen at sending; older messages may not have recorded it. */
+  mission_context?: { type: string; label: string } | null;
   created_ts: string;
   deliver_ts: string;
   reply_ts: string;
@@ -199,7 +201,13 @@ export type OnboardStep = { id: number; label: string; due_ts: string | null; do
 export type EarthUpdatePreview = {
   summary: string;
   who: string;
-  findings: { indicator: string; value: number | null; unit: string; previous: number | null; change: OnboardReading['change'] }[];
+  findings: {
+    indicator: string;
+    value: number | null;
+    unit: string;
+    previous: number | null;
+    change: OnboardReading['change'];
+  }[];
   actions_taken: string[];
 };
 
@@ -616,7 +624,8 @@ export function createApiClient(baseUrl: string) {
     getEarthMessages: () => request<EarthMessage[]>('/api/earth/messages'),
     tickOnboardStep: (stepId: number, done: boolean) =>
       request<OnboardStep>(`/api/earth/steps/${stepId}`, { method: 'POST', body: JSON.stringify({ done }) }),
-    previewEarthUpdate: (messageId: number) => request<EarthUpdatePreview>(`/api/earth/messages/${messageId}/update`),
+    previewEarthUpdate: (messageId: number) =>
+      request<EarthUpdatePreview>(`/api/earth/messages/${messageId}/update`),
     sendEarthUpdate: (messageId: number) =>
       request<EarthMessage>(`/api/earth/messages/${messageId}/update`, { method: 'POST' }),
     advanceEarthTime: (seconds: number) =>

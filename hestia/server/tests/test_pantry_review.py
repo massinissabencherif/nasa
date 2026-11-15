@@ -296,3 +296,24 @@ def test_repeated_food_deducts_meals_once_and_edits_recalculate_meals(client):
         assert len(session.exec(select(ConsumptionEvent)).all()) == events_before
         today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         assert kcal_eaten_today(session, crew_id, today) == 800
+
+
+def test_reference_photo_keeps_prior_and_new_meal_deductions(client, monkeypatch, tmp_path):
+    import shutil
+    (tmp_path / 'data').mkdir()
+    shutil.copyfile(pantry.SERVER_DIR / 'data' / 'food_catalogue.json', tmp_path / 'data' / 'food_catalogue.json')
+    monkeypatch.setattr(pantry, 'SERVER_DIR', tmp_path)
+    monkeypatch.setattr(pantry, 'CAPTURES_DIR', tmp_path / 'captures')
+    food = client.get('/api/crew/1/meal').json()['available'][0]
+    baseline = client.get('/api/pantry').json()
+    image = cv2.imencode('.png', np.zeros((40, 40, 3), dtype=np.uint8))[1].tobytes()
+    for meal_count in (1, 2):
+        assert client.post('/api/crew/1/meal', json={'food_item_id': food['food_item_id'], 'qty': 1}).status_code == 200
+        expected = baseline['stock_kcal'] - meal_count * food['kcal']
+        # Replacing the same reference twice must neither restore nor double-deduct meals.
+        for _ in range(2):
+            response = client.post('/api/pantry/photo?scan=false', files={'file': ('reference.png', image, 'image/png')})
+            assert response.status_code == 200, response.text
+            stock = client.get('/api/pantry').json()
+            assert stock['stock_kcal'] == pytest.approx(expected)
+            assert [s['count'] for s in stock['slots']] == [s['count'] for s in baseline['slots']]

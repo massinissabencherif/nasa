@@ -4,6 +4,48 @@ Last update: 15 Nov 2026. This file says what
 works, how it was checked, and what is still open. Decisions are in
 [decisions.md](decisions.md).
 
+## 15 Nov — Approved pre-demo audit fixes
+
+David approved F1–F5 and the exact commit message
+`fix: preserve inventory and report context before demo`, plus publication on main.
+The reference-photo route now carries already consumed meals into the new stock
+snapshot; repeated reference changes do not restore or double-deduct energy.
+Simulator/Earth list failures display persistent errors with retry and retain
+previous results instead of claiming an empty list. Reports and updates record
+the mission at sending; legacy messages without that record explicitly say so.
+Presentation drafts now match the short reaction protocol, local Wi-Fi requirement,
+human stock review and explicit demo multiplier/replay.
+
+Verified on David's Mac: **111 backend tests, 27 frontend tests, both builds**,
+focused lint, offline-source and diff checks. Targeted browser error/retry and
+mission-switch evidence is appended to the [audit report](sources/2026-11-15-revue-parcours-codex.md).
+Original shelf-image generator provenance, final public submission links, actual
+phone/camera and spoken rehearsal still need the team's check. Claude's separate
+video worktree was not modified; its final texts must preserve these corrections.
+No demo database reset. Git records the final publication hash.
+
+## 15 Nov — Codex complete flow review (report only)
+
+David approved an independent read-only code audit with mutations on an isolated
+API/database. [Full report, findings and coverage](sources/2026-11-15-revue-parcours-codex.md).
+All 12 principal journey areas were exercised through browser/API or their recent
+published evidence; physical phone/camera, oral five-minute pitch and clinical
+validation remain unverified. No source fix, commit or publication in this audit.
+
+Confirmed findings: legacy reference-photo upload restores pending meal energy;
+simulator list failure looks empty; Earth list failure is silent; old Mars reports
+are labelled ISS after switching context; presentation drafts still say 3+15 and
+"no network". One actual simple Ollama read of a known fixture took 60.3 s and
+matched 11/12 slots (A3: 2 instead of 4), staged for review without saving stock.
+The explicit no-AI technical demo chain succeeded; automated clicks do not replace
+Massi/David's spoken and hardware rehearsal before 18:30.
+
+Audit artifacts/base/captures: `/private/tmp/hestia-flow-audit-20261115/`, API 8012,
+station 1432. Production/demo preview 8011 data was not reset or mutated. Started
+at `a3850b9`; `8ed3edf` arrived during the review and affects Pantry shortcuts/
+catalogue, not the identified Earth/simulator/legacy-upload source paths. See
+report for exact test scope, temporary setup and false-positive harness errors.
+
 ## 15 Nov — History/Meal delivery integrated with Massi's Earth and photo QR
 
 Delivery rebases the approved `fix: keep history readings consistent and clarify

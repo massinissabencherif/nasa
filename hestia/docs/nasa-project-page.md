@@ -23,7 +23,8 @@ indicator turns red, the crew is alerted at once; when a value is critical
 or several indicators are red together, a compact report is queued for Earth
 with the real communication delay, so the crew acts first and the ground
 confirms later. A zone with no recent reading says so instead of showing
-green. All of it, AI included, runs on one laptop with no network.
+green. Processing, including AI, runs on the station laptop without Internet.
+A separate crew phone connects to that laptop over local Wi-Fi.
 
 ## Link to project demo
 
@@ -37,21 +38,21 @@ _[repository link]_
 
 **What it does.** HESTIA has six parts:
 
-1. **Camera pantry.** A webcam looks at a shelf with 12 fixed slots. A vision
-   model running on the laptop counts the units in each slot. Uncertain
-   readings are flagged and a crew member confirms them on screen. The count
-   becomes days of food autonomy for the crew, a ration plan per astronaut and
-   a consumption feed. Remove three boxes, scan, and the autonomy figure drops
-   in front of you.
+1. **Camera pantry.** A Mac camera or an imported phone photo shows up to
+   3 × 4 configured slots. The crew assigns a product to each slot; a local
+   vision model proposes the package counts. A person checks and corrects them
+   before saving. Physical package counts are distinct from a mission projection
+   using an explicit, editable demo multiplier. A labelled replay with known
+   counts is available as a fallback; it makes no claim of live AI accuracy.
 2. **Crew mobile app.** Daily check-in (blood pressure, heart rate, glucose,
    temperature, weight, sleep, mood, symptoms, exercise) and a separate
-   reaction time assessment: three practice trials, then fifteen measured
+   reaction time assessment: one practice trial, then five measured
    trials, with raw attempts, interruption handling and pending sync.
    Complete sessions are compared with five previous complete sessions
    of the same protocol, installation and data source. This assessment
    is informational and does not change body-zone colours or alerts. Every field has a "how to measure / why we ask / what risk"
    sheet. The app suggests a meal
-   from what is really on the shelf, shows reminders adapted to the mission
+   from the recorded inventory, shows reminders adapted to the mission
    context, a check-in streak and badges, and history charts with green,
    orange and red bands.
 3. **Clickable silhouette.** Brain and morale, eyes (SANS), heart, bones,
@@ -174,9 +175,12 @@ values and flagged assumptions. No model was trained.
 - The source code and documentation were written with AI coding assistants
   (Claude Code by Anthropic, Codex by OpenAI), directed and reviewed by the
   team. The same assistants audited each other's work during the event.
-- The shelf test photos are AI-generated _[name the image tool]_. They are
-  captioned "AI-generated" in the app and are only test fixtures. No NASA
-  logo or mark appears in them or anywhere else.
+- The companion and concept blood-pressure-monitor illustration were generated
+  with the built-in OpenAI image tool (model identifier not returned); provenance
+  is recorded in `docs/licenses.md`. Shelf images are generated test fixtures,
+  labelled as such. Confirm the generator of the original shelf pair before
+  submitting this draft. The unchanged Space Apps event mark and ESGI mark appear
+  in student-project credits, with no NASA endorsement claim; HESTIA uses its own logo.
 
 ## Space Agency Data / references
 

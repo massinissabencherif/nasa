@@ -45,6 +45,7 @@ def _out(session: Session, m: EarthMessage, now: datetime) -> dict:
         "alert_id": m.alert_id,
         "kind": "update" if is_update else "report",
         "parent_id": payload.get("parent_id"),
+        "mission_context": payload.get("mission_context"),
         "crew_member_id": crew_id,
         # what is true on board now, next to what Earth will read
         "onboard_now": onboard_now(session, crew_id, findings) if crew_id is not None and not is_update else [],

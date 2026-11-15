@@ -356,6 +356,13 @@ says nothing about the code.
   counted packages and catalogue units; existing nutrition rules are preserved.
   PWA/tablet finishing stays deferred. Branch `fix/meal-history-clarity`.
 
+- **D50 (implemented, 15 Nov):** David approves the five pre-demo audit fixes:
+  conserve meal deductions when changing only the shelf reference photo; expose
+  list errors and retry without erasing prior reports; freeze each Earth message's
+  sending mission, leaving unrecorded legacy context explicitly unknown; align
+  presentation text with actual protocol/network/demo behaviour. No new feature,
+  threshold or migration. Exact commit message and main publication approved.
+
 ## Proposed, not decided
 
 | # | Idea | State |
