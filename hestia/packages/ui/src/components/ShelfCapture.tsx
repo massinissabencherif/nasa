@@ -14,10 +14,10 @@ import { ShelfAnalysis } from './ShelfAnalysis';
 import { ShelfCamera } from './ShelfCamera';
 import { ShelfFrameEditor } from './ShelfFrameEditor';
 import { ShelfScanReview } from './ShelfScanReview';
-import { IconPhoto, IconScan, IconPhone, IconReplay, IconCaution } from '../icons';
+import { IconPhoto, IconScan, IconReplay, IconCaution } from '../icons';
 import { t } from '../i18n';
 
-type Step = 'choose' | 'camera' | 'frame' | 'analyse' | 'review' | 'phone' | 'demo' | 'products';
+type Step = 'choose' | 'camera' | 'frame' | 'analyse' | 'review' | 'demo' | 'products';
 export function ShelfCapture({
   api,
   slots,
@@ -199,25 +199,24 @@ export function ShelfCapture({
                   )}
                 </p>
                 {variant === 'crew' && (
-                  <Button variant="primary" icon={<IconPhoto size={22} />} onClick={() => shot.current?.click()}>
+                  <Button
+                    variant="primary"
+                    icon={<IconPhoto size={22} />}
+                    onClick={() => shot.current?.click()}
+                  >
                     {t('Take a photo', 'Prendre une photo')}
                   </Button>
                 )}
                 {(variant === 'station' || viewfinder) && (
                   <Button icon={<IconScan size={22} />} onClick={() => setStep('camera')}>
                     {variant === 'station'
-                      ? t('Mac camera', 'Caméra du Mac')
+                      ? t('Device camera', 'Caméra d’un appareil')
                       : t('Live viewfinder', 'Viseur en direct')}
                   </Button>
                 )}
                 <Button icon={<IconPhoto size={22} />} onClick={() => file.current?.click()}>
                   {t('Import a photo', 'Importer une photo')}
                 </Button>
-                {variant === 'station' && (
-                  <Button icon={<IconPhone size={22} />} onClick={() => setStep('phone')}>
-                    {t('Photo from a phone', 'Photo du téléphone')}
-                  </Button>
-                )}
                 <Button icon={<IconReplay size={22} />} onClick={() => setStep('demo')}>
                   {t('Rehearse with a demo', 'Répéter avec une démo')}
                 </Button>
@@ -230,32 +229,6 @@ export function ShelfCapture({
               </>
             )}
             {step === 'camera' && <ShelfCamera onCapture={selectPhoto} />}
-            {step === 'phone' && (
-              <>
-                <p>
-                  {t(
-                    'Connect the phone to the station’s Wi-Fi and scan this code: the phone opens the shelf photo directly, no profile needed. No Internet is needed.',
-                    'Connectez le téléphone au Wi-Fi de la station et scannez ce code : le téléphone ouvre directement la photo de la réserve, sans choisir de profil. Pas besoin d’Internet.',
-                  )}
-                </p>
-                <img
-                  className="hz-shelf-qr"
-                  src={api.crewQrUrl(false, 'pantry_photo')}
-                  alt={t('Open the crew app', 'Ouvrir l’app astronaute')}
-                  width={200}
-                  height={200}
-                />
-                <p className="hz-caption">
-                  {t(
-                    'Alternatively, transfer your phone photo to the Mac and import it.',
-                    'Vous pouvez aussi transférer la photo du téléphone sur le Mac et l’importer.',
-                  )}
-                </p>
-                <Button onClick={() => file.current?.click()}>
-                  {t('Import a photo', 'Importer une photo')}
-                </Button>
-              </>
-            )}
             {step === 'frame' && (
               <>
                 {photoUrl && <ShelfFrameEditor imageUrl={photoUrl} value={frame} onChange={setFrame} />}

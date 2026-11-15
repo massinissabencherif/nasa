@@ -4,6 +4,21 @@ Last update: 15 Nov 2026. This file says what
 works, how it was checked, and what is still open. Decisions are in
 [decisions.md](decisions.md).
 
+## 15 Nov — Simplified camera choices and persistent Ollama
+
+David approves removal of the station's duplicate phone-photo choice and the
+label “Device camera”; camera selection still uses devices detected by macOS.
+The crew app's native photo route and station settings QR remain available.
+Both builds, focused lint/format/diff checks and Chrome fake-camera selection /
+direct phone-photo route pass. David confirms the iPhone now appears; this does
+not establish a real shelf scan's accuracy. No stock was changed by these checks.
+
+Ollama was not running and Homebrew reported no registered service. Previous
+launches used a temporary agent process; termination cause is not established.
+David authorises a persistent Homebrew service so it no longer depends on that
+session. Verify service/API/model status after activation; a sleeping Mac still
+cannot serve the station. No new model or dependency was installed.
+
 ## 15 Nov — Approved pre-demo audit fixes
 
 David approved F1–F5 and the exact commit message
